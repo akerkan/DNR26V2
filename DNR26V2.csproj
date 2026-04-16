@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DNR26V2</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       Sub-Projekt-Ordner aus der Kompilierung ausschließen.
+       Ohne diese Einträge würde das SDK alle *.cs Dateien in Unterordnern
+       doppelt kompilieren (einmal hier, einmal in deren eigenem .csproj).
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <Compile Remove="DNR26V2.Domain\**" />
+    <Compile Remove="DNR26V2.Data\**" />
+    <Compile Remove="DNR26V2.Services\**" />
+    <EmbeddedResource Remove="DNR26V2.Domain\**" />
+    <EmbeddedResource Remove="DNR26V2.Data\**" />
+    <EmbeddedResource Remove="DNR26V2.Services\**" />
+    <None Remove="DNR26V2.Domain\**" />
+    <None Remove="DNR26V2.Data\**" />
+    <None Remove="DNR26V2.Services\**" />
+  </ItemGroup>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       Referenzen auf Sub-Projekte (korrekte Einbindung via ProjectReference)
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       NuGet-Pakete nur für die WinForms-Schicht
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <!-- EF Core -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer"              Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools"                  Version="8.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design"                 Version="8.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- Dapper + SQL -->
+    <PackageReference Include="Dapper"                                               Version="2.1.35" />
+    <PackageReference Include="Microsoft.Data.SqlClient"                             Version="5.2.2" />
+    <!-- DI + Konfiguration -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json"              Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection"             Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

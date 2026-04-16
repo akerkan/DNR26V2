@@ -29,6 +29,11 @@ public class ProductService : IProductService
                    p.Einheit,
                    p.VKPreis,
                    p.MwstProzent,
+                   p.Feld1,
+                   p.Feld2,
+                   p.Feld3,
+                   p.Feld4,
+                   p.Printfarbe,
                    p.Aktiv
             FROM   Product p
             WHERE  (@Suche    IS NULL

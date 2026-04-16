@@ -46,15 +46,17 @@ public partial class FrmProductList : BaseListForm
         Load         += FrmProductList_Load;
         FormClosing  += FrmProductList_FormClosing;
 
-        txtSuche.TextChanged  += TxtSuche_TextChanged;
-        txtSuche.KeyDown      += TxtSuche_KeyDown;
+        txtSuche.TextChanged       += TxtSuche_TextChanged;
+        txtSuche.KeyDown           += TxtSuche_KeyDown;
         chkNurAktiv.CheckedChanged += Filter_Changed;
 
         dgwArtikel.SelectionChanged += DgwArtikel_SelectionChanged;
+        dgwArtikel.CellFormatting   += DgwArtikel_CellFormatting;
 
         btnNeu.Click          += BtnNeu_Click;
         btnSpeichern.Click    += BtnSpeichern_Click;
         btnDeaktivieren.Click += BtnDeaktivieren_Click;
+        btnPrintfarbe.Click   += BtnPrintfarbe_Click;
 
         _searchTimer.Tick += async (_, _) =>
         {
@@ -64,13 +66,14 @@ public partial class FrmProductList : BaseListForm
 
         foreach (var tb in new Control[] {
             txtArtikelnummer, txtBezeichnung, txtBezeichnung2,
-            txtEinheit, txtBarcode, txtNotizen })
+            txtEinheit, txtBarcode, txtNotizen,
+            txtFeld1, txtFeld2, txtFeld3, txtFeld4 })
             ((TextBox)tb).TextChanged += Detail_Changed;
 
-        nudVKPreis.ValueChanged    += (_, _) => _isDirty = true;
-        nudEKPreis.ValueChanged    += (_, _) => _isDirty = true;
+        nudVKPreis.ValueChanged     += (_, _) => _isDirty = true;
+        nudEKPreis.ValueChanged     += (_, _) => _isDirty = true;
         nudMwstProzent.ValueChanged += (_, _) => _isDirty = true;
-        chkAktiv.CheckedChanged    += (_, _) => _isDirty = true;
+        chkAktiv.CheckedChanged     += (_, _) => _isDirty = true;
     }
 
     // ── Laden ─────────────────────────────────────────────────────────────────
@@ -80,11 +83,8 @@ public partial class FrmProductList : BaseListForm
         if (IsDesignMode() || _productService is null) return;
 
         WindowState = FormWindowState.Maximized;
-        // Detail-Panel nicht grundsätzlich verbergen — Verhalten wie bei Kunden: wenn Liste leer → Neu-Modus
-        // SetDetailVisible(false);
         await LoadListAsync();
 
-        // Wenn Liste leer ist automatisch "Neu" aktivieren, damit Nutzer Daten in Entwurf hinzufügen kann
         if (dgwArtikel.Rows.Count == 0)
             NewProduct();
     }
@@ -142,10 +142,12 @@ public partial class FrmProductList : BaseListForm
         foreach (DataGridViewColumn col in dgwArtikel.Columns) col.Visible = false;
         ShowCol("Artikelnummer", "Art.-Nr.",    100);
         ShowCol("Bezeichnung",   "Bezeichnung", 0, fill: true);
-        ShowCol("Einheit",       "Einheit",     60);
-        ShowCol("VKPreis",       "VK-Preis",    80, format: "N4", right: true);
-        ShowCol("MwstProzent",   "MwSt %",      60, format: "N2", right: true);
-        ShowCol("Aktiv",         "Aktiv",        50);
+        ShowCol("Feld1",         "Feld 1",      120);
+        ShowCol("Feld2",         "Feld 2",      120);
+        ShowCol("Feld3",         "Feld 3",      120);
+        ShowCol("Feld4",         "Feld 4",      120);
+        ShowCol("Printfarbe",    "Printfarbe",   90);
+        ShowCol("Aktiv",         "Aktiv",         50);
     }
 
     private void ShowCol(string name, string header, int width,
@@ -159,6 +161,27 @@ public partial class FrmProductList : BaseListForm
         else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
         if (format is not null) col.DefaultCellStyle.Format = format;
         if (right) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+    }
+
+    // ── Printfarbe: Grid-Zelle einfärben ──────────────────────────────────────
+
+    private void DgwArtikel_CellFormatting(object? s, DataGridViewCellFormattingEventArgs e)
+    {
+        if (e.RowIndex < 0) return;
+        if (dgwArtikel.Columns[e.ColumnIndex].Name != "Printfarbe") return;
+
+        var colorStr = e.Value as string;
+        if (string.IsNullOrWhiteSpace(colorStr)) return;
+
+        try
+        {
+            var color = ColorTranslator.FromHtml(colorStr);
+            e.CellStyle.BackColor = color;
+            // Kontrastfarbe für Text wählen
+            e.CellStyle.ForeColor = (color.R * 0.299 + color.G * 0.587 + color.B * 0.114) > 128
+                ? Color.Black : Color.White;
+        }
+        catch { /* ungültige Farbangabe → keine Einfärbung */ }
     }
 
     private async Task LoadDetailAsync(int id)
@@ -185,6 +208,11 @@ public partial class FrmProductList : BaseListForm
         nudVKPreis.Value          = p.VKPreis;
         nudEKPreis.Value          = p.EKPreis;
         nudMwstProzent.Value      = p.MwstProzent;
+        txtFeld1.Text             = p.Feld1 ?? "";
+        txtFeld2.Text             = p.Feld2 ?? "";
+        txtFeld3.Text             = p.Feld3 ?? "";
+        txtFeld4.Text             = p.Feld4 ?? "";
+        ApplyPrintfarbe(p.Printfarbe);
         txtBarcode.Text           = p.Barcode ?? "";
         txtNotizen.Text           = p.Notizen ?? "";
         chkAktiv.Checked          = p.Aktiv;
@@ -202,9 +230,46 @@ public partial class FrmProductList : BaseListForm
         p.VKPreis       = nudVKPreis.Value;
         p.EKPreis       = nudEKPreis.Value;
         p.MwstProzent   = nudMwstProzent.Value;
+        p.Feld1         = txtFeld1.Text.NullIfEmpty();
+        p.Feld2         = txtFeld2.Text.NullIfEmpty();
+        p.Feld3         = txtFeld3.Text.NullIfEmpty();
+        p.Feld4         = txtFeld4.Text.NullIfEmpty();
+        p.Printfarbe    = pnlPrintfarbe.BackColor == SystemColors.Control
+                          ? null
+                          : ColorTranslator.ToHtml(pnlPrintfarbe.BackColor);
         p.Barcode       = txtBarcode.Text.NullIfEmpty();
         p.Notizen       = txtNotizen.Text.NullIfEmpty();
         p.Aktiv         = chkAktiv.Checked;
+    }
+
+    // ── Printfarbe-Hilfe ──────────────────────────────────────────────────────
+
+    private void ApplyPrintfarbe(string? colorStr)
+    {
+        if (string.IsNullOrWhiteSpace(colorStr))
+        {
+            pnlPrintfarbe.BackColor = SystemColors.Control;
+            return;
+        }
+        try   { pnlPrintfarbe.BackColor = ColorTranslator.FromHtml(colorStr); }
+        catch { pnlPrintfarbe.BackColor = SystemColors.Control; }
+    }
+
+    private void BtnPrintfarbe_Click(object? s, EventArgs e)
+    {
+        using var dlg = new ColorDialog
+        {
+            Color            = pnlPrintfarbe.BackColor == SystemColors.Control
+                               ? Color.White
+                               : pnlPrintfarbe.BackColor,
+            FullOpen         = true,
+            AllowFullOpen    = true
+        };
+        if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
+            pnlPrintfarbe.BackColor = dlg.Color;
+            _isDirty = true;
+        }
     }
 
     private async Task SaveAsync()
@@ -308,14 +373,14 @@ public partial class FrmProductList : BaseListForm
         await LoadListAsync();
     }
 
-    private void BtnNeu_Click(object? s, EventArgs e)          => NewProduct();
-    private async void BtnSpeichern_Click(object? s, EventArgs e)    => await SaveAsync();
-    private async void BtnDeaktivieren_Click(object? s, EventArgs e) => await ToggleActiveAsync();
-    private void Detail_Changed(object? s, EventArgs e)         => _isDirty = true;
+    private void BtnNeu_Click(object? s, EventArgs e)               => NewProduct();
+    private async void BtnSpeichern_Click(object? s, EventArgs e)   => await SaveAsync();
+    private async void BtnDeaktivieren_Click(object? s, EventArgs e)=> await ToggleActiveAsync();
+    private void Detail_Changed(object? s, EventArgs e)              => _isDirty = true;
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
-        if (keyData == Keys.F2)                    { NewProduct(); return true; }
+        if (keyData == Keys.F2)               { NewProduct();    return true; }
         if (keyData == (Keys.Control | Keys.S)) { _ = SaveAsync(); return true; }
         return base.ProcessCmdKey(ref msg, keyData);
     }

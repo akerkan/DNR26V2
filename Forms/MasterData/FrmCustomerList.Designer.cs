@@ -43,9 +43,9 @@ partial class FrmCustomerList
     // Detail – Tab Einstellungen
     private ComboBox       cmbRoute            = null!;
     private ComboBox       cmbKundenfilter     = null!;
-    private NumericUpDown  nudRoutenfolge      = null!;
-    private NumericUpDown  nudLimit            = null!;
-    private CheckBox       chkWochenendtour    = null!;
+    private ComboBox cmbRoute = null!;
+    private Label lblKundenfilter = null!;
+    private ComboBox cmbKundenfilter = null!;
     private CheckBox       chkPreisAusblenden  = null!;
     private CheckBox       chkAktiv            = null!;
 

@@ -22,7 +22,10 @@ public class AppDbContext : DbContext
     public DbSet<Route>          Route          { get; set; } = null!;
     public DbSet<Driver>         Driver         { get; set; } = null!;
 
-    // ── Modul 3+ DbSets werden hier ergänzt ──────────────────────────────────
+    // ── Stammdaten (Modul 3) ──────────────────────────────────────────────────
+    public DbSet<Product> Product { get; set; } = null!;
+
+    // ── Modul 4+ DbSets werden hier ergänzt ──────────────────────────────────
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

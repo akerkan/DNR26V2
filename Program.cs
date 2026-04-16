@@ -70,11 +70,15 @@ static class Program
         services.AddScoped<IRouteService,          RouteService>();
         services.AddScoped<IDriverService,         DriverService>();
 
+        // --- Modul 3: Produktstammdaten-Services ---
+        services.AddScoped<IProductService, ProductService>();
+
         // --- Forms ---
         services.AddTransient<FrmMain>();
         services.AddTransient<FrmAppSetup>();
         services.AddTransient<FrmLocationSetup>();
         services.AddTransient<FrmCustomerList>();
+        services.AddTransient<FrmProductList>();
 
         return services;
     }

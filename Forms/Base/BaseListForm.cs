@@ -1,4 +1,4 @@
-namespace DNR26V2.Forms.Base;
+using DNR26V2.Forms.Base;
 
 /// <summary>
 /// Basis für Listen-Formulare (Kunden, Produkte, Rechnungen etc.).
@@ -8,7 +8,8 @@ public class BaseListForm : BaseForm
 {
     protected BaseListForm()
     {
-        WindowState = FormWindowState.Maximized;
+        // WindowState wird in GetOrCreateInstance() auf Maximized gesetzt.
+        // Hier NICHT setzen, da es den WinForms-Designer stört.
     }
 
     /// <summary>
@@ -32,7 +33,7 @@ public class BaseListForm : BaseForm
 
         instance.Show();
         instance.BringToFront();
-        instance.WindowState = FormWindowState.Maximized;
+        //instance.WindowState = FormWindowState.Maximized;
         return instance;
     }
 

@@ -18,7 +18,7 @@ public class CustomerService : ICustomerService
         _dapper = dapper;
     }
 
-    // ── Liste via Dapper (performant für DataGridView) ────────────────────────
+    // ── Liste via Dapper ──────────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<CustomerListDto>> GetListAsync(CustomerListFilter filter)
     {
@@ -26,19 +26,18 @@ public class CustomerService : ICustomerService
             SELECT c.Id,
                    c.Kundennummer,
                    c.Kundenname,
-                   r.Routencode,
+                   t.Routencode   AS Tur,
                    cf.Kundenfilter,
                    c.Aktiv,
-                   c.Limit,
-                   c.Wochenendtour
+                   c.Limit
             FROM   Customer c
-            LEFT   JOIN Route          r  ON r.Id  = c.RouteId
+            LEFT   JOIN Route          t  ON t.Id  = c.TurId
             LEFT   JOIN CustomerFilter cf ON cf.Id = c.KundenfilterId
             WHERE  (@Suche    IS NULL
                     OR c.Kundenname   LIKE '%' + @Suche + '%'
                     OR c.Kundennummer LIKE '%' + @Suche + '%')
             AND    (@NurAktiv IS NULL OR c.Aktiv         = @NurAktiv)
-            AND    (@RouteId  IS NULL OR c.RouteId        = @RouteId)
+            AND    (@RouteId  IS NULL OR c.TurId          = @RouteId)
             AND    (@FilterId IS NULL OR c.KundenfilterId = @FilterId)
             ORDER  BY c.Kundenname
             """;
@@ -58,7 +57,8 @@ public class CustomerService : ICustomerService
 
     public async Task<Customer?> GetByIdAsync(int id)
         => await _db.Customer
-                    .Include(c => c.Route)
+                    .Include(c => c.Tur)
+                    .Include(c => c.AusnahmeTur)
                     .Include(c => c.KundenfilterNavigation)
                     .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -93,6 +93,13 @@ public class CustomerService : ICustomerService
 
         if (string.IsNullOrWhiteSpace(customer.Kundenname))
             throw new ValidationException("Kundenname ist ein Pflichtfeld.");
+
+        // AusnahmeTur darf nicht gleich StandardTur sein
+        if (customer.AusnahmeTurId.HasValue
+            && customer.TurId.HasValue
+            && customer.AusnahmeTurId == customer.TurId)
+            throw new ValidationException(
+                "Ausnahme-Tour darf nicht identisch mit der Standard-Tour sein.");
 
         bool duplicate = await _db.Customer
             .AnyAsync(c => c.Kundennummer == customer.Kundennummer

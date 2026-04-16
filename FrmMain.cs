@@ -62,9 +62,13 @@ public partial class FrmMain : Form
     // ── Stammdaten-Menü ───────────────────────────────────────────────────────
 
     private FrmCustomerList? FrmCustomerListInstance;
+    private FrmProductList?  FrmProductListInstance;
 
     private void MenuKunden_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmCustomerList>(ref FrmCustomerListInstance, this, () => GetService<FrmCustomerList>());
+
+    private void MenuArtikel_Click(object? sender, EventArgs e)
+        => BaseListForm.GetOrCreateInstance<FrmProductList>(ref FrmProductListInstance, this, () => GetService<FrmProductList>());
 
     private void OnMenuItemNotImplemented(object? sender, EventArgs e)
     {

@@ -4,10 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DNR26V2.Data.Seed;
 
-/// <summary>
-/// Erstellt Startwerte wenn die Tabellen leer sind.
-/// Wird beim Anwendungsstart ausgeführt (idempotent).
-/// </summary>
 public class DatabaseSeeder
 {
     private readonly AppDbContext _db;
@@ -19,7 +15,7 @@ public class DatabaseSeeder
 
     public async Task SeedAsync()
     {
-        // Migrationen anwenden (lokale DB wird ggf. angelegt)
+        // Migrationen anwenden – DB wird automatisch angelegt falls nicht vorhanden
         await _db.Database.MigrateAsync();
 
         await SeedLocationAsync();
@@ -27,11 +23,9 @@ public class DatabaseSeeder
         await SeedNoSeriesAsync();
     }
 
-    // ── Standort ─────────────────────────────────────────────────────────────
     private async Task SeedLocationAsync()
     {
-        if (await _db.Location.AnyAsync())
-            return;
+        if (await _db.Location.AnyAsync()) return;
 
         _db.Location.Add(new Location
         {
@@ -46,11 +40,9 @@ public class DatabaseSeeder
         await _db.SaveChangesAsync();
     }
 
-    // ── AppSetup ──────────────────────────────────────────────────────────────
     private async Task SeedAppSetupAsync()
     {
-        if (await _db.AppSetup.AnyAsync())
-            return;
+        if (await _db.AppSetup.AnyAsync()) return;
 
         _db.AppSetup.Add(new AppSetup
         {
@@ -70,22 +62,18 @@ public class DatabaseSeeder
         await _db.SaveChangesAsync();
     }
 
-    // ── NoSeries ──────────────────────────────────────────────────────────────
     private async Task SeedNoSeriesAsync()
     {
-        if (await _db.NoSeries.AnyAsync())
-            return;
+        if (await _db.NoSeries.AnyAsync()) return;
 
-        var serien = new[]
-        {
-            new NoSeries { Seriencode = "RE", Beschreibung = "Rechnungsnummer",      Praefix = "RE",  ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "LS", Beschreibung = "Lieferscheinnummer",   Praefix = "LS",  ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "GS", Beschreibung = "Gutschriftsnummer",    Praefix = "GS",  ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "ZA", Beschreibung = "Zahlungsnummer",       Praefix = "ZA",  ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "AU", Beschreibung = "Auftragsnummer",       Praefix = "AU",  ErstelltVon = "SYSTEM" }
-        };
+        _db.NoSeries.AddRange(
+            new NoSeries { Seriencode = "RE", Beschreibung = "Rechnungsnummer",    Praefix = "RE", ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "LS", Beschreibung = "Lieferscheinnummer", Praefix = "LS", ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "GS", Beschreibung = "Gutschriftsnummer",  Praefix = "GS", ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "ZA", Beschreibung = "Zahlungsnummer",     Praefix = "ZA", ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "AU", Beschreibung = "Auftragsnummer",     Praefix = "AU", ErstelltVon = "SYSTEM" }
+        );
 
-        _db.NoSeries.AddRange(serien);
         await _db.SaveChangesAsync();
     }
 }

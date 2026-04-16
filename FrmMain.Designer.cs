@@ -22,8 +22,8 @@ partial class FrmMain
 
         // --- Stammdaten ---
         var menuStammdaten = new ToolStripMenuItem("&Stammdaten");
-        var menuKunden = new ToolStripMenuItem("&Kunden", null, OnMenuItemNotImplemented);
-        var menuProdukte = new ToolStripMenuItem("&Produkte", null, OnMenuItemNotImplemented);
+        var menuKunden = new ToolStripMenuItem("&Kunden", null, MenuKunden_Click);  // ← KORRIGIERT
+        var menuProdukte = new ToolStripMenuItem("&Produkte", null, MenuArtikel_Click);
         var menuKundenpreise = new ToolStripMenuItem("Kunden&preise", null, OnMenuItemNotImplemented);
         var menuLiefertage = new ToolStripMenuItem("&Liefertage", null, OnMenuItemNotImplemented);
         var menuRouten = new ToolStripMenuItem("&Routen", null, OnMenuItemNotImplemented);

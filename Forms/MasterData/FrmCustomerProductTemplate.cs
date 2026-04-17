@@ -28,7 +28,6 @@ public partial class FrmCustomerProductTemplate : BaseListForm
     /// <summary>Attribut-IDs deren Werte mindestens ein IstVorlage=true haben → DropDown statt DropDownList.</summary>
     private readonly HashSet<int> _vorlageAttributIds = [];
 
-    private readonly List<KundenproduktZeile> _zeilen = [];
     private readonly System.Windows.Forms.Timer _searchTimer = new() { Interval = 350 };
 
     // ── Konstruktoren ─────────────────────────────────────────────────────────
@@ -393,7 +392,7 @@ public partial class FrmCustomerProductTemplate : BaseListForm
         dgwKundenprodukte.CellClick -= DgwKundenprodukte_EntfernenClick;
         dgwKundenprodukte.CellFormatting -= DgwKundenprodukte_CellFormatting;
 
-        _zeilen.Clear();
+        //_zeilen.Clear();
         dgwKundenprodukte.Rows.Clear();
         dgwKundenprodukte.Columns.Clear();
         dgwKundenprodukte.DataSource = null;
@@ -452,7 +451,7 @@ public partial class FrmCustomerProductTemplate : BaseListForm
             try { attrs = await _cpService.GetAttributesAsync(kp.Id); }
             finally { _lock.Release(); }
 
-            _zeilen.Add(new KundenproduktZeile(kp, attrs));
+            //_zeilen.Add(new KundenproduktZeile(kp, attrs));
 
             var rowIdx = dgwKundenprodukte.Rows.Add();
             var row = dgwKundenprodukte.Rows[rowIdx];

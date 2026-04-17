@@ -23,7 +23,10 @@ public class AppDbContext : DbContext
     public DbSet<Driver>         Driver         { get; set; } = null!;
 
     // ── Stammdaten (Modul 3) ──────────────────────────────────────────────────
-    public DbSet<Product> Product { get; set; } = null!;
+    public DbSet<Product>                 Product                 { get; set; } = null!;
+    public DbSet<ProductAttribute>        ProductAttribute        { get; set; } = null!;
+    public DbSet<ProductAttributeValue>   ProductAttributeValue   { get; set; } = null!;
+    public DbSet<ProductAttributeMapping> ProductAttributeMapping { get; set; } = null!;
 
     // ── Modul 4+ DbSets werden hier ergänzt ──────────────────────────────────
 

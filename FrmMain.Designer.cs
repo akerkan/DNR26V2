@@ -24,6 +24,7 @@ partial class FrmMain
         var menuStammdaten = new ToolStripMenuItem("&Stammdaten");
         var menuKunden = new ToolStripMenuItem("&Kunden", null, MenuKunden_Click);  // ← KORRIGIERT
         var menuProdukte = new ToolStripMenuItem("&Produkte", null, MenuArtikel_Click);
+        var menuArtikelattribute = new ToolStripMenuItem("Artikel&attribute", null, MenuArtikelattribute_Click);
         var menuKundenpreise = new ToolStripMenuItem("Kunden&preise", null, OnMenuItemNotImplemented);
         var menuLiefertage = new ToolStripMenuItem("&Liefertage", null, OnMenuItemNotImplemented);
         var menuRouten = new ToolStripMenuItem("&Routen", null, OnMenuItemNotImplemented);
@@ -31,7 +32,7 @@ partial class FrmMain
         var menuStandort = new ToolStripMenuItem("S&tandort", null, OnMenuItemNotImplemented);
         menuStammdaten.DropDownItems.AddRange(new ToolStripItem[]
         {
-            menuKunden, menuProdukte, new ToolStripSeparator(),
+            menuKunden, menuProdukte, menuArtikelattribute, new ToolStripSeparator(),
             menuKundenpreise, menuLiefertage, new ToolStripSeparator(),
             menuRouten, menuFahrer, menuStandort
         });

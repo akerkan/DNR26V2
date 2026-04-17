@@ -71,7 +71,8 @@ static class Program
         services.AddScoped<IDriverService,         DriverService>();
 
         // --- Modul 3: Produktstammdaten-Services ---
-        services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IProductService,          ProductService>();
+        services.AddScoped<IProductAttributeService, ProductAttributeService>();
 
         // --- Forms ---
         services.AddTransient<FrmMain>();
@@ -79,6 +80,7 @@ static class Program
         services.AddTransient<FrmLocationSetup>();
         services.AddTransient<FrmCustomerList>();
         services.AddTransient<FrmProductList>();
+        services.AddTransient<FrmProductAttributeList>();
 
         return services;
     }

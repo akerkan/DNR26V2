@@ -64,6 +64,7 @@ public partial class FrmMain : Form
     private FrmCustomerList?          FrmCustomerListInstance;
     private FrmProductList?           FrmProductListInstance;
     private FrmProductAttributeList?  FrmProductAttributeListInstance;
+    private FrmCustomerProductTemplate? FrmCustomerProductTemplateInstance;
 
     private void MenuKunden_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmCustomerList>(ref FrmCustomerListInstance, this, () => GetService<FrmCustomerList>());
@@ -73,6 +74,9 @@ public partial class FrmMain : Form
 
     private void MenuArtikelattribute_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmProductAttributeList>(ref FrmProductAttributeListInstance, this, () => GetService<FrmProductAttributeList>());
+
+    private void MenuKundenArtikelvorlage_Click(object? sender, EventArgs e)
+    => BaseListForm.GetOrCreateInstance<FrmCustomerProductTemplate>(ref FrmCustomerProductTemplateInstance, this,() => GetService<FrmCustomerProductTemplate>());
 
     private void OnMenuItemNotImplemented(object? sender, EventArgs e)
     {

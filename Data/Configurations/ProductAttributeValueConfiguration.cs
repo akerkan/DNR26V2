@@ -24,5 +24,7 @@ internal sealed class ProductAttributeValueConfiguration : IEntityTypeConfigurat
               .WithMany(a => a.Werte)
               .HasForeignKey(e => e.AttributId)
               .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasIndex(e => e.AttributId);
     }
 }

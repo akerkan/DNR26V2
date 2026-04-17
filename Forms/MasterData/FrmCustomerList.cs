@@ -2,6 +2,7 @@
 using System.Threading;
 using DNR26V2.Domain.DTOs;
 using DNR26V2.Domain.Entities.MasterData;
+using DNR26V2.Domain.Enums;
 using DNR26V2.Domain.Exceptions;
 using DNR26V2.Forms.Base;
 using DNR26V2.Helpers;
@@ -11,7 +12,6 @@ namespace DNR26V2.Forms.MasterData;
 
 public partial class FrmCustomerList : BaseListForm
 {
-    // ── Kolon Kataloğu — TÜM DTO alanlarının Almanca başlıkları ─────────────
     private static readonly Dictionary<string, string> _columnHeaders = new()
     {
         ["Kundennummer"]    = "Kunden-Nr.",
@@ -26,7 +26,7 @@ public partial class FrmCustomerList : BaseListForm
         ["Adresse"]         = "Adresse",
         ["Tur"]             = "Tour",
         ["AusnahmeTur"]     = "Ausnahme-Tour",
-        ["Kundenfilter"]    = "Gruppe",
+        ["KundenGruppe"]    = "Gruppe",
         ["Routenfolge"]     = "Reihenfolge",
         ["Limit"]           = "Limit",
         ["LiefertMo"]       = "Mo",
@@ -41,40 +41,34 @@ public partial class FrmCustomerList : BaseListForm
         ["Aktiv"]           = "Aktiv",
     };
 
-    private readonly ICustomerService _customerService;
-    private readonly ICustomerFilterService _filterService;
-    private readonly IRouteService _routeService;
+    private readonly ICustomerService        _customerService;
+    private readonly IProductAttributeService _attributeService;
 
     private Customer? _currentCustomer;
     private bool _isDirty;
 
-    // Verhindert parallele DbContext-Zugriffe
-    private readonly SemaphoreSlim _serviceLock = new(1, 1);
-
-    // Unterdrückt Event-Kaskaden während Ladevorgängen
-    private bool _suppressSelectionChanged;
-    private bool _suppressFilterChanged;
+    private readonly SemaphoreSlim _serviceLock          = new(1, 1);
+    private bool                   _suppressSelectionChanged;
+    private bool                   _suppressFilterChanged;
 
     private readonly System.Windows.Forms.Timer _searchTimer = new() { Interval = 350 };
 
-    // Parameterloser Konstruktor — wird vom WinForms-Designer benötigt
+    // ── Konstruktoren ─────────────────────────────────────────────────────────
+
     public FrmCustomerList()
     {
-        _customerService = null!;
-        _filterService = null!;
-        _routeService = null!;
+        _customerService  = null!;
+        _attributeService = null!;
         InitializeComponent();
         WireUpEvents();
     }
 
     public FrmCustomerList(
-        ICustomerService customerService,
-        ICustomerFilterService filterService,
-        IRouteService routeService)
+        ICustomerService        customerService,
+        IProductAttributeService attributeService)
     {
-        _customerService = customerService;
-        _filterService = filterService;
-        _routeService = routeService;
+        _customerService  = customerService;
+        _attributeService = attributeService;
         InitializeComponent();
         WireUpEvents();
     }
@@ -106,6 +100,12 @@ public partial class FrmCustomerList : BaseListForm
         // AusnahmeTur-Combo: Validierung beim Verlassen
         cmbAusnahmeTur.SelectedIndexChanged += CmbAusnahmeTur_Changed;
 
+        // Neu: DropDown-Events zeigen Prompt nur beim Öffnen der Combos
+        cmbRouteOben.DropDown      += CmbRouteOben_DropDown;
+        cmbTur.DropDown            += CmbTur_DropDown;
+        cmbAusnahmeTur.DropDown    += CmbAusnahmeTur_DropDown;
+        cmbKundenfilter.DropDown   += CmbKundenfilter_DropDown;
+
         _searchTimer.Tick += async (_, _) =>
         {
             _searchTimer.Stop();
@@ -127,22 +127,21 @@ public partial class FrmCustomerList : BaseListForm
         EnableColumnChooser(dgwKunden);
     }
 
-    // ── Laden ─────────────────────────────────────────────────────────────────
+    // ── Load ──────────────────────────────────────────────────────────────────
 
     private async void FrmCustomerList_Load(object? sender, EventArgs e)
     {
         if (IsDesignMode() || _customerService is null) return;
 
         WindowState = FormWindowState.Maximized;
-        // SetDetailVisible(false);  ← Bu satırı kaldır / yorum yap
-
         await LoadComboBoxesAsync();
         await LoadListAsync();
 
-        // Liste boşsa otomatik "Neu" moduna geç
         if (dgwKunden.Rows.Count == 0)
             NewCustomer();
     }
+
+    // ── ComboBoxen laden (Tour + KundenGruppe via Attribute) ──────────────────
 
     private async Task LoadComboBoxesAsync()
     {
@@ -151,39 +150,40 @@ public partial class FrmCustomerList : BaseListForm
         {
             _suppressFilterChanged = true;
 
-            var routes  = await _routeService.GetAllActiveAsync();
-            var filters = await _filterService.GetAllAsync();
+            // Tour- und Gruppen-Werte jetzt via AttributeService
+            var touren  = await _attributeService.GetValuesByEntityTypeAsync(AttributeEntityType.Tour);
+            var gruppen = await _attributeService.GetValuesByEntityTypeAsync(AttributeEntityType.KundenGruppe);
 
             // ── Filter-Leiste oben ────────────────────────────────────────────
             cmbRouteOben.Items.Clear();
             cmbRouteOben.Items.Add(new ComboItem(0, "(Alle Touren)"));
-            foreach (var r in routes)
-                cmbRouteOben.Items.Add(new ComboItem(r.Id, $"{r.Routencode} – {r.Bezeichnung}"));
+            foreach (var t in touren)
+                cmbRouteOben.Items.Add(new ComboItem(t.Id, t.Bezeichnung));
             cmbRouteOben.SelectedIndex = 0;
 
             cmbFilterOben.Items.Clear();
             cmbFilterOben.Items.Add(new ComboItem(0, "(Alle Gruppen)"));
-            foreach (var f in filters)
-                cmbFilterOben.Items.Add(new ComboItem(f.Id, f.Kundenfilter));
+            foreach (var g in gruppen)
+                cmbFilterOben.Items.Add(new ComboItem(g.Id, g.Bezeichnung));
             cmbFilterOben.SelectedIndex = 0;
 
             // ── Detail: Standard-Tour ─────────────────────────────────────────
             cmbTur.Items.Clear();
             cmbTur.Items.Add(new ComboItem(0, "(keine)"));
-            foreach (var r in routes)
-                cmbTur.Items.Add(new ComboItem(r.Id, $"{r.Routencode} – {r.Bezeichnung}"));
+            foreach (var t in touren)
+                cmbTur.Items.Add(new ComboItem(t.Id, t.Bezeichnung));
 
             // ── Detail: Ausnahme-Tour ─────────────────────────────────────────
             cmbAusnahmeTur.Items.Clear();
             cmbAusnahmeTur.Items.Add(new ComboItem(0, "(keine)"));
-            foreach (var r in routes)
-                cmbAusnahmeTur.Items.Add(new ComboItem(r.Id, $"{r.Routencode} – {r.Bezeichnung}"));
+            foreach (var t in touren)
+                cmbAusnahmeTur.Items.Add(new ComboItem(t.Id, t.Bezeichnung));
 
-            // ── Detail: Kundenfilter ──────────────────────────────────────────
+            // ── Detail: KundenGruppe ──────────────────────────────────────────
             cmbKundenfilter.Items.Clear();
             cmbKundenfilter.Items.Add(new ComboItem(0, "(keine)"));
-            foreach (var f in filters)
-                cmbKundenfilter.Items.Add(new ComboItem(f.Id, f.Kundenfilter));
+            foreach (var g in gruppen)
+                cmbKundenfilter.Items.Add(new ComboItem(g.Id, g.Bezeichnung));
         }
         catch (Exception ex) { ShowError($"Fehler beim Laden der Listen:\n{ex.Message}"); }
         finally
@@ -192,6 +192,32 @@ public partial class FrmCustomerList : BaseListForm
             _serviceLock.Release();
         }
     }
+
+    /// <summary>
+    /// Zeigt einen Hinweis wenn keine Attributwerte für einen EntityType definiert sind.
+    /// Der Benutzer kann direkt zur Attribute-Form navigieren.
+    /// </summary>
+    private void WarnKeineAttributwerte(string name, AttributeEntityType entityType)
+    {
+        var result = MessageBox.Show(
+            $"Für '{name}' sind noch keine Werte definiert.\n\n" +
+            $"Bitte öffnen Sie Stammdaten → Attribute und legen Sie " +
+            $"ein Attribut vom Typ '{entityType}' mit Werten an.\n\n" +
+            $"Jetzt öffnen?",
+            $"Keine {name}-Werte",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+
+        if (result == DialogResult.Yes)
+        {
+            var frm = new FrmProductAttributeList(_attributeService);
+            frm.MdiParent = MdiParent;
+            frm.Show();
+            frm.BringToFront();
+        }
+    }
+
+    // ── Liste laden ───────────────────────────────────────────────────────────
 
     private async Task LoadListAsync()
     {
@@ -205,21 +231,20 @@ public partial class FrmCustomerList : BaseListForm
 
             var filter = new CustomerListFilter
             {
-                Suche = txtSuche.Text.NullIfEmpty(),
-                NurAktiv = chkNurAktiv.Checked ? true : null,
-                RouteId = (cmbRouteOben.SelectedItem as ComboItem)?.Id is > 0 and int r ? r : null,
-                FilterId = (cmbFilterOben.SelectedItem as ComboItem)?.Id is > 0 and int f ? f : null
+                Suche              = txtSuche.Text.NullIfEmpty(),
+                NurAktiv           = chkNurAktiv.Checked ? true : null,
+                TourWertId         = (cmbRouteOben.SelectedItem  as ComboItem)?.Id is > 0 and int t ? t : null,
+                KundenGruppeWertId = (cmbFilterOben.SelectedItem as ComboItem)?.Id is > 0 and int g ? g : null
             };
 
             var prevId = SelectedId();
-            var liste = await _customerService.GetListAsync(filter);
+            var liste  = await _customerService.GetListAsync(filter);
 
             dgwKunden.DataSource = null;
             dgwKunden.DataSource = liste.ToList();
             StyleGrid();
 
-            if (prevId > 0)
-                SelectById(prevId);
+            if (prevId > 0) SelectById(prevId);
             else if (dgwKunden.Rows.Count > 0)
             {
                 var firstRow = dgwKunden.Rows[0];
@@ -238,7 +263,6 @@ public partial class FrmCustomerList : BaseListForm
             _serviceLock.Release();
         }
 
-        // Detail nach Lock laden, um Parallelzugriff auf DbContext zu vermeiden
         if (idToLoad > 0)
             await LoadDetailAsync(idToLoad);
     }
@@ -246,20 +270,14 @@ public partial class FrmCustomerList : BaseListForm
     private void StyleGrid()
     {
         if (dgwKunden.Columns.Count == 0) return;
-
-        // 1. Tüm kolonlara Almanca başlık ata (gizli olanlar da dahil)
         ApplyColumnHeaders(dgwKunden, _columnHeaders);
-
-        // 2. Standart görünür kolonları belirle
         foreach (DataGridViewColumn col in dgwKunden.Columns) col.Visible = false;
         ShowCol("Kundennummer", "Kunden-Nr.", 100);
-        ShowCol("Kundenname",   "Name",       0, fill: true);
-        ShowCol("Tur",          "Tour",       80);
-        ShowCol("Kundenfilter", "Gruppe",     90);
-        ShowCol("Limit",        "Limit",      80, format: "N2", right: true);
-        ShowCol("Aktiv",        "Aktiv",      50);
-
-        // 3. Kullanıcı ayarlarını uygula
+        ShowCol("Kundenname",   "Name",        0, fill: true);
+        ShowCol("Tur",          "Tour",        80);
+        ShowCol("KundenGruppe", "Gruppe",      90);
+        ShowCol("Limit",        "Limit",       80, format: "N2", right: true);
+        ShowCol("Aktiv",        "Aktiv",       50);
         ApplyColumnChooserSettings(dgwKunden);
     }
 
@@ -268,13 +286,15 @@ public partial class FrmCustomerList : BaseListForm
     {
         if (!dgwKunden.Columns.Contains(name)) return;
         var col = dgwKunden.Columns[name];
-        col.Visible = true;
+        col.Visible    = true;
         col.HeaderText = header;
         if (fill) col.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
         if (format is not null) col.DefaultCellStyle.Format = format;
         if (right) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
     }
+
+    // ── Detail laden/binden ───────────────────────────────────────────────────
 
     private async Task LoadDetailAsync(int id)
     {
@@ -294,35 +314,34 @@ public partial class FrmCustomerList : BaseListForm
     private void BindToForm(Customer c)
     {
         txtKundennummer.Text = c.Kundennummer;
-        txtKundenname.Text = c.Kundenname;
-        txtName2.Text = c.Name2 ?? "";
-        txtInhaber.Text = c.Inhaber ?? "";
-        txtTelefon.Text = c.Telefonnummer ?? "";
-        txtHandy.Text = c.Handynummer ?? "";
-        txtEmail.Text = c.EMail ?? "";
-        txtNotizen.Text = c.Notizen ?? "";
-        txtAdresse.Text = c.Adresse ?? "";
-        txtAdresse2.Text = c.Adresse2 ?? "";
-        txtPLZ.Text = c.PLZ ?? "";
-        txtOrt.Text = c.Ort ?? "";
-        txtLand.Text = c.Land;
+        txtKundenname.Text   = c.Kundenname;
+        txtName2.Text        = c.Name2 ?? "";
+        txtInhaber.Text      = c.Inhaber ?? "";
+        txtTelefon.Text      = c.Telefonnummer ?? "";
+        txtHandy.Text        = c.Handynummer ?? "";
+        txtEmail.Text        = c.EMail ?? "";
+        txtNotizen.Text      = c.Notizen ?? "";
+        txtAdresse.Text      = c.Adresse ?? "";
+        txtAdresse2.Text     = c.Adresse2 ?? "";
+        txtPLZ.Text          = c.PLZ ?? "";
+        txtOrt.Text          = c.Ort ?? "";
+        txtLand.Text         = c.Land;
+
         chkAbweichend.Checked = c.AbweichendeLieferadresse;
-        txtALName2.Text = c.ALName2 ?? "";
-        txtALInhaber.Text = c.ALInhaber ?? "";
-        txtALAdresse.Text = c.ALAdresse ?? "";
+        txtALName2.Text    = c.ALName2 ?? "";
+        txtALInhaber.Text  = c.ALInhaber ?? "";
+        txtALAdresse.Text  = c.ALAdresse ?? "";
         txtALAdresse2.Text = c.ALAdresse2 ?? "";
-        txtALPLZ.Text = c.ALPLZ ?? "";
-        txtALOrt.Text = c.ALOrt ?? "";
-        txtALLand.Text = c.ALLand ?? "";
+        txtALPLZ.Text      = c.ALPLZ ?? "";
+        txtALOrt.Text      = c.ALOrt ?? "";
+        txtALLand.Text     = c.ALLand ?? "";
 
-        SelectCombo(cmbTur,          c.TurId);
-        SelectCombo(cmbAusnahmeTur,  c.AusnahmeTurId);
-        SelectCombo(cmbKundenfilter, c.KundenfilterId);
+        SelectCombo(cmbTur,          c.TurWertId);
+        SelectCombo(cmbAusnahmeTur,  c.AusnahmeTurWertId);
+        SelectCombo(cmbKundenfilter, c.KundenGruppeWertId);
 
-        //nudRoutenfolge.Value = c.Routenfolge;
-        nudLimit.Value       = c.Limit;
+        nudLimit.Value = c.Limit;
 
-        // Liefertage
         chkMo.Checked = c.LiefertMo;
         chkDi.Checked = c.LiefertDi;
         chkMi.Checked = c.LiefertMi;
@@ -331,7 +350,6 @@ public partial class FrmCustomerList : BaseListForm
         chkSa.Checked = c.LiefertSa;
         chkSo.Checked = c.LiefertSo;
 
-        // Geräte
         txtGeraete1.Text = c.Geraete1 ?? "";
         txtGeraete2.Text = c.Geraete2 ?? "";
         txtGeraete3.Text = c.Geraete3 ?? "";
@@ -361,6 +379,7 @@ public partial class FrmCustomerList : BaseListForm
         c.PLZ           = txtPLZ.Text.NullIfEmpty();
         c.Ort           = txtOrt.Text.NullIfEmpty();
         c.Land          = string.IsNullOrWhiteSpace(txtLand.Text) ? "Deutschland" : txtLand.Text.Trim();
+
         c.AbweichendeLieferadresse = chkAbweichend.Checked;
         c.ALName2    = txtALName2.Text.NullIfEmpty();
         c.ALInhaber  = txtALInhaber.Text.NullIfEmpty();
@@ -370,14 +389,12 @@ public partial class FrmCustomerList : BaseListForm
         c.ALOrt      = txtALOrt.Text.NullIfEmpty();
         c.ALLand     = txtALLand.Text.NullIfEmpty();
 
-        c.TurId         = (cmbTur.SelectedItem         as ComboItem)?.Id is > 0 and int tid ? tid : null;
-        c.AusnahmeTurId = (cmbAusnahmeTur.SelectedItem  as ComboItem)?.Id is > 0 and int aid ? aid : null;
-        c.KundenfilterId = (cmbKundenfilter.SelectedItem as ComboItem)?.Id is > 0 and int fid ? fid : null;
+        c.TurWertId          = (cmbTur.SelectedItem         as ComboItem)?.Id is > 0 and int t  ? t  : null;
+        c.AusnahmeTurWertId  = (cmbAusnahmeTur.SelectedItem  as ComboItem)?.Id is > 0 and int at ? at : null;
+        c.KundenGruppeWertId = (cmbKundenfilter.SelectedItem as ComboItem)?.Id is > 0 and int kg ? kg : null;
 
-        //c.Routenfolge    = (int)nudRoutenfolge.Value;
-        c.Limit          = nudLimit.Value;
+        c.Limit = nudLimit.Value;
 
-        // Liefertage
         c.LiefertMo = chkMo.Checked;
         c.LiefertDi = chkDi.Checked;
         c.LiefertMi = chkMi.Checked;
@@ -386,7 +403,6 @@ public partial class FrmCustomerList : BaseListForm
         c.LiefertSa = chkSa.Checked;
         c.LiefertSo = chkSo.Checked;
 
-        // Geräte
         c.Geraete1 = txtGeraete1.Text.NullIfEmpty();
         c.Geraete2 = txtGeraete2.Text.NullIfEmpty();
         c.Geraete3 = txtGeraete3.Text.NullIfEmpty();
@@ -396,6 +412,8 @@ public partial class FrmCustomerList : BaseListForm
         c.PreisAusblenden = chkPreisAusblenden.Checked;
         c.Aktiv           = chkAktiv.Checked;
     }
+
+    // ── Speichern / Neu / Deaktivieren ────────────────────────────────────────
 
     private async Task SaveAsync()
     {
@@ -412,7 +430,7 @@ public partial class FrmCustomerList : BaseListForm
             ShowSuccess("Kunde gespeichert.");
         }
         catch (ValidationException ex) { ShowError(ex.Message); }
-        catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
+        catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
     }
 
     private void NewCustomer()
@@ -436,7 +454,7 @@ public partial class FrmCustomerList : BaseListForm
             try { await _customerService.SetActiveAsync(_currentCustomer.Id, newState); _currentCustomer.Aktiv = newState; }
             finally { _serviceLock.Release(); }
 
-            chkAktiv.Checked = newState;
+            chkAktiv.Checked     = newState;
             btnDeaktivieren.Text = newState ? "Deaktivieren" : "Aktivieren";
             await LoadListAsync();
         }
@@ -449,10 +467,10 @@ public partial class FrmCustomerList : BaseListForm
 
     private void ToggleAltFields(bool on)
     {
-        foreach (var tb in new Control[] {
+        foreach (var c in new Control[] {
             txtALName2, txtALInhaber, txtALAdresse,
             txtALAdresse2, txtALPLZ, txtALOrt, txtALLand })
-            tb.Enabled = on;
+            c.Enabled = on;
     }
 
     private int SelectedId() =>
@@ -514,10 +532,10 @@ public partial class FrmCustomerList : BaseListForm
         await LoadListAsync();
     }
 
-    private void BtnNeu_Click(object? s, EventArgs e) => NewCustomer();
-    private async void BtnSpeichern_Click(object? s, EventArgs e) => await SaveAsync();
+    private void BtnNeu_Click(object? s, EventArgs e)                => NewCustomer();
+    private async void BtnSpeichern_Click(object? s, EventArgs e)    => await SaveAsync();
     private async void BtnDeaktivieren_Click(object? s, EventArgs e) => await ToggleActiveAsync();
-    private void Detail_Changed(object? s, EventArgs e) => _isDirty = true;
+    private void Detail_Changed(object? s, EventArgs e)               => _isDirty = true;
 
     private void ChkAbweichend_CheckedChanged(object? s, EventArgs e)
     {
@@ -525,9 +543,21 @@ public partial class FrmCustomerList : BaseListForm
         _isDirty = true;
     }
 
+    private void CmbAusnahmeTur_Changed(object? s, EventArgs e)
+    {
+        _isDirty = true;
+        var turId      = (cmbTur.SelectedItem        as ComboItem)?.Id;
+        var ausnahmeId = (cmbAusnahmeTur.SelectedItem as ComboItem)?.Id;
+        if (turId.HasValue && ausnahmeId.HasValue && turId == ausnahmeId && ausnahmeId > 0)
+        {
+            ShowError("Ausnahme-Tour darf nicht identisch mit der Standard-Tour sein.");
+            cmbAusnahmeTur.SelectedIndex = 0;
+        }
+    }
+
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
-        if (keyData == Keys.F2) { NewCustomer(); return true; }
+        if (keyData == Keys.F2)                     { NewCustomer();    return true; }
         if (keyData == (Keys.Control | Keys.S)) { _ = SaveAsync(); return true; }
         return base.ProcessCmdKey(ref msg, keyData);
     }
@@ -538,17 +568,48 @@ public partial class FrmCustomerList : BaseListForm
             e.Cancel = true;
     }
 
-    // ── AusnahmeTur Validierung (live, beim Auswählen) ────────────────────────────
-    private void CmbAusnahmeTur_Changed(object? s, EventArgs e)
-    {
-        _isDirty = true;
-        var turId       = (cmbTur.SelectedItem         as ComboItem)?.Id;
-        var ausnahmeId  = (cmbAusnahmeTur.SelectedItem  as ComboItem)?.Id;
+    // Neue Methoden unten in die Klasse einfügen (DropDown-Handler + Helper)
+    private async void CmbTur_DropDown(object? s, EventArgs e)
+        => await CheckAndPromptForAttributeAsync(AttributeEntityType.Tour, "Tour");
 
-        if (turId.HasValue && ausnahmeId.HasValue && turId == ausnahmeId && ausnahmeId > 0)
+    private async void CmbAusnahmeTur_DropDown(object? s, EventArgs e)
+        => await CheckAndPromptForAttributeAsync(AttributeEntityType.Tour, "Ausnahme-Tour");
+
+    private async void CmbRouteOben_DropDown(object? s, EventArgs e)
+        => await CheckAndPromptForAttributeAsync(AttributeEntityType.Tour, "Tour");
+
+    private async void CmbKundenfilter_DropDown(object? s, EventArgs e)
+        => await CheckAndPromptForAttributeAsync(AttributeEntityType.KundenGruppe, "Kundengruppe");
+
+    // Ersetze CheckAndPromptForAttributeAsync():
+    private async Task CheckAndPromptForAttributeAsync(AttributeEntityType entityType, string displayName)
+    {
+        try
         {
-            ShowError("Ausnahme-Tour darf nicht identisch mit der Standard-Tour sein.");
-            cmbAusnahmeTur.SelectedIndex = 0;
+            var values = await _attributeService.GetValuesByEntityTypeAsync(entityType);
+            if (values is null || values.Count == 0)
+            {
+                var result = MessageBox.Show(
+                    $"Für '{displayName}' sind noch keine Werte definiert.\n\n" +
+                    "Möchten Sie jetzt ein Attribut anlegen?",
+                    $"Keine {displayName}-Werte",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (result == DialogResult.Yes)
+                {
+                    var frm = new FrmProductAttributeList(_attributeService);
+                    frm.MdiParent = MdiParent;
+                    frm.SetPendingNewAttribute(entityType); // ← VOR Show()!
+                    frm.Show();
+                    frm.BringToFront();
+                    // StartNewAttribute() entfernt — SetPendingNewAttribute übernimmt
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Fehler beim Prüfen der Attribute:\n{ex.Message}");
         }
     }
 }

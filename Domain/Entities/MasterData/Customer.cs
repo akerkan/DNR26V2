@@ -1,9 +1,5 @@
 ﻿namespace DNR26V2.Domain.Entities.MasterData;
 
-/// <summary>
-/// Kundenstammdaten. Kernentität des Systems.
-/// Soft-Delete via Aktiv=false — physisches Löschen ist verboten.
-/// </summary>
 public class Customer : AuditableEntity
 {
     public int    Id           { get; set; }
@@ -25,7 +21,7 @@ public class Customer : AuditableEntity
     public string? EMail         { get; set; }
 
     // Alternative Lieferadresse
-    public bool    AbweichendeLieferadresse { get; set; } = false;
+    public bool    AbweichendeLieferadresse { get; set; }
     public string? ALName2    { get; set; }
     public string? ALInhaber  { get; set; }
     public string? ALAdresse  { get; set; }
@@ -34,39 +30,26 @@ public class Customer : AuditableEntity
     public string? ALOrt      { get; set; }
     public string? ALLand     { get; set; }
 
-    // Tour / Route
-    /// <summary>
-    /// Routenfolge: Integer-Wert für die Nähe zum Fahrer — Sortierung der Fahrerliste beim Druck.
-    /// Wird manuell eingetragen.
-    /// </summary>
-    public int  Routenfolge  { get; set; } = 0;
+    // Tour / Route — jetzt über AttributeValue (EntityType = Tour)
+    public int  Routenfolge     { get; set; } = 0;
+    public int? TurWertId       { get; set; }   // FK → ProductAttributeValue (Tour)
+    public int? AusnahmeTurWertId { get; set; } // FK → ProductAttributeValue (Tour)
 
-    /// <summary>
-    /// StandardTur: Normalerweise zugewiesene Tour für tägliche Lieferungen (FK → Route).
-    /// </summary>
-    public int? TurId        { get; set; }
-
-    /// <summary>
-    /// AusnahmeTur: Ausnahme-Tour (z.B. Fahrer krank). Darf nicht gleich TurId sein.
-    /// Wird in der Lieferungen-Form per Funktion zugewiesen oder zurückgesetzt.
-    /// </summary>
-    public int? AusnahmeTurId { get; set; }
-
-    // Filter
-    public int? KundenfilterId { get; set; }
+    // Kundengruppe — über AttributeValue (EntityType = KundenGruppe)
+    public int? KundenGruppeWertId { get; set; } // FK → ProductAttributeValue (KundenGruppe)
 
     // Finanzen
-    public decimal Limit          { get; set; } = 0;
+    public decimal Limit           { get; set; } = 0;
     public bool    PreisAusblenden { get; set; } = false;
 
     // Liefertage (MO–SO)
-    public bool LiefertMo { get; set; } = false;
-    public bool LiefertDi { get; set; } = false;
-    public bool LiefertMi { get; set; } = false;
-    public bool LiefertDo { get; set; } = false;
-    public bool LiefertFr { get; set; } = false;
-    public bool LiefertSa { get; set; } = false;
-    public bool LiefertSo { get; set; } = false;
+    public bool LiefertMo { get; set; }
+    public bool LiefertDi { get; set; }
+    public bool LiefertMi { get; set; }
+    public bool LiefertDo { get; set; }
+    public bool LiefertFr { get; set; }
+    public bool LiefertSa { get; set; }
+    public bool LiefertSo { get; set; }
 
     // Geräte / Ausstattung
     public string? Geraete1 { get; set; }
@@ -81,7 +64,7 @@ public class Customer : AuditableEntity
     public string? Notizen { get; set; }
 
     // Navigation
-    public Route?          Tur                    { get; set; }
-    public Route?          AusnahmeTur            { get; set; }
-    public CustomerFilter? KundenfilterNavigation { get; set; }
+    public ProductAttributeValue? TurWert          { get; set; }
+    public ProductAttributeValue? AusnahmeTurWert   { get; set; }
+    public ProductAttributeValue? KundenGruppeWert  { get; set; }
 }

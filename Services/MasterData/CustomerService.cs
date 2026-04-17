@@ -18,8 +18,6 @@ public class CustomerService : ICustomerService
         _dapper = dapper;
     }
 
-    // ── Liste via Dapper ──────────────────────────────────────────────────────
-
     public async Task<IReadOnlyList<CustomerListDto>> GetListAsync(CustomerListFilter filter)
     {
         const string sql = """
@@ -34,9 +32,9 @@ public class CustomerService : ICustomerService
                    c.PLZ,
                    c.Ort,
                    c.Adresse,
-                   r1.Routencode                          AS Tur,
-                   r2.Routencode                          AS AusnahmeTur,
-                   cf.Kundenfilter,
+                   vTur.Bezeichnung           AS Tur,
+                   vAus.Bezeichnung           AS AusnahmeTur,
+                   vGrp.Bezeichnung           AS KundenGruppe,
                    c.Routenfolge,
                    c.Limit,
                    c.LiefertMo, c.LiefertDi, c.LiefertMi,
@@ -45,46 +43,47 @@ public class CustomerService : ICustomerService
                    c.Offen,
                    c.Aktiv
             FROM   Customer c
-            LEFT JOIN Route          r1 ON r1.Id = c.TurId
-            LEFT JOIN Route          r2 ON r2.Id = c.AusnahmeTurId
-            LEFT JOIN CustomerFilter cf ON cf.Id = c.KundenfilterId
-            WHERE  (@Suche    IS NULL
+            LEFT JOIN ProductAttributeValue vTur ON vTur.Id = c.TurWertId
+            LEFT JOIN ProductAttributeValue vAus ON vAus.Id = c.AusnahmeTurWertId
+            LEFT JOIN ProductAttributeValue vGrp ON vGrp.Id = c.KundenGruppeWertId
+            WHERE  (@Suche              IS NULL
                     OR c.Kundenname    LIKE '%' + @Suche + '%'
                     OR c.Kundennummer  LIKE '%' + @Suche + '%'
                     OR c.Telefonnummer LIKE '%' + @Suche + '%')
-            AND    (@NurAktiv IS NULL OR c.Aktiv = @NurAktiv)
-            AND    (@RouteId  IS NULL OR c.TurId = @RouteId)
-            AND    (@FilterId IS NULL OR c.KundenfilterId = @FilterId)
+            AND    (@NurAktiv           IS NULL OR c.Aktiv            = @NurAktiv)
+            AND    (@TourWertId         IS NULL OR c.TurWertId        = @TourWertId)
+            AND    (@KundenGruppeWertId IS NULL OR c.KundenGruppeWertId = @KundenGruppeWertId)
             ORDER  BY c.Kundenname
             """;
 
         using var conn = _dapper.CreateConnection();
-        var result = await conn.QueryAsync<CustomerListDto>(sql, new
+        return (await conn.QueryAsync<CustomerListDto>(sql, new
         {
-            Suche    = filter.Suche,
-            NurAktiv = filter.NurAktiv,
-            RouteId  = filter.RouteId,
-            FilterId = filter.FilterId
-        });
-        return result.AsList();
+            Suche              = filter.Suche,
+            NurAktiv           = filter.NurAktiv,
+            TourWertId         = filter.TourWertId,
+            KundenGruppeWertId = filter.KundenGruppeWertId
+        })).AsList();
     }
-
-    // ── Einzelkunde via EF Core ───────────────────────────────────────────────
 
     public async Task<Customer?> GetByIdAsync(int id)
         => await _db.Customer.FirstOrDefaultAsync(c => c.Id == id);
 
-    // ── Speichern ─────────────────────────────────────────────────────────────
-
     public async Task SaveAsync(Customer customer)
     {
         await ValidateAsync(customer);
+
+        // AusnahmeTur darf nicht gleich StandardTur sein
+        if (customer.TurWertId.HasValue
+         && customer.AusnahmeTurWertId.HasValue
+         && customer.TurWertId == customer.AusnahmeTurWertId)
+            throw new ValidationException(
+                "Ausnahme-Tour darf nicht identisch mit der Standard-Tour sein.");
+
         if (customer.Id == 0) _db.Customer.Add(customer);
         else                  _db.Customer.Update(customer);
         await _db.SaveChangesAsync();
     }
-
-    // ── Soft-Delete ───────────────────────────────────────────────────────────
 
     public async Task SetActiveAsync(int id, bool aktiv)
     {
@@ -94,19 +93,17 @@ public class CustomerService : ICustomerService
         await _db.SaveChangesAsync();
     }
 
-    // ── Validierung ───────────────────────────────────────────────────────────
-
     private async Task ValidateAsync(Customer customer)
     {
         if (string.IsNullOrWhiteSpace(customer.Kundennummer))
             throw new ValidationException("Kundennummer ist ein Pflichtfeld.");
-
         if (string.IsNullOrWhiteSpace(customer.Kundenname))
             throw new ValidationException("Kundenname ist ein Pflichtfeld.");
 
         bool duplicate = await _db.Customer
             .AnyAsync(c => c.Kundennummer == customer.Kundennummer && c.Id != customer.Id);
         if (duplicate)
-            throw new ValidationException($"Kundennummer '{customer.Kundennummer}' ist bereits vergeben.");
+            throw new ValidationException(
+                $"Kundennummer '{customer.Kundennummer}' ist bereits vergeben.");
     }
 }

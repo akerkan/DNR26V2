@@ -1,5 +1,6 @@
 ﻿using DNR26V2.Data.Context;
 using DNR26V2.Domain.Entities.MasterData;
+using DNR26V2.Domain.Enums;
 using DNR26V2.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,8 +10,6 @@ public class ProductAttributeService : IProductAttributeService
 {
     private readonly AppDbContext _db;
     public ProductAttributeService(AppDbContext db) => _db = db;
-
-    // ── Attribute-Definitionen ─────────────────────────────────────────────
 
     public async Task<IReadOnlyList<ProductAttribute>> GetAllAttributesAsync(bool nurAktiv = false)
         => await _db.ProductAttribute
@@ -34,6 +33,24 @@ public class ProductAttributeService : IProductAttributeService
         if (duplicate)
             throw new ValidationException($"Attribut '{attribute.Bezeichnung}' existiert bereits.");
 
+        // Tour und KundenGruppe: nur EINES aktiv erlaubt (ComboBox muss eindeutig zuordnen können)
+        if (attribute.Aktiv &&
+            attribute.EntityType is AttributeEntityType.Tour or AttributeEntityType.KundenGruppe)
+        {
+            bool existsOther = await _db.ProductAttribute
+                .AnyAsync(a => a.EntityType == attribute.EntityType
+                            && a.Aktiv
+                            && a.Id != attribute.Id);
+            if (existsOther)
+            {
+                var typName = attribute.EntityType == AttributeEntityType.Tour
+                    ? "Tour" : "Kundengruppe";
+                throw new ValidationException(
+                    $"Es existiert bereits ein aktives Attribut vom Typ '{typName}'.\n" +
+                    $"Bitte deaktivieren Sie das bestehende zuerst.");
+            }
+        }
+
         if (attribute.Id == 0) _db.ProductAttribute.Add(attribute);
         else                   _db.ProductAttribute.Update(attribute);
 
@@ -48,13 +65,22 @@ public class ProductAttributeService : IProductAttributeService
         await _db.SaveChangesAsync();
     }
 
-    // ── Attribute-Werte ────────────────────────────────────────────────────
-
     public async Task<IReadOnlyList<ProductAttributeValue>> GetValuesByAttributeAsync(int attributId)
         => await _db.ProductAttributeValue
                     .Where(v => v.AttributId == attributId)
-                    .OrderBy(v => v.Sortierung)
-                    .ThenBy(v => v.Bezeichnung)
+                    .OrderBy(v => v.Sortierung).ThenBy(v => v.Bezeichnung)
+                    .ToListAsync();
+
+    /// <summary>Alle aktiven Werte aller Attribute eines EntityType (z.B. Tour, KundenGruppe).</summary>
+    public async Task<IReadOnlyList<ProductAttributeValue>> GetValuesByEntityTypeAsync(
+        AttributeEntityType entityType)
+        => await _db.ProductAttributeValue
+                    .Where(v => v.Aktiv
+                             && v.Attribut != null
+                             && v.Attribut.Aktiv
+                             && v.Attribut.EntityType == entityType)
+                    .Include(v => v.Attribut)
+                    .OrderBy(v => v.Sortierung).ThenBy(v => v.Bezeichnung)
                     .ToListAsync();
 
     public async Task SaveValueAsync(ProductAttributeValue value)
@@ -63,9 +89,9 @@ public class ProductAttributeService : IProductAttributeService
             throw new ValidationException("Wert-Bezeichnung ist ein Pflichtfeld.");
 
         bool duplicate = await _db.ProductAttributeValue
-            .AnyAsync(v => v.AttributId   == value.AttributId
-                        && v.Bezeichnung  == value.Bezeichnung
-                        && v.Id           != value.Id);
+            .AnyAsync(v => v.AttributId  == value.AttributId
+                        && v.Bezeichnung == value.Bezeichnung
+                        && v.Id          != value.Id);
         if (duplicate)
             throw new ValidationException($"Wert '{value.Bezeichnung}' existiert bereits.");
 
@@ -89,15 +115,13 @@ public class ProductAttributeService : IProductAttributeService
             .AnyAsync(m => m.AttributWertId == id);
         if (referenced)
             throw new ValidationException(
-                "Dieser Wert ist in Produkt-Zuweisungen in Verwendung und kann nicht gelöscht werden.");
+                "Dieser Wert ist in Produkt-Zuweisungen in Verwendung.");
 
         var val = await _db.ProductAttributeValue.FindAsync(id)
             ?? throw new InvalidOperationException("Attributwert nicht gefunden.");
         _db.ProductAttributeValue.Remove(val);
         await _db.SaveChangesAsync();
     }
-
-    // ── Produkt-Zuweisungen ────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<ProductAttributeMapping>> GetMappingsByProductAsync(int produktId)
         => await _db.ProductAttributeMapping
@@ -110,16 +134,9 @@ public class ProductAttributeService : IProductAttributeService
     public async Task SaveMappingsAsync(int produktId, IEnumerable<ProductAttributeMapping> mappings)
     {
         var existing = await _db.ProductAttributeMapping
-            .Where(m => m.ArtikelId == produktId)
-            .ToListAsync();
+            .Where(m => m.ArtikelId == produktId).ToListAsync();
         _db.ProductAttributeMapping.RemoveRange(existing);
-
-        foreach (var m in mappings)
-        {
-            m.ArtikelId = produktId;
-            m.Id        = 0;
-            _db.ProductAttributeMapping.Add(m);
-        }
+        foreach (var m in mappings) { m.ArtikelId = produktId; m.Id = 0; _db.ProductAttributeMapping.Add(m); }
         await _db.SaveChangesAsync();
     }
 
@@ -128,6 +145,36 @@ public class ProductAttributeService : IProductAttributeService
         var mapping = await _db.ProductAttributeMapping.FindAsync(mappingId)
             ?? throw new InvalidOperationException("Zuweisung nicht gefunden.");
         _db.ProductAttributeMapping.Remove(mapping);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAttributeAsync(int id)
+    {
+        // Müşteri ürünlerinde kullanılıyor mu?
+        bool usedInCustomer = await _db.CustomerProductAttributeMapping
+            .AnyAsync(m => m.AttributId == id);
+        if (usedInCustomer)
+            throw new ValidationException(
+                "Dieses Attribut ist in Kundenprodukt-Zuweisungen in Verwendung.\n" +
+                "Bitte zuerst alle Kundenzuweisungen entfernen.");
+
+        // Ürünlerde kullanılıyor mu?
+        bool usedInProduct = await _db.ProductAttributeMapping
+            .AnyAsync(m => m.AttributId == id);
+        if (usedInProduct)
+            throw new ValidationException(
+                "Dieses Attribut ist in Produkt-Zuweisungen in Verwendung.\n" +
+                "Bitte zuerst alle Produkt-Zuweisungen entfernen.");
+
+        // Tüm değerleri sil, sonra attributu sil
+        var werte = await _db.ProductAttributeValue
+            .Where(v => v.AttributId == id).ToListAsync();
+        _db.ProductAttributeValue.RemoveRange(werte);
+
+        var attr = await _db.ProductAttribute.FindAsync(id)
+            ?? throw new InvalidOperationException("Attribut nicht gefunden.");
+        _db.ProductAttribute.Remove(attr);
+
         await _db.SaveChangesAsync();
     }
 }

@@ -89,8 +89,6 @@ partial class FrmCustomerList
     private Label lblAktiv = null!;
     private CheckBox chkAktiv = null!;
 
-
-
     private CheckBox chkMo = null!;
     private CheckBox chkDi = null!;
     private CheckBox chkMi = null!;
@@ -104,6 +102,18 @@ partial class FrmCustomerList
     private TextBox txtGeraete3 = null!;
     private TextBox txtGeraete4 = null!;
     private TextBox txtGeraete5 = null!;
+
+    // --- Liefertage - Konstanten für Tabelle und Steuerelemente ---
+    private FlowLayoutPanel flpLiefertage = null!;
+    private Label           lblLiefertageTitel  = null!;
+    private TabPage         tabLeihgeraete      = null!;
+    private TableLayoutPanel tlpLeihgeraete     = null!;
+    private Label           lblLeihgeraeteTitel = null!;
+    private Label           lblLeihgeraet1      = null!;
+    private Label           lblLeihgeraet2      = null!;
+    private Label           lblLeihgeraet3      = null!;
+    private Label           lblLeihgeraet4      = null!;
+    private Label           lblLeihgeraet5      = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -174,24 +184,26 @@ partial class FrmCustomerList
         txtALLand = new TextBox();
         tabEinstellungen = new TabPage();
         tlpEinstellungen = new TableLayoutPanel();
-        cmbAusnahmeTur = new ComboBox();
-        lblAusnahmeTour = new Label();
-        lblLimit = new Label();
         cmbTur = new ComboBox();
         lblStandartTour = new Label();
         lblRoutenfolge = new Label();
         cmbRoute = new ComboBox();
         lblKundenfilter = new Label();
         cmbKundenfilter = new ComboBox();
-        nudLimit = new NumericUpDown();
         lblPreisAusblenden = new Label();
         chkPreisAusblenden = new CheckBox();
         lblAktiv = new Label();
         chkAktiv = new CheckBox();
-        panelButtons = new Panel();
-        btnDeaktivieren = new Button();
-        btnSpeichern = new Button();
-        btnNeu = new Button();
+        cmbAusnahmeTur = new ComboBox();
+        nudLimit = new NumericUpDown();
+        lblLimit = new Label();
+        lblAusnahmeTour = new Label();
+        tabLiefertage = new TabPage();
+        tlpLiefertage = new TableLayoutPanel();
+        lblLiefertageTitel = new Label();
+        flpLiefertage = new FlowLayoutPanel();
+        lblLiefertage = new Label();
+        flpDays = new FlowLayoutPanel();
         chkMo = new CheckBox();
         chkDi = new CheckBox();
         chkMi = new CheckBox();
@@ -199,11 +211,24 @@ partial class FrmCustomerList
         chkFr = new CheckBox();
         chkSa = new CheckBox();
         chkSo = new CheckBox();
+        spacer = new Panel();
+        tabLeihgeraete = new TabPage();
+        tlpLeihgeraete = new TableLayoutPanel();
+        lblLeihgeraeteTitel = new Label();
+        lblLeihgeraet1 = new Label();
         txtGeraete1 = new TextBox();
+        lblLeihgeraet2 = new Label();
         txtGeraete2 = new TextBox();
+        lblLeihgeraet3 = new Label();
         txtGeraete3 = new TextBox();
+        lblLeihgeraet4 = new Label();
         txtGeraete4 = new TextBox();
+        lblLeihgeraet5 = new Label();
         txtGeraete5 = new TextBox();
+        panelButtons = new Panel();
+        btnDeaktivieren = new Button();
+        btnSpeichern = new Button();
+        btnNeu = new Button();
         panelTop.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
         splitContainer.Panel1.SuspendLayout();
@@ -221,6 +246,11 @@ partial class FrmCustomerList
         tabEinstellungen.SuspendLayout();
         tlpEinstellungen.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)nudLimit).BeginInit();
+        tabLiefertage.SuspendLayout();
+        tlpLiefertage.SuspendLayout();
+        flpDays.SuspendLayout();
+        tabLeihgeraete.SuspendLayout();
+        tlpLeihgeraete.SuspendLayout();
         panelButtons.SuspendLayout();
         SuspendLayout();
         // 
@@ -341,6 +371,8 @@ partial class FrmCustomerList
         tabDetail.Controls.Add(tabAdresse);
         tabDetail.Controls.Add(tabAltAdresse);
         tabDetail.Controls.Add(tabEinstellungen);
+        tabDetail.Controls.Add(tabLiefertage);
+        tabDetail.Controls.Add(tabLeihgeraete);
         tabDetail.Dock = DockStyle.Fill;
         tabDetail.Location = new Point(4, 4);
         tabDetail.Name = "tabDetail";
@@ -957,38 +989,6 @@ partial class FrmCustomerList
         tlpEinstellungen.Size = new Size(396, 536);
         tlpEinstellungen.TabIndex = 0;
         // 
-        // cmbAusnahmeTur
-        // 
-        cmbAusnahmeTur.Dock = DockStyle.Fill;
-        cmbAusnahmeTur.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbAusnahmeTur.Location = new Point(168, 112);
-        cmbAusnahmeTur.Margin = new Padding(0, 5, 0, 5);
-        cmbAusnahmeTur.Name = "cmbAusnahmeTur";
-        cmbAusnahmeTur.Size = new Size(220, 23);
-        cmbAusnahmeTur.TabIndex = 15;
-        // 
-        // lblAusnahmeTour
-        // 
-        lblAusnahmeTour.Dock = DockStyle.Fill;
-        lblAusnahmeTour.Location = new Point(8, 112);
-        lblAusnahmeTour.Margin = new Padding(0, 5, 8, 5);
-        lblAusnahmeTour.Name = "lblAusnahmeTour";
-        lblAusnahmeTour.Size = new Size(152, 23);
-        lblAusnahmeTour.TabIndex = 21;
-        lblAusnahmeTour.Text = "Ausnahme-Tour";
-        lblAusnahmeTour.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // lblLimit
-        // 
-        lblLimit.Dock = DockStyle.Fill;
-        lblLimit.Location = new Point(8, 145);
-        lblLimit.Margin = new Padding(0, 5, 8, 5);
-        lblLimit.Name = "lblLimit";
-        lblLimit.Size = new Size(152, 23);
-        lblLimit.TabIndex = 20;
-        lblLimit.Text = "Kreditlimit";
-        lblLimit.TextAlign = ContentAlignment.MiddleLeft;
-        // 
         // cmbTur
         // 
         cmbTur.Dock = DockStyle.Fill;
@@ -1052,17 +1052,6 @@ partial class FrmCustomerList
         cmbKundenfilter.Size = new Size(220, 23);
         cmbKundenfilter.TabIndex = 3;
         // 
-        // nudLimit
-        // 
-        nudLimit.DecimalPlaces = 2;
-        nudLimit.Dock = DockStyle.Fill;
-        nudLimit.Location = new Point(168, 145);
-        nudLimit.Margin = new Padding(0, 5, 0, 5);
-        nudLimit.Maximum = new decimal(new int[] { 999999, 0, 0, 0 });
-        nudLimit.Name = "nudLimit";
-        nudLimit.Size = new Size(220, 23);
-        nudLimit.TabIndex = 7;
-        // 
         // lblPreisAusblenden
         // 
         lblPreisAusblenden.Dock = DockStyle.Fill;
@@ -1101,6 +1090,369 @@ partial class FrmCustomerList
         chkAktiv.Size = new Size(104, 20);
         chkAktiv.TabIndex = 13;
         // 
+        // cmbAusnahmeTur
+        // 
+        cmbAusnahmeTur.Dock = DockStyle.Fill;
+        cmbAusnahmeTur.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbAusnahmeTur.Location = new Point(168, 112);
+        cmbAusnahmeTur.Margin = new Padding(0, 5, 0, 5);
+        cmbAusnahmeTur.Name = "cmbAusnahmeTur";
+        cmbAusnahmeTur.Size = new Size(220, 23);
+        cmbAusnahmeTur.TabIndex = 15;
+        // 
+        // nudLimit
+        // 
+        nudLimit.DecimalPlaces = 2;
+        nudLimit.Dock = DockStyle.Fill;
+        nudLimit.Location = new Point(168, 145);
+        nudLimit.Margin = new Padding(0, 5, 0, 5);
+        nudLimit.Maximum = new decimal(new int[] { 999999, 0, 0, 0 });
+        nudLimit.Name = "nudLimit";
+        nudLimit.Size = new Size(220, 23);
+        nudLimit.TabIndex = 7;
+        // 
+        // lblLimit
+        // 
+        lblLimit.Dock = DockStyle.Fill;
+        lblLimit.Location = new Point(8, 145);
+        lblLimit.Margin = new Padding(0, 5, 8, 5);
+        lblLimit.Name = "lblLimit";
+        lblLimit.Size = new Size(152, 23);
+        lblLimit.TabIndex = 20;
+        lblLimit.Text = "Kreditlimit";
+        lblLimit.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // lblAusnahmeTour
+        // 
+        lblAusnahmeTour.Dock = DockStyle.Fill;
+        lblAusnahmeTour.Location = new Point(8, 112);
+        lblAusnahmeTour.Margin = new Padding(0, 5, 8, 5);
+        lblAusnahmeTour.Name = "lblAusnahmeTour";
+        lblAusnahmeTour.Size = new Size(152, 23);
+        lblAusnahmeTour.TabIndex = 21;
+        lblAusnahmeTour.Text = "Ausnahme-Tour";
+        lblAusnahmeTour.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // tabLiefertage
+        // 
+        tabLiefertage.Controls.Add(tlpLiefertage);
+        tabLiefertage.Location = new Point(4, 24);
+        tabLiefertage.Name = "tabLiefertage";
+        tabLiefertage.Padding = new Padding(3);
+        tabLiefertage.Size = new Size(402, 542);
+        tabLiefertage.TabIndex = 4;
+        tabLiefertage.Text = "Liefertage";
+        tabLiefertage.UseVisualStyleBackColor = true;
+        // 
+        // tlpLiefertage
+        // 
+        tlpLiefertage.ColumnCount = 2;
+        tlpLiefertage.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160F));
+        tlpLiefertage.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        tlpLiefertage.Controls.Add(lblLiefertageTitel, 0, 0);
+        tlpLiefertage.Controls.Add(flpLiefertage, 0, 1);
+        tlpLiefertage.Controls.Add(lblLiefertage, 0, 0);
+        tlpLiefertage.Controls.Add(flpDays, 0, 1);
+        tlpLiefertage.Controls.Add(spacer, 0, 7);
+        tlpLiefertage.Dock = DockStyle.Fill;
+        tlpLiefertage.Location = new Point(3, 3);
+        tlpLiefertage.Name = "tlpLiefertage";
+        tlpLiefertage.Padding = new Padding(8);
+        tlpLiefertage.RowCount = 13;
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLiefertage.Size = new Size(396, 536);
+        tlpLiefertage.TabIndex = 0;
+        // 
+        // lblLiefertageTitel
+        // 
+        tlpLiefertage.SetColumnSpan(lblLiefertageTitel, 2);
+        lblLiefertageTitel.Dock = DockStyle.Fill;
+        lblLiefertageTitel.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Bold);
+        lblLiefertageTitel.Location = new Point(11, 38);
+        lblLiefertageTitel.Name = "lblLiefertageTitel";
+        lblLiefertageTitel.Size = new Size(374, 30);
+        lblLiefertageTitel.TabIndex = 0;
+        lblLiefertageTitel.Text = "Liefertage";
+        lblLiefertageTitel.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // flpLiefertage
+        // 
+        flpLiefertage.AutoSize = true;
+        tlpLiefertage.SetColumnSpan(flpLiefertage, 2);
+        flpLiefertage.Dock = DockStyle.Fill;
+        flpLiefertage.Location = new Point(11, 101);
+        flpLiefertage.Name = "flpLiefertage";
+        flpLiefertage.Size = new Size(374, 24);
+        flpLiefertage.TabIndex = 1;
+        // 
+        // lblLiefertage
+        // 
+        tlpLiefertage.SetColumnSpan(lblLiefertage, 2);
+        lblLiefertage.Location = new Point(11, 8);
+        lblLiefertage.Name = "lblLiefertage";
+        lblLiefertage.Size = new Size(100, 23);
+        lblLiefertage.TabIndex = 2;
+        // 
+        // flpDays
+        // 
+        tlpLiefertage.SetColumnSpan(flpDays, 2);
+        flpDays.Controls.Add(chkMo);
+        flpDays.Controls.Add(chkDi);
+        flpDays.Controls.Add(chkMi);
+        flpDays.Controls.Add(chkDo);
+        flpDays.Controls.Add(chkFr);
+        flpDays.Controls.Add(chkSa);
+        flpDays.Controls.Add(chkSo);
+        flpDays.Dock = DockStyle.Fill;
+        flpDays.Location = new Point(11, 71);
+        flpDays.Name = "flpDays";
+        flpDays.Size = new Size(374, 24);
+        flpDays.TabIndex = 3;
+        // 
+        // chkMo
+        // 
+        chkMo.AutoSize = true;
+        chkMo.Location = new Point(4, 6);
+        chkMo.Margin = new Padding(4, 6, 4, 0);
+        chkMo.Name = "chkMo";
+        chkMo.Size = new Size(44, 19);
+        chkMo.TabIndex = 16;
+        chkMo.Text = "Mo";
+        // 
+        // chkDi
+        // 
+        chkDi.AutoSize = true;
+        chkDi.Location = new Point(56, 6);
+        chkDi.Margin = new Padding(4, 6, 4, 0);
+        chkDi.Name = "chkDi";
+        chkDi.Size = new Size(37, 19);
+        chkDi.TabIndex = 17;
+        chkDi.Text = "Di";
+        // 
+        // chkMi
+        // 
+        chkMi.AutoSize = true;
+        chkMi.Location = new Point(101, 6);
+        chkMi.Margin = new Padding(4, 6, 4, 0);
+        chkMi.Name = "chkMi";
+        chkMi.Size = new Size(40, 19);
+        chkMi.TabIndex = 18;
+        chkMi.Text = "Mi";
+        // 
+        // chkDo
+        // 
+        chkDo.AutoSize = true;
+        chkDo.Location = new Point(149, 6);
+        chkDo.Margin = new Padding(4, 6, 4, 0);
+        chkDo.Name = "chkDo";
+        chkDo.Size = new Size(41, 19);
+        chkDo.TabIndex = 19;
+        chkDo.Text = "Do";
+        // 
+        // chkFr
+        // 
+        chkFr.AutoSize = true;
+        chkFr.Location = new Point(198, 6);
+        chkFr.Margin = new Padding(4, 6, 4, 0);
+        chkFr.Name = "chkFr";
+        chkFr.Size = new Size(36, 19);
+        chkFr.TabIndex = 20;
+        chkFr.Text = "Fr";
+        // 
+        // chkSa
+        // 
+        chkSa.AutoSize = true;
+        chkSa.Location = new Point(242, 6);
+        chkSa.Margin = new Padding(4, 6, 4, 0);
+        chkSa.Name = "chkSa";
+        chkSa.Size = new Size(38, 19);
+        chkSa.TabIndex = 21;
+        chkSa.Text = "Sa";
+        // 
+        // chkSo
+        // 
+        chkSo.AutoSize = true;
+        chkSo.Location = new Point(288, 6);
+        chkSo.Margin = new Padding(4, 6, 4, 0);
+        chkSo.Name = "chkSo";
+        chkSo.Size = new Size(39, 19);
+        chkSo.TabIndex = 22;
+        chkSo.Text = "So";
+        // 
+        // spacer
+        // 
+        tlpLiefertage.SetColumnSpan(spacer, 2);
+        spacer.Location = new Point(11, 221);
+        spacer.Name = "spacer";
+        spacer.Size = new Size(200, 24);
+        spacer.TabIndex = 4;
+        // 
+        // tabLeihgeraete
+        // 
+        tabLeihgeraete.Controls.Add(tlpLeihgeraete);
+        tabLeihgeraete.Location = new Point(4, 24);
+        tabLeihgeraete.Name = "tabLeihgeraete";
+        tabLeihgeraete.Padding = new Padding(3);
+        tabLeihgeraete.Size = new Size(402, 542);
+        tabLeihgeraete.TabIndex = 5;
+        tabLeihgeraete.Text = "Leihgeräte";
+        tabLeihgeraete.UseVisualStyleBackColor = true;
+        // 
+        // tlpLeihgeraete
+        // 
+        tlpLeihgeraete.ColumnCount = 2;
+        tlpLeihgeraete.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160F));
+        tlpLeihgeraete.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        tlpLeihgeraete.Controls.Add(lblLeihgeraeteTitel, 0, 0);
+        tlpLeihgeraete.Controls.Add(lblLeihgeraet1, 0, 1);
+        tlpLeihgeraete.Controls.Add(txtGeraete1, 1, 1);
+        tlpLeihgeraete.Controls.Add(lblLeihgeraet2, 0, 2);
+        tlpLeihgeraete.Controls.Add(txtGeraete2, 1, 2);
+        tlpLeihgeraete.Controls.Add(lblLeihgeraet3, 0, 3);
+        tlpLeihgeraete.Controls.Add(txtGeraete3, 1, 3);
+        tlpLeihgeraete.Controls.Add(lblLeihgeraet4, 0, 4);
+        tlpLeihgeraete.Controls.Add(txtGeraete4, 1, 4);
+        tlpLeihgeraete.Controls.Add(lblLeihgeraet5, 0, 5);
+        tlpLeihgeraete.Controls.Add(txtGeraete5, 1, 5);
+        tlpLeihgeraete.Dock = DockStyle.Fill;
+        tlpLeihgeraete.Location = new Point(3, 3);
+        tlpLeihgeraete.Name = "tlpLeihgeraete";
+        tlpLeihgeraete.Padding = new Padding(8);
+        tlpLeihgeraete.RowCount = 7;
+        tlpLeihgeraete.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        tlpLeihgeraete.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+        tlpLeihgeraete.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+        tlpLeihgeraete.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+        tlpLeihgeraete.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+        tlpLeihgeraete.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+        tlpLeihgeraete.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
+        tlpLeihgeraete.Size = new Size(396, 536);
+        tlpLeihgeraete.TabIndex = 0;
+        // 
+        // lblLeihgeraeteTitel
+        // 
+        tlpLeihgeraete.SetColumnSpan(lblLeihgeraeteTitel, 2);
+        lblLeihgeraeteTitel.Dock = DockStyle.Fill;
+        lblLeihgeraeteTitel.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Bold);
+        lblLeihgeraeteTitel.Location = new Point(11, 8);
+        lblLeihgeraeteTitel.Name = "lblLeihgeraeteTitel";
+        lblLeihgeraeteTitel.Size = new Size(374, 30);
+        lblLeihgeraeteTitel.TabIndex = 0;
+        lblLeihgeraeteTitel.Text = "Leihgeräte beim Kunden";
+        lblLeihgeraeteTitel.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // lblLeihgeraet1
+        // 
+        lblLeihgeraet1.Dock = DockStyle.Fill;
+        lblLeihgeraet1.Location = new Point(8, 43);
+        lblLeihgeraet1.Margin = new Padding(0, 5, 8, 5);
+        lblLeihgeraet1.Name = "lblLeihgeraet1";
+        lblLeihgeraet1.Size = new Size(152, 23);
+        lblLeihgeraet1.TabIndex = 1;
+        lblLeihgeraet1.Text = "Leihgerät 1";
+        lblLeihgeraet1.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // txtGeraete1
+        // 
+        txtGeraete1.Dock = DockStyle.Fill;
+        txtGeraete1.Location = new Point(168, 43);
+        txtGeraete1.Margin = new Padding(0, 5, 0, 5);
+        txtGeraete1.Name = "txtGeraete1";
+        txtGeraete1.Size = new Size(220, 23);
+        txtGeraete1.TabIndex = 23;
+        // 
+        // lblLeihgeraet2
+        // 
+        lblLeihgeraet2.Dock = DockStyle.Fill;
+        lblLeihgeraet2.Location = new Point(8, 76);
+        lblLeihgeraet2.Margin = new Padding(0, 5, 8, 5);
+        lblLeihgeraet2.Name = "lblLeihgeraet2";
+        lblLeihgeraet2.Size = new Size(152, 23);
+        lblLeihgeraet2.TabIndex = 24;
+        lblLeihgeraet2.Text = "Leihgerät 2";
+        lblLeihgeraet2.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // txtGeraete2
+        // 
+        txtGeraete2.Dock = DockStyle.Fill;
+        txtGeraete2.Location = new Point(168, 76);
+        txtGeraete2.Margin = new Padding(0, 5, 0, 5);
+        txtGeraete2.Name = "txtGeraete2";
+        txtGeraete2.Size = new Size(220, 23);
+        txtGeraete2.TabIndex = 24;
+        // 
+        // lblLeihgeraet3
+        // 
+        lblLeihgeraet3.Dock = DockStyle.Fill;
+        lblLeihgeraet3.Location = new Point(8, 109);
+        lblLeihgeraet3.Margin = new Padding(0, 5, 8, 5);
+        lblLeihgeraet3.Name = "lblLeihgeraet3";
+        lblLeihgeraet3.Size = new Size(152, 23);
+        lblLeihgeraet3.TabIndex = 25;
+        lblLeihgeraet3.Text = "Leihgerät 3";
+        lblLeihgeraet3.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // txtGeraete3
+        // 
+        txtGeraete3.Dock = DockStyle.Fill;
+        txtGeraete3.Location = new Point(168, 109);
+        txtGeraete3.Margin = new Padding(0, 5, 0, 5);
+        txtGeraete3.Name = "txtGeraete3";
+        txtGeraete3.Size = new Size(220, 23);
+        txtGeraete3.TabIndex = 25;
+        // 
+        // lblLeihgeraet4
+        // 
+        lblLeihgeraet4.Dock = DockStyle.Fill;
+        lblLeihgeraet4.Location = new Point(8, 142);
+        lblLeihgeraet4.Margin = new Padding(0, 5, 8, 5);
+        lblLeihgeraet4.Name = "lblLeihgeraet4";
+        lblLeihgeraet4.Size = new Size(152, 23);
+        lblLeihgeraet4.TabIndex = 26;
+        lblLeihgeraet4.Text = "Leihgerät 4";
+        lblLeihgeraet4.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // txtGeraete4
+        // 
+        txtGeraete4.Dock = DockStyle.Fill;
+        txtGeraete4.Location = new Point(168, 142);
+        txtGeraete4.Margin = new Padding(0, 5, 0, 5);
+        txtGeraete4.Name = "txtGeraete4";
+        txtGeraete4.Size = new Size(220, 23);
+        txtGeraete4.TabIndex = 26;
+        // 
+        // lblLeihgeraet5
+        // 
+        lblLeihgeraet5.Dock = DockStyle.Fill;
+        lblLeihgeraet5.Location = new Point(8, 175);
+        lblLeihgeraet5.Margin = new Padding(0, 5, 8, 5);
+        lblLeihgeraet5.Name = "lblLeihgeraet5";
+        lblLeihgeraet5.Size = new Size(152, 23);
+        lblLeihgeraet5.TabIndex = 27;
+        lblLeihgeraet5.Text = "Leihgerät 5";
+        lblLeihgeraet5.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // txtGeraete5
+        // 
+        txtGeraete5.Dock = DockStyle.Fill;
+        txtGeraete5.Location = new Point(168, 175);
+        txtGeraete5.Margin = new Padding(0, 5, 0, 5);
+        txtGeraete5.Name = "txtGeraete5";
+        txtGeraete5.Size = new Size(220, 23);
+        txtGeraete5.TabIndex = 27;
+        // 
         // panelButtons
         // 
         panelButtons.Controls.Add(btnDeaktivieren);
@@ -1136,114 +1488,6 @@ partial class FrmCustomerList
         btnNeu.TabIndex = 0;
         btnNeu.Text = "Neu (F2)";
         // 
-        // chkMo
-        // 
-        chkMo.AutoSize = true;
-        chkMo.Location = new Point(4, 80);
-        chkMo.Margin = new Padding(0, 10, 0, 5);
-        chkMo.Name = "chkMo";
-        chkMo.Size = new Size(50, 19);
-        chkMo.TabIndex = 16;
-        // 
-        // chkDi
-        // 
-        chkDi.AutoSize = true;
-        chkDi.Location = new Point(60, 80);
-        chkDi.Margin = new Padding(0, 10, 0, 5);
-        chkDi.Name = "chkDi";
-        chkDi.Size = new Size(44, 19);
-        chkDi.TabIndex = 17;
-        // 
-        // chkMi
-        // 
-        chkMi.AutoSize = true;
-        chkMi.Location = new Point(108, 80);
-        chkMi.Margin = new Padding(0, 10, 0, 5);
-        chkMi.Name = "chkMi";
-        chkMi.Size = new Size(48, 19);
-        chkMi.TabIndex = 18;
-        // 
-        // chkDo
-        // 
-        chkDo.AutoSize = true;
-        chkDo.Location = new Point(156, 80);
-        chkDo.Margin = new Padding(0, 10, 0, 5);
-        chkDo.Name = "chkDo";
-        chkDo.Size = new Size(48, 19);
-        chkDo.TabIndex = 19;
-        // 
-        // chkFr
-        // 
-        chkFr.AutoSize = true;
-        chkFr.Location = new Point(204, 80);
-        chkFr.Margin = new Padding(0, 10, 0, 5);
-        chkFr.Name = "chkFr";
-        chkFr.Size = new Size(47, 19);
-        chkFr.TabIndex = 20;
-        // 
-        // chkSa
-        // 
-        chkSa.AutoSize = true;
-        chkSa.Location = new Point(4, 105);
-        chkSa.Margin = new Padding(0, 5, 0, 5);
-        chkSa.Name = "chkSa";
-        chkSa.Size = new Size(46, 19);
-        chkSa.TabIndex = 21;
-        // 
-        // chkSo
-        // 
-        chkSo.AutoSize = true;
-        chkSo.Location = new Point(56, 105);
-        chkSo.Margin = new Padding(0, 5, 0, 5);
-        chkSo.Name = "chkSo";
-        chkSo.Size = new Size(43, 19);
-        chkSo.TabIndex = 22;
-        // 
-        // txtGeraete1
-        // 
-        txtGeraete1.Dock = DockStyle.Top;
-        txtGeraete1.Location = new Point(4, 130);
-        txtGeraete1.Margin = new Padding(0, 10, 0, 5);
-        txtGeraete1.Name = "txtGeraete1";
-        txtGeraete1.Size = new Size(220, 23);
-        txtGeraete1.TabIndex = 23;
-        // 
-        // txtGeraete2
-        // 
-        txtGeraete2.Dock = DockStyle.Top;
-        txtGeraete2.Location = new Point(4, 159);
-        txtGeraete2.Margin = new Padding(0, 5, 0, 5);
-        txtGeraete2.Name = "txtGeraete2";
-        txtGeraete2.Size = new Size(220, 23);
-        txtGeraete2.TabIndex = 24;
-        // 
-        // txtGeraete3
-        // 
-        txtGeraete3.Dock = DockStyle.Top;
-        txtGeraete3.Location = new Point(4, 188);
-        txtGeraete3.Margin = new Padding(0, 5, 0, 5);
-        txtGeraete3.Name = "txtGeraete3";
-        txtGeraete3.Size = new Size(220, 23);
-        txtGeraete3.TabIndex = 25;
-        // 
-        // txtGeraete4
-        // 
-        txtGeraete4.Dock = DockStyle.Top;
-        txtGeraete4.Location = new Point(4, 217);
-        txtGeraete4.Margin = new Padding(0, 5, 0, 5);
-        txtGeraete4.Name = "txtGeraete4";
-        txtGeraete4.Size = new Size(220, 23);
-        txtGeraete4.TabIndex = 26;
-        // 
-        // txtGeraete5
-        // 
-        txtGeraete5.Dock = DockStyle.Top;
-        txtGeraete5.Location = new Point(4, 246);
-        txtGeraete5.Margin = new Padding(0, 5, 0, 5);
-        txtGeraete5.Name = "txtGeraete5";
-        txtGeraete5.Size = new Size(220, 23);
-        txtGeraete5.TabIndex = 27;
-        // 
         // FrmCustomerList
         // 
         ClientSize = new Size(1081, 672);
@@ -1277,6 +1521,14 @@ partial class FrmCustomerList
         tabEinstellungen.PerformLayout();
         tlpEinstellungen.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)nudLimit).EndInit();
+        tabLiefertage.ResumeLayout(false);
+        tlpLiefertage.ResumeLayout(false);
+        tlpLiefertage.PerformLayout();
+        flpDays.ResumeLayout(false);
+        flpDays.PerformLayout();
+        tabLeihgeraete.ResumeLayout(false);
+        tlpLeihgeraete.ResumeLayout(false);
+        tlpLeihgeraete.PerformLayout();
         panelButtons.ResumeLayout(false);
         ResumeLayout(false);
     }
@@ -1286,4 +1538,9 @@ partial class FrmCustomerList
     private ComboBox cmbAusnahmeTur;
     private Label lblAusnahmeTour;
     private Label lblLimit;
+    private TabPage tabLiefertage;
+    private TableLayoutPanel tlpLiefertage;
+    private Label lblLiefertage;
+    private FlowLayoutPanel flpDays;
+    private Panel spacer;
 }

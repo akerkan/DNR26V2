@@ -38,6 +38,53 @@ These rules were violated multiple times. They are NON-NEGOTIABLE:
 
 ---
 
+## ⚠️ DESIGNER CODE RULES — ABSOLUTE, NEVER VIOLATE
+
+**The Designer can ONLY serialize linear, unconditional code. Any logic causes a Designer crash.**
+
+### FORBIDDEN in InitializeComponent() — causes Designer errors:
+1. **NO `for`/`foreach` loops** — always write explicit individual lines
+2. **NO `if`/`else` conditions** — the Designer cannot serialize conditional logic
+3. **NO `switch` expressions** — same reason
+4. **NO `SetChildIndex()`** — tab order is determined by the order of `Controls.Add()` calls
+5. **NO `Controls.Contains()` checks** — every control is added exactly once, unconditionally
+6. **NO `Controls.IndexOf()`** — no dynamic positioning
+7. **NO `var` declarations for new controls** — declare all fields at class level, initialize in the new-block at the top of InitializeComponent()
+
+### CORRECT pattern — always:
+```csharp
+// ✅ Tab-Reihenfolge: durch Reihenfolge der Controls.Add()-Aufrufe festlegen
+tabDetail.Controls.Add(tabStamm);
+tabDetail.Controls.Add(tabAdresse);
+tabDetail.Controls.Add(tabEinstellungen);
+tabDetail.Controls.Add(tabLiefertage);   // ← Position = Reihenfolge hier
+tabDetail.Controls.Add(tabLeihgeraete);  // ← nicht SetChildIndex!
+
+// ✅ RowStyles: explizit einzeln, nie in einer Schleife
+tlpXxx.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+tlpXxx.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+tlpXxx.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+```
+
+### FORBIDDEN examples:
+```csharp
+// ❌ Schleife
+for (int i = 0; i < 5; i++)
+    tlpXxx.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+
+// ❌ Bedingung
+if (!tabDetail.Controls.Contains(tabLiefertage))
+    tabDetail.Controls.Add(tabLiefertage);
+
+// ❌ SetChildIndex
+tabDetail.Controls.SetChildIndex(tabLiefertage, idxEinstellungen);
+
+// ❌ switch in InitializeComponent
+TextBox tb = i switch { 0 => txtGeraete1, ... };
+```
+
+---
+
 ## ⚠️ LIST FORM LOAD PATTERN — ALWAYS USE THIS
 
 Every list form (`FrmXxxList`) must follow this exact load pattern:
@@ -60,28 +107,51 @@ private async void FrmXxxList_Load(object? sender, EventArgs e)
 
 ## ⚠️ EF CORE / MIGRATION RULES — NEVER VIOLATE
 
-These mistakes were made and must never happen again:
-
-1. **When multiple FK relations point to the same table** (e.g. `TurId` and `AusnahmeTurId` both → `Route`): ALWAYS use `OnDelete(DeleteBehavior.NoAction)` on ALL of them — SQL Server rejects cascade on multiple paths
-2. **Always configure FK relationships explicitly in `AppDbContext.cs`** using `modelBuilder.Entity<>()` — never rely on EF Core convention defaults for cascade behavior
-3. **Before writing a migration, check if that migration name already exists** — use a new name if needed
-4. **Template for dual-FK to same table** (always use this):
+1. **When multiple FK relations point to the same table**: ALWAYS use `OnDelete(DeleteBehavior.NoAction)` on ALL of them
+2. **Always configure FK relationships explicitly in `AppDbContext.cs`**
+3. **Before writing a migration, check if that migration name already exists**
+4. **Template for dual-FK to same table:**
 
 ```csharp
 modelBuilder.Entity<Customer>()
-    .HasOne(c => c.Tur)
-    .WithMany()
+    .HasOne(c => c.Tur).WithMany()
     .HasForeignKey(c => c.TurId)
     .OnDelete(DeleteBehavior.NoAction);
 
 modelBuilder.Entity<Customer>()
-    .HasOne(c => c.AusnahmeTur)
-    .WithMany()
+    .HasOne(c => c.AusnahmeTur).WithMany()
     .HasForeignKey(c => c.AusnahmeTurId)
     .OnDelete(DeleteBehavior.NoAction);
 ```
 
-5. **Every table needs a `IEntityTypeConfiguration<T>` class** in `Data\Configurations\` — never skip this
+5. **Every table needs a `IEntityTypeConfiguration<T>` class** in `Data\Configurations\`
+
+---
+
+## ⚠️ GRID COLUMN CHOOSER — PFLICHTREGELN FÜR ALLE GRIDS
+
+1. **`EnableColumnChooser(dgwXxx)`** in `WireUpEvents()`
+2. **`ApplyColumnChooserSettings(dgwXxx)`** am Ende von `StyleGrid()`
+3. **`ApplyColumnHeaders(dgwXxx, _columnHeaders)`** am Anfang von `StyleGrid()`
+4. **`_columnHeaders` Dictionary** mit ALLEN DTO-Feldern
+5. Einstellungen in `UserGridSetting` Tabelle (DB), nicht JSON
+
+---
+
+## CUSTOMER FIELD TERMINOLOGY
+
+| Feldname (C#/DB) | Deutsche UI-Bezeichnung | Bedeutung |
+|---|---|---|
+| `Geraete1`..`Geraete5` | Leihgerät 1..5 | Beim Kunden hinterlegte Leihgeräte/Ausstattung (z.B. Kühlbox, Spender) |
+| `LiefertMo`..`LiefertSo` | Mo..So | Liefertage der Woche |
+
+**FrmCustomerList Tabs (in dieser Reihenfolge):**
+- `tabStamm` → Stammdaten
+- `tabAdresse` → Adresse
+- `tabAltAdresse` → Alt. Lieferadresse
+- `tabEinstellungen` → Einstellungen (Tour, Gruppe, Limit, Aktiv, Preis ausblenden)
+- `tabLiefertage` → Liefertage (Mo–So Checkboxen)
+- `tabLeihgeraete` → Leihgeräte (5 Freitextfelder für verliehene Geräte)
 
 ---
 
@@ -91,31 +161,24 @@ modelBuilder.Entity<Customer>()
 - .NET 8 WinForms + Entity Framework Core + Migrations
 - SQL Server + SQL LocalDB support
 - MDI WinForms (MdiParent/MdiChild)
-- BaseForm for shared behavior
-- When MdiChild is maximized → MdiParent scrollbars must still be visible
 
 ---
 
 ## DI REGISTRATION PATTERN (Program.cs)
 
-All forms and services are registered in `Program.cs → ConfigureServices()`.
 - Services → `AddScoped<IXxxService, XxxService>()`
 - Forms → `AddTransient<FrmXxx>()`
-- FrmMain uses `GetService<T>()` helper + `BaseListForm.GetOrCreateInstance<T>()` for MDI child forms
+- `IGridSettingsService` → `AddSingleton<IGridSettingsService, GridSettingsService>()`
+- After `BuildServiceProvider()`: `GridColumnChooser.SetService(...)`
 
 ---
 
 ## MDI MENU → FORM CONNECTION PATTERN (FrmMain)
 
 ```csharp
-// FrmMain.cs
 private FrmXxxList? FrmXxxListInstance;
-
 private void MenuXxx_Click(object? sender, EventArgs e)
     => BaseListForm.GetOrCreateInstance<FrmXxxList>(ref FrmXxxListInstance, this, () => GetService<FrmXxxList>());
-
-// FrmMain.Designer.cs
-var menuXxx = new ToolStripMenuItem("&Xxx", null, MenuXxx_Click);
 ```
 
 ---
@@ -123,98 +186,38 @@ var menuXxx = new ToolStripMenuItem("&Xxx", null, MenuXxx_Click);
 ## MODULE STATUS
 
 ### ✅ MODULE 0 – Project Setup & Infrastructure
-- Single project structure, EF Core, Migrations, BaseForm, LocalDB+SQL Server
+### ✅ MODULE 1 – System Tables (AppSetup, NoSeries, AuditLog, Location, UserGridSetting)
+### ✅ MODULE 2 – Kundenstammdaten
+- `FrmCustomerList` — working, 6 Tabs (Stamm/Adresse/AltAdresse/Einstellungen/Liefertage/Leihgeräte)
+- Migration: `Module2_Fix_TurAusnahmeTur_v2`
 
-### ✅ MODULE 1 – System Tables
-- AppSetup, NoSeries, AuditLog, Location (single warehouse)
+### ✅ MODULE 3 – Produktstammdaten
+- Product, ProductAttribute, ProductAttributeValue, ProductAttributeMapping
+- `FrmProductList`, `FrmProductAttributeList` — working
+- Migrations: `Module3_Product_Felder_Printfarbe`, `Module3_ProductAttributes`, `System_UserGridSettings`
 
-### ✅ MODULE 2 – Kundenstammdaten (Customer Master Data)
-- `FrmCustomerList` — working, Designer OK, MDI menu connected (Stammdaten → Kunden)
-- Customer fields: Kundennummer, Kundenname, Telefonnummer, Handynummer, EMail, Routenfolge (int), KreditLimit, Aktiv, Offen, PreisAusblenden
-- Address section: Name2, Inhaber, Adresse, Adresse2, PLZ, Ort, Land + AbweichendeLieferadresse checkbox
-- **Tour** (int, FK → Route, `OnDelete(DeleteBehavior.NoAction)`): StandardTour
-- **AusnahmeTur** (int, FK → Route, `OnDelete(DeleteBehavior.NoAction)`): Exception tour. AusnahmeTur ≠ Tur (validated)
-- Kundenfilter: ComboBox + lookup, working
-- Liefertage: MO/DI/MI/DO/FR/SA/SO checkboxes, working
-- Ausstattung: Geräte 1–5 text fields, working
-- Migration applied: `Module2_Fix_TurAusnahmeTur_v2`
-
-### 🔲 MODULE 3 – Produktstammdaten (Product Master Data)
-#### ✅ Done so far:
-- `Product` entity with fields: Artikelnummer, Bezeichnung, Bezeichnung2, Einheit, VKPreis, EKPreis, MwstProzent, **Feld1–Feld4**, **Printfarbe**, Barcode, Notizen, Aktiv
-- `ProductListDto` — includes Feld1–4 and Printfarbe for grid display
-- `ProductConfiguration` (`Data\Configurations\ProductConfiguration.cs`) — fully configured
-- `IProductService` / `ProductService` — Dapper list query + EF Core detail/save/delete
-- `FrmProductList` — working, Designer OK, MDI menu connected (Stammdaten → Produkte)
-  - Grid shows: Art.-Nr., Bezeichnung, Feld1–4, Printfarbe (cell background colored), Aktiv
-  - Detail panel always visible (never hidden on load)
-  - Empty grid → auto NewProduct() mode
-  - Printfarbe: `pnlPrintfarbe` (Panel, color preview) + `btnPrintfarbe` (Button → ColorDialog)
-  - Grid Printfarbe column: cell background matches stored color, auto contrast text color
-  - Feld1–4: MultiLine TextBoxes in detail panel
-  - Keyboard: F2 = Neu, Ctrl+S = Speichern
-- Migration pending: `Module3_Product_Felder_Printfarbe` → **run `Update-Database` before testing**
-
-#### 🔲 Still needed for Module 3:
-- DonerSekil lookup table + form
-- DonerBoruTipi lookup table + form
-
-### 🔲 MODULE 4 – Auftragserfassung (Sales Order Entry)
-- Fast daily order entry
-- SalesOrderHeader / SalesOrderLine
-
-### 🔲 MODULE 5 – Lieferungen (Deliveries)
-- DeliveryHeader / DeliveryLine
-- AusnahmeTur / Normaltour assignment buttons
-- Driver list print (sorted by Routenfolge)
-- No destructive edit after finalization
-
-### 🔲 MODULE 6 – Rechnungen (Invoices)
-- SalesInvoiceHeader / Line, twice-per-month, Storno logic
-
-### 🔲 MODULE 7 – Zahlungen (Payments)
-- PaymentEntry / CustomerLedgerEntry, no deletion
-
+### 🔲 MODULE 4 – Auftragserfassung
+### 🔲 MODULE 5 – Lieferungen
+### 🔲 MODULE 6 – Rechnungen
+### 🔲 MODULE 7 – Zahlungen
 ### 🔲 MODULE 8 – Etiketten / Labels
-- Uses Printfarbe and Feld1–4 from Product for label positioning and color
 
 ---
 
-## DATABASE TABLES (summary)
-
-**Master Data:** Customer, Product, CustomerProduct, CustomerPrice, CustomerDeliveryDay, Driver, Route, Location
-
-**Operations:** SalesOrderHeader/Line, DeliveryHeader/Line
-
-**Finance:** SalesInvoiceHeader/Line, SalesCreditMemoHeader/Line, PaymentEntry, CustomerLedgerEntry
-
-**System:** NoSeries, AppSetup, AuditLog
-
-**Audit fields on ALL tables:** ErstelltAm, ErstelltVon, GeaendertAm, GeaendertVon
-
-**Document status lifecycle:** OPEN → FINALIZED → POSTED → STORNIERT
-
----
-
-## PRODUCT FIELDS — PURPOSE REFERENCE
+## PRODUCT FIELDS
 
 | Field | Purpose |
 |---|---|
-| Feld1 | Etikett-Position 1 (z.B. Zutaten-Kurztext) |
-| Feld2 | Etikett-Position 2 (z.B. Zutaten-Langtext) |
-| Feld3 | Etikett-Position 3 (z.B. Hinweise) |
-| Feld4 | Etikett-Position 4 (reserve) |
-| Printfarbe | Hintergrundfarbe auf dem Etikett (Name oder Hex z.B. `Red`, `#FF0080`) |
+| Feld1–4 | Etikett-Positionen |
+| Printfarbe | Hintergrundfarbe auf dem Etikett |
 
 ---
 
 ## DEVELOPER PREFERENCES
 
-- Errors shown with `MessageBox.Show`
-- DataGridView for lists
-- EF Core preferred over stored procedures in V2
-- German UI / English code+table names / German column names
-- `SemaphoreSlim` for parallel DbContext protection in async form methods
-- Search timer (350ms debounce) for live search in list forms
-- `ComboItem(int Id, string Text)` helper for all ComboBox bindings
-- `NullIfEmpty()` extension for trimming optional string fields before save
+- `MessageBox.Show` für Fehler
+- `SemaphoreSlim` für async DbContext-Schutz
+- Search timer (350ms debounce)
+- `ComboItem(int Id, string Text)` für alle ComboBox-Bindings
+- `NullIfEmpty()` für optionale Strings
+- **KEINE Schleifen, KEINE Bedingungen, KEINE SetChildIndex in `InitializeComponent()`**

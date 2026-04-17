@@ -1,4 +1,5 @@
 ﻿using DNR26V2.Domain.Entities.MasterData;
+using DNR26V2.Domain.Enums;
 
 namespace DNR26V2.Services.MasterData;
 
@@ -12,6 +13,10 @@ public interface IProductAttributeService
 
     // ── Attribute-Werte ────────────────────────────────────────────────────
     Task<IReadOnlyList<ProductAttributeValue>> GetValuesByAttributeAsync(int attributId);
+
+    /// <summary>Alle aktiven Werte aller Attribute eines bestimmten EntityType.</summary>
+    Task<IReadOnlyList<ProductAttributeValue>> GetValuesByEntityTypeAsync(AttributeEntityType entityType);
+
     Task SaveValueAsync(ProductAttributeValue value);
     Task SetValueActiveAsync(int id, bool aktiv);
     Task DeleteValueAsync(int id);
@@ -20,4 +25,6 @@ public interface IProductAttributeService
     Task<IReadOnlyList<ProductAttributeMapping>> GetMappingsByProductAsync(int produktId);
     Task SaveMappingsAsync(int produktId, IEnumerable<ProductAttributeMapping> mappings);
     Task DeleteMappingAsync(int mappingId);
+
+    Task DeleteAttributeAsync(int id);
 }

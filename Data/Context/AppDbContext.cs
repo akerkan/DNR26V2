@@ -17,11 +17,12 @@ public class AppDbContext : DbContext
     public DbSet<Location>       Location       { get; set; } = null!;
     public DbSet<UserGridSetting> UserGridSetting { get; set; } = null!;
 
-    // ── Stammdaten (Modul 2) ──────────────────────────────────────────────────
+    // ── Stammdaten (Modul 2/3 – Kundenprodukt-Schablone) ─────────────────────
     public DbSet<Customer>       Customer       { get; set; } = null!;
-    public DbSet<CustomerFilter> CustomerFilter { get; set; } = null!;
     public DbSet<Route>          Route          { get; set; } = null!;
     public DbSet<Driver>         Driver         { get; set; } = null!;
+    public DbSet<CustomerProduct>                 CustomerProduct                 { get; set; } = null!;
+    public DbSet<CustomerProductAttributeMapping> CustomerProductAttributeMapping { get; set; } = null!;
 
     // ── Stammdaten (Modul 3) ──────────────────────────────────────────────────
     public DbSet<Product>                 Product                 { get; set; } = null!;

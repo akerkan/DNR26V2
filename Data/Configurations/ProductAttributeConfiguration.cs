@@ -14,10 +14,10 @@ internal sealed class ProductAttributeConfiguration : IEntityTypeConfiguration<P
         entity.Property(e => e.Id).UseIdentityColumn();
 
         entity.Property(e => e.Bezeichnung).HasMaxLength(100).IsRequired();
-        entity.Property(e => e.Feldtyp)    .HasConversion<int>()
-                                            .HasDefaultValue(AttributeFieldType.Lookup);
+        entity.Property(e => e.Feldtyp)    .HasDefaultValue(AttributeFieldType.Lookup);
         entity.Property(e => e.MaxLaenge)  .IsRequired(false);
         entity.Property(e => e.Aktiv)      .HasDefaultValue(true);
+        entity.Property(e => e.IstVorlage) .HasDefaultValue(false);
 
         entity.Property(e => e.ErstelltAm)  .HasDefaultValueSql("GETDATE()");
         entity.Property(e => e.ErstelltVon) .HasMaxLength(100).IsRequired();

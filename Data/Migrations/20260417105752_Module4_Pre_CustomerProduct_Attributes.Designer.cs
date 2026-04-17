@@ -4,6 +4,7 @@ using DNR26V2.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNR26V2.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260417105752_Module4_Pre_CustomerProduct_Attributes")]
+    partial class Module4_Pre_CustomerProduct_Attributes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,7 +77,10 @@ namespace DNR26V2.Data.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.Property<int?>("AusnahmeTurWertId")
+                    b.Property<int?>("AusnahmeTurId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CustomerFilterId")
                         .HasColumnType("int");
 
                     b.Property<string>("EMail")
@@ -126,7 +132,7 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int?>("KundenGruppeWertId")
+                    b.Property<int?>("KundenfilterId")
                         .HasColumnType("int");
 
                     b.Property<string>("Kundenname")
@@ -208,23 +214,63 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int?>("TurWertId")
+                    b.Property<int?>("TurId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AusnahmeTurWertId");
+                    b.HasIndex("AusnahmeTurId");
 
-                    b.HasIndex("KundenGruppeWertId");
+                    b.HasIndex("CustomerFilterId");
+
+                    b.HasIndex("KundenfilterId");
 
                     b.HasIndex("Kundennummer")
                         .IsUnique();
 
                     b.HasIndex("RouteId");
 
-                    b.HasIndex("TurWertId");
+                    b.HasIndex("TurId");
 
                     b.ToTable("Customer", (string)null);
+                });
+
+            modelBuilder.Entity("DNR26V2.Domain.Entities.MasterData.CustomerFilter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ErstelltAm")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("ErstelltVon")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("GeaendertAm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GeaendertVon")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Kundenfilter")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kundenfilter")
+                        .IsUnique();
+
+                    b.ToTable("CustomerFilter", (string)null);
                 });
 
             modelBuilder.Entity("DNR26V2.Domain.Entities.MasterData.CustomerProduct", b =>
@@ -517,11 +563,13 @@ namespace DNR26V2.Data.Migrations
 
                     b.Property<string>("Bezeichnung")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("EntityType")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
 
                     b.Property<DateTime>("ErstelltAm")
                         .ValueGeneratedOnAdd()
@@ -545,18 +593,10 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("IstVorlage")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<int?>("MaxLaenge")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Bezeichnung")
-                        .IsUnique();
 
                     b.ToTable("ProductAttribute", (string)null);
                 });
@@ -1059,30 +1099,34 @@ namespace DNR26V2.Data.Migrations
 
             modelBuilder.Entity("DNR26V2.Domain.Entities.MasterData.Customer", b =>
                 {
-                    b.HasOne("DNR26V2.Domain.Entities.MasterData.ProductAttributeValue", "AusnahmeTurWert")
+                    b.HasOne("DNR26V2.Domain.Entities.MasterData.Route", "AusnahmeTur")
                         .WithMany()
-                        .HasForeignKey("AusnahmeTurWertId")
+                        .HasForeignKey("AusnahmeTurId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("DNR26V2.Domain.Entities.MasterData.ProductAttributeValue", "KundenGruppeWert")
+                    b.HasOne("DNR26V2.Domain.Entities.MasterData.CustomerFilter", null)
+                        .WithMany("Kunden")
+                        .HasForeignKey("CustomerFilterId");
+
+                    b.HasOne("DNR26V2.Domain.Entities.MasterData.CustomerFilter", "KundenfilterNavigation")
                         .WithMany()
-                        .HasForeignKey("KundenGruppeWertId")
+                        .HasForeignKey("KundenfilterId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DNR26V2.Domain.Entities.MasterData.Route", null)
                         .WithMany("Kunden")
                         .HasForeignKey("RouteId");
 
-                    b.HasOne("DNR26V2.Domain.Entities.MasterData.ProductAttributeValue", "TurWert")
+                    b.HasOne("DNR26V2.Domain.Entities.MasterData.Route", "Tur")
                         .WithMany()
-                        .HasForeignKey("TurWertId")
+                        .HasForeignKey("TurId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.Navigation("AusnahmeTurWert");
+                    b.Navigation("AusnahmeTur");
 
-                    b.Navigation("KundenGruppeWert");
+                    b.Navigation("KundenfilterNavigation");
 
-                    b.Navigation("TurWert");
+                    b.Navigation("Tur");
                 });
 
             modelBuilder.Entity("DNR26V2.Domain.Entities.MasterData.CustomerProduct", b =>
@@ -1165,6 +1209,11 @@ namespace DNR26V2.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Attribut");
+                });
+
+            modelBuilder.Entity("DNR26V2.Domain.Entities.MasterData.CustomerFilter", b =>
+                {
+                    b.Navigation("Kunden");
                 });
 
             modelBuilder.Entity("DNR26V2.Domain.Entities.MasterData.CustomerProduct", b =>

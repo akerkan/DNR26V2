@@ -50,22 +50,22 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
         entity.HasIndex(e => e.Kundennummer).IsUnique();
 
-        // StandardTur → Route (DB: NO ACTION, App logic handles set-null)
-        entity.HasOne(e => e.Tur)
+        // StandardTour → ProductAttributeValue (EntityType = Tour)
+        entity.HasOne(e => e.TurWert)
               .WithMany()
-              .HasForeignKey(e => e.TurId)
+              .HasForeignKey(e => e.TurWertId)
               .OnDelete(DeleteBehavior.NoAction);
 
-        // AusnahmeTur → Route (DB: NO ACTION)
-        entity.HasOne(e => e.AusnahmeTur)
+        // AusnahmeTour → ProductAttributeValue (EntityType = Tour)
+        entity.HasOne(e => e.AusnahmeTurWert)
               .WithMany()
-              .HasForeignKey(e => e.AusnahmeTurId)
+              .HasForeignKey(e => e.AusnahmeTurWertId)
               .OnDelete(DeleteBehavior.NoAction);
 
-        // Kundenfilter FK — ebenfalls NO ACTION falls SetNull zuvor gesetzt
-        entity.HasOne(e => e.KundenfilterNavigation)
+        // KundenGruppe → ProductAttributeValue (EntityType = KundenGruppe)
+        entity.HasOne(e => e.KundenGruppeWert)
               .WithMany()
-              .HasForeignKey(e => e.KundenfilterId)
+              .HasForeignKey(e => e.KundenGruppeWertId)
               .OnDelete(DeleteBehavior.NoAction);
 
         entity.Property(e => e.ErstelltAm)  .HasDefaultValueSql("GETDATE()");

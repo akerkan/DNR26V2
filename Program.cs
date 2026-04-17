@@ -1,4 +1,4 @@
-using DNR26V2.Data.Context;
+﻿using DNR26V2.Data.Context;
 using DNR26V2.Data.Seed;
 using DNR26V2.Domain.Configuration;
 using DNR26V2.Forms.MasterData;
@@ -70,8 +70,6 @@ static class Program
         services.AddSingleton<IGridSettingsService, GridSettingsService>();
 
         // --- Modul 2: Stammdaten-Services ---
-        services.AddScoped<ICustomerService,       CustomerService>();
-        services.AddScoped<ICustomerFilterService, CustomerFilterService>();
         services.AddScoped<IRouteService,          RouteService>();
         services.AddScoped<IDriverService,         DriverService>();
 
@@ -79,13 +77,25 @@ static class Program
         services.AddScoped<IProductService,          ProductService>();
         services.AddScoped<IProductAttributeService, ProductAttributeService>();
 
+        // --- Modul 4: Kunden-Bearbeitungs-Services ---
+        services.AddScoped<ICustomerService,        CustomerService>();          // ← NEU
+        services.AddScoped<ICustomerProductService, CustomerProductService>();
+
         // --- Forms ---
         services.AddTransient<FrmMain>();
         services.AddTransient<FrmAppSetup>();
         services.AddTransient<FrmLocationSetup>();
-        services.AddTransient<FrmCustomerList>();
+        services.AddTransient<FrmCustomerList>(sp =>
+            new FrmCustomerList(
+                sp.GetRequiredService<ICustomerService>(),
+                sp.GetRequiredService<IProductAttributeService>()));
         services.AddTransient<FrmProductList>();
         services.AddTransient<FrmProductAttributeList>();
+        services.AddTransient<FrmCustomerProductTemplate>(sp =>           // ← Factory ergänzt
+            new FrmCustomerProductTemplate(
+                sp.GetRequiredService<ICustomerService>(),
+                sp.GetRequiredService<IProductService>(),
+                sp.GetRequiredService<ICustomerProductService>()));
 
         return services;
     }
@@ -102,7 +112,7 @@ static class Program
         {
             MessageBox.Show(
                 $"Datenbankinitialisierung fehlgeschlagen:\n\n{ex.Message}\n\n" +
-                "Bitte pr�fen Sie die Verbindungseinstellungen.",
+                "Bitte prüfen Sie die Verbindungseinstellungen.",
                 "Startfehler",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);

@@ -1,15 +1,31 @@
 namespace DNR26V2.Domain.DTOs;
 
-/// <summary>
-/// Schlankes DTO für die Kundenliste (Dapper-Query).
-/// Enthält nur die für die Listenansicht benötigten Felder.
-/// Die Parameter-Namen müssen mit den Spalten/Aliases der SQL-Abfrage übereinstimmen.
-/// </summary>
-public sealed record CustomerListDto(
-    int     Id,
-    string  Kundennummer,
-    string  Kundenname,
-    string? Tur,
-    string? Kundenfilter,
-    bool    Aktiv,
-    decimal Limit);
+public sealed class CustomerListDto
+{
+    public int      Id              { get; set; }
+    public string   Kundennummer    { get; set; } = string.Empty;
+    public string   Kundenname      { get; set; } = string.Empty;
+    public string?  Name2           { get; set; }
+    public string?  Inhaber         { get; set; }
+    public string?  Telefonnummer   { get; set; }
+    public string?  Handynummer     { get; set; }
+    public string?  EMail           { get; set; }
+    public string?  PLZ             { get; set; }
+    public string?  Ort             { get; set; }
+    public string?  Adresse         { get; set; }
+    public string?  Tur             { get; set; }
+    public string?  AusnahmeTur     { get; set; }
+    public string?  Kundenfilter    { get; set; }
+    public int      Routenfolge     { get; set; }
+    public decimal  Limit           { get; set; }
+    public bool     LiefertMo       { get; set; }
+    public bool     LiefertDi       { get; set; }
+    public bool     LiefertMi       { get; set; }
+    public bool     LiefertDo       { get; set; }
+    public bool     LiefertFr       { get; set; }
+    public bool     LiefertSa       { get; set; }
+    public bool     LiefertSo       { get; set; }
+    public bool     PreisAusblenden { get; set; }
+    public bool     Offen           { get; set; }
+    public bool     Aktiv           { get; set; }
+}

@@ -3,6 +3,7 @@ using DNR26V2.Data.Seed;
 using DNR26V2.Domain.Configuration;
 using DNR26V2.Forms.MasterData;
 using DNR26V2.Forms.Settings;
+using DNR26V2.Helpers;
 using DNR26V2.Services.MasterData;
 using DNR26V2.Services.System;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,9 @@ static class Program
 
         // DB migrieren + Seed-Daten anlegen
         InitializeDatabaseAsync(serviceProvider).GetAwaiter().GetResult();
+
+        // GridColumnChooser bekommt den DB-Service einmalig gesetzt
+        GridColumnChooser.SetService(serviceProvider.GetRequiredService<IGridSettingsService>());
 
         Application.Run(serviceProvider.GetRequiredService<FrmMain>());
     }
@@ -63,6 +67,7 @@ static class Program
         services.AddScoped<INoSeriesService,  NoSeriesService>();
         services.AddScoped<IAuditLogService,  AuditLogService>();
         services.AddScoped<DatabaseSeeder>();
+        services.AddSingleton<IGridSettingsService, GridSettingsService>();
 
         // --- Modul 2: Stammdaten-Services ---
         services.AddScoped<ICustomerService,       CustomerService>();

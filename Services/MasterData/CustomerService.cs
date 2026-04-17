@@ -26,18 +26,34 @@ public class CustomerService : ICustomerService
             SELECT c.Id,
                    c.Kundennummer,
                    c.Kundenname,
-                   t.Routencode   AS Tur,
+                   c.Name2,
+                   c.Inhaber,
+                   c.Telefonnummer,
+                   c.Handynummer,
+                   c.EMail,
+                   c.PLZ,
+                   c.Ort,
+                   c.Adresse,
+                   r1.Routencode                          AS Tur,
+                   r2.Routencode                          AS AusnahmeTur,
                    cf.Kundenfilter,
-                   c.Aktiv,
-                   c.Limit
+                   c.Routenfolge,
+                   c.Limit,
+                   c.LiefertMo, c.LiefertDi, c.LiefertMi,
+                   c.LiefertDo, c.LiefertFr, c.LiefertSa, c.LiefertSo,
+                   c.PreisAusblenden,
+                   c.Offen,
+                   c.Aktiv
             FROM   Customer c
-            LEFT   JOIN Route          t  ON t.Id  = c.TurId
-            LEFT   JOIN CustomerFilter cf ON cf.Id = c.KundenfilterId
+            LEFT JOIN Route          r1 ON r1.Id = c.TurId
+            LEFT JOIN Route          r2 ON r2.Id = c.AusnahmeTurId
+            LEFT JOIN CustomerFilter cf ON cf.Id = c.KundenfilterId
             WHERE  (@Suche    IS NULL
-                    OR c.Kundenname   LIKE '%' + @Suche + '%'
-                    OR c.Kundennummer LIKE '%' + @Suche + '%')
-            AND    (@NurAktiv IS NULL OR c.Aktiv         = @NurAktiv)
-            AND    (@RouteId  IS NULL OR c.TurId          = @RouteId)
+                    OR c.Kundenname    LIKE '%' + @Suche + '%'
+                    OR c.Kundennummer  LIKE '%' + @Suche + '%'
+                    OR c.Telefonnummer LIKE '%' + @Suche + '%')
+            AND    (@NurAktiv IS NULL OR c.Aktiv = @NurAktiv)
+            AND    (@RouteId  IS NULL OR c.TurId = @RouteId)
             AND    (@FilterId IS NULL OR c.KundenfilterId = @FilterId)
             ORDER  BY c.Kundenname
             """;
@@ -56,21 +72,15 @@ public class CustomerService : ICustomerService
     // ── Einzelkunde via EF Core ───────────────────────────────────────────────
 
     public async Task<Customer?> GetByIdAsync(int id)
-        => await _db.Customer
-                    .Include(c => c.Tur)
-                    .Include(c => c.AusnahmeTur)
-                    .Include(c => c.KundenfilterNavigation)
-                    .FirstOrDefaultAsync(c => c.Id == id);
+        => await _db.Customer.FirstOrDefaultAsync(c => c.Id == id);
 
     // ── Speichern ─────────────────────────────────────────────────────────────
 
     public async Task SaveAsync(Customer customer)
     {
         await ValidateAsync(customer);
-
         if (customer.Id == 0) _db.Customer.Add(customer);
         else                  _db.Customer.Update(customer);
-
         await _db.SaveChangesAsync();
     }
 
@@ -94,18 +104,9 @@ public class CustomerService : ICustomerService
         if (string.IsNullOrWhiteSpace(customer.Kundenname))
             throw new ValidationException("Kundenname ist ein Pflichtfeld.");
 
-        // AusnahmeTur darf nicht gleich StandardTur sein
-        if (customer.AusnahmeTurId.HasValue
-            && customer.TurId.HasValue
-            && customer.AusnahmeTurId == customer.TurId)
-            throw new ValidationException(
-                "Ausnahme-Tour darf nicht identisch mit der Standard-Tour sein.");
-
         bool duplicate = await _db.Customer
-            .AnyAsync(c => c.Kundennummer == customer.Kundennummer
-                        && c.Id != customer.Id);
+            .AnyAsync(c => c.Kundennummer == customer.Kundennummer && c.Id != customer.Id);
         if (duplicate)
-            throw new ValidationException(
-                $"Kundennummer '{customer.Kundennummer}' ist bereits vergeben.");
+            throw new ValidationException($"Kundennummer '{customer.Kundennummer}' ist bereits vergeben.");
     }
 }

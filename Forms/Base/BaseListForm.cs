@@ -1,57 +1,60 @@
-using DNR26V2.Forms.Base;
+ï»¿namespace DNR26V2.Forms.Base;
 
-/// <summary>
-/// Basis für Listen-Formulare (Kunden, Produkte, Rechnungen etc.).
-/// Öffnet als MDI-Child maximiert. Singleton-Steuerung via GetOrCreateInstance().
-/// </summary>
 public class BaseListForm : BaseForm
 {
-    protected BaseListForm()
-    {
-        // WindowState wird in GetOrCreateInstance() auf Maximized gesetzt.
-        // Hier NICHT setzen, da es den WinForms-Designer stört.
-    }
+    protected BaseListForm() { }
 
-    /// <summary>
-    /// Singleton-Pattern für MDI-Kindfenster.
-    /// Verhindert doppeltes Öffnen desselben Formulartyps.
-    /// </summary>
     public static T GetOrCreateInstance<T>(
-        ref T? instance,
-        Form mdiParent,
-        Func<T> factory) where T : BaseListForm
+        ref T? instance, Form mdiParent, Func<T> factory) where T : BaseListForm
     {
         if (instance == null || instance.IsDisposed)
         {
             instance = factory();
             instance.MdiParent = mdiParent;
-
-            // Workaround: Capture a local variable for the event handler
-            T? localInstance = instance;
-            instance.FormClosed += (_, _) => localInstance = null;
+            T? local = instance;
+            instance.FormClosed += (_, _) => local = null;
         }
-
         instance.Show();
         instance.BringToFront();
-        //instance.WindowState = FormWindowState.Maximized;
         return instance;
     }
 
-    /// <summary>
-    /// Standardmäßige DataGridView-Konfiguration für Listenformulare.
-    /// </summary>
     protected static void ConfigureGrid(DataGridView grid)
     {
-        grid.AllowUserToAddRows = false;
+        grid.AllowUserToAddRows    = false;
         grid.AllowUserToDeleteRows = false;
-        grid.ReadOnly = true;
-        grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        grid.MultiSelect = false;
-        grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        grid.RowHeadersVisible = false;
-        grid.BackgroundColor = SystemColors.Window;
-        grid.BorderStyle = BorderStyle.Fixed3D;
+        grid.ReadOnly              = true;
+        grid.SelectionMode         = DataGridViewSelectionMode.FullRowSelect;
+        grid.MultiSelect           = false;
+        grid.RowHeadersVisible     = false;
+        grid.BackgroundColor       = SystemColors.Window;
+        grid.BorderStyle           = BorderStyle.Fixed3D;
         grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 250);
         SetDoubleBuffered(grid);
+    }
+
+    /// <summary>
+    /// TÃ¼m kolonlara (gizli olanlar dahil) Almanca baÅŸlÄ±k uygular.
+    /// StyleGrid() iÃ§inde, hide-all adÄ±mÄ±ndan Ã–NCE Ã§aÄŸrÄ±lmalÄ±.
+    /// </summary>
+    protected static void ApplyColumnHeaders(DataGridView grid, IReadOnlyDictionary<string, string> headers)
+    {
+        foreach (DataGridViewColumn col in grid.Columns)
+            if (headers.TryGetValue(col.Name, out var header))
+                col.HeaderText = header;
+    }
+
+    /// <summary>Einmalig in WireUpEvents aufrufen.</summary>
+    protected void EnableColumnChooser(DataGridView grid, string? key = null)
+    {
+        key ??= $"{GetType().Name}_{grid.Name}";
+        Helpers.GridColumnChooser.Attach(grid, key);
+    }
+
+    /// <summary>Am Ende von StyleGrid() aufrufen.</summary>
+    protected void ApplyColumnChooserSettings(DataGridView grid, string? key = null)
+    {
+        key ??= $"{GetType().Name}_{grid.Name}";
+        Helpers.GridColumnChooser.ApplyUserSettings(grid, key);
     }
 }

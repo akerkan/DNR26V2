@@ -11,6 +11,36 @@ namespace DNR26V2.Forms.MasterData;
 
 public partial class FrmCustomerList : BaseListForm
 {
+    // ── Kolon Kataloğu — TÜM DTO alanlarının Almanca başlıkları ─────────────
+    private static readonly Dictionary<string, string> _columnHeaders = new()
+    {
+        ["Kundennummer"]    = "Kunden-Nr.",
+        ["Kundenname"]      = "Name",
+        ["Name2"]           = "Name 2",
+        ["Inhaber"]         = "Inhaber",
+        ["Telefonnummer"]   = "Telefon",
+        ["Handynummer"]     = "Handy",
+        ["EMail"]           = "E-Mail",
+        ["PLZ"]             = "PLZ",
+        ["Ort"]             = "Ort",
+        ["Adresse"]         = "Adresse",
+        ["Tur"]             = "Tour",
+        ["AusnahmeTur"]     = "Ausnahme-Tour",
+        ["Kundenfilter"]    = "Gruppe",
+        ["Routenfolge"]     = "Reihenfolge",
+        ["Limit"]           = "Limit",
+        ["LiefertMo"]       = "Mo",
+        ["LiefertDi"]       = "Di",
+        ["LiefertMi"]       = "Mi",
+        ["LiefertDo"]       = "Do",
+        ["LiefertFr"]       = "Fr",
+        ["LiefertSa"]       = "Sa",
+        ["LiefertSo"]       = "So",
+        ["PreisAusblenden"] = "Preis ausblendn.",
+        ["Offen"]           = "Offen",
+        ["Aktiv"]           = "Aktiv",
+    };
+
     private readonly ICustomerService _customerService;
     private readonly ICustomerFilterService _filterService;
     private readonly IRouteService _routeService;
@@ -93,6 +123,8 @@ public partial class FrmCustomerList : BaseListForm
         // Liefertage
         foreach (var chk in new[] { chkMo, chkDi, chkMi, chkDo, chkFr, chkSa, chkSo })
             chk.CheckedChanged += Detail_Changed;
+
+        EnableColumnChooser(dgwKunden);
     }
 
     // ── Laden ─────────────────────────────────────────────────────────────────
@@ -214,6 +246,11 @@ public partial class FrmCustomerList : BaseListForm
     private void StyleGrid()
     {
         if (dgwKunden.Columns.Count == 0) return;
+
+        // 1. Tüm kolonlara Almanca başlık ata (gizli olanlar da dahil)
+        ApplyColumnHeaders(dgwKunden, _columnHeaders);
+
+        // 2. Standart görünür kolonları belirle
         foreach (DataGridViewColumn col in dgwKunden.Columns) col.Visible = false;
         ShowCol("Kundennummer", "Kunden-Nr.", 100);
         ShowCol("Kundenname",   "Name",       0, fill: true);
@@ -221,6 +258,9 @@ public partial class FrmCustomerList : BaseListForm
         ShowCol("Kundenfilter", "Gruppe",     90);
         ShowCol("Limit",        "Limit",      80, format: "N2", right: true);
         ShowCol("Aktiv",        "Aktiv",      50);
+
+        // 3. Kullanıcı ayarlarını uygula
+        ApplyColumnChooserSettings(dgwKunden);
     }
 
     private void ShowCol(string name, string header, int width,

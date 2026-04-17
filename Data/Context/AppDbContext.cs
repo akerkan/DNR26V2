@@ -11,10 +11,11 @@ public class AppDbContext : DbContext
         : base(options) { }
 
     // ── System ────────────────────────────────────────────────────────────────
-    public DbSet<AppSetup>  AppSetup  { get; set; } = null!;
-    public DbSet<NoSeries>  NoSeries  { get; set; } = null!;
-    public DbSet<AuditLog>  AuditLog  { get; set; } = null!;
-    public DbSet<Location>  Location  { get; set; } = null!;
+    public DbSet<AppSetup>       AppSetup       { get; set; } = null!;
+    public DbSet<NoSeries>       NoSeries       { get; set; } = null!;
+    public DbSet<AuditLog>       AuditLog       { get; set; } = null!;
+    public DbSet<Location>       Location       { get; set; } = null!;
+    public DbSet<UserGridSetting> UserGridSetting { get; set; } = null!;
 
     // ── Stammdaten (Modul 2) ──────────────────────────────────────────────────
     public DbSet<Customer>       Customer       { get; set; } = null!;
@@ -27,8 +28,6 @@ public class AppDbContext : DbContext
     public DbSet<ProductAttribute>        ProductAttribute        { get; set; } = null!;
     public DbSet<ProductAttributeValue>   ProductAttributeValue   { get; set; } = null!;
     public DbSet<ProductAttributeMapping> ProductAttributeMapping { get; set; } = null!;
-
-    // ── Modul 4+ DbSets werden hier ergänzt ──────────────────────────────────
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

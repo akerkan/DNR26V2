@@ -74,6 +74,8 @@ public partial class FrmProductList : BaseListForm
         nudEKPreis.ValueChanged     += (_, _) => _isDirty = true;
         nudMwstProzent.ValueChanged += (_, _) => _isDirty = true;
         chkAktiv.CheckedChanged     += (_, _) => _isDirty = true;
+        
+        EnableColumnChooser(dgwArtikel);
     }
 
     // ── Laden ─────────────────────────────────────────────────────────────────
@@ -140,14 +142,16 @@ public partial class FrmProductList : BaseListForm
     {
         if (dgwArtikel.Columns.Count == 0) return;
         foreach (DataGridViewColumn col in dgwArtikel.Columns) col.Visible = false;
-        ShowCol("Artikelnummer", "Art.-Nr.",    100);
-        ShowCol("Bezeichnung",   "Bezeichnung", 0, fill: true);
-        ShowCol("Feld1",         "Feld 1",      120);
-        ShowCol("Feld2",         "Feld 2",      120);
-        ShowCol("Feld3",         "Feld 3",      120);
-        ShowCol("Feld4",         "Feld 4",      120);
-        ShowCol("Printfarbe",    "Printfarbe",   90);
-        ShowCol("Aktiv",         "Aktiv",         50);
+        ShowCol("Artikelnummer", "Art.-Nr.", 100);
+        ShowCol("Bezeichnung", "Bezeichnung", 0, fill: true);
+        ShowCol("Feld1", "Feld 1", 120);
+        ShowCol("Feld2", "Feld 2", 120);
+        ShowCol("Feld3", "Feld 3", 120);
+        ShowCol("Feld4", "Feld 4", 120);
+        ShowCol("Printfarbe", "Printfarbe", 90);
+        ShowCol("Aktiv", "Aktiv", 50);
+
+        ApplyColumnChooserSettings(dgwArtikel);  // ← NEU
     }
 
     private void ShowCol(string name, string header, int width,

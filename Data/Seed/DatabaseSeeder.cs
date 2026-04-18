@@ -67,11 +67,11 @@ public class DatabaseSeeder
         if (await _db.NoSeries.AnyAsync()) return;
 
         _db.NoSeries.AddRange(
-            new NoSeries { Seriencode = "RE", Beschreibung = "Rechnungsnummer",    Praefix = "RE", ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "LS", Beschreibung = "Lieferscheinnummer", Praefix = "LS", ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "GS", Beschreibung = "Gutschriftsnummer",  Praefix = "GS", ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "ZA", Beschreibung = "Zahlungsnummer",     Praefix = "ZA", ErstelltVon = "SYSTEM" },
-            new NoSeries { Seriencode = "AU", Beschreibung = "Auftragsnummer",     Praefix = "AU", ErstelltVon = "SYSTEM" }
+            new NoSeries { Seriencode = "RE",  Beschreibung = "Rechnungsnummer",    Praefix = "RE",  ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "LS",  Beschreibung = "Lieferscheinnummer", Praefix = "LS",  ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "GS",  Beschreibung = "Gutschriftsnummer",  Praefix = "GS",  ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "ZA",  Beschreibung = "Zahlungsnummer",     Praefix = "ZA",  ErstelltVon = "SYSTEM" },
+            new NoSeries { Seriencode = "AUF", Beschreibung = "Auftragsnummer",     Praefix = "AUF", ErstelltVon = "SYSTEM" }
         );
 
         await _db.SaveChangesAsync();

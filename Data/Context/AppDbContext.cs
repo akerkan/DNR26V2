@@ -1,6 +1,8 @@
 ﻿using DNR26V2.Domain.Entities;
 using DNR26V2.Domain.Entities.MasterData;
 using DNR26V2.Domain.Entities.System;
+using DNR26V2.Domain.Entities.Orders;
+using DNR26V2.Domain.Entities.Deliveries;
 using Microsoft.EntityFrameworkCore;
 
 namespace DNR26V2.Data.Context;
@@ -29,6 +31,14 @@ public class AppDbContext : DbContext
     public DbSet<ProductAttribute>        ProductAttribute        { get; set; } = null!;
     public DbSet<ProductAttributeValue>   ProductAttributeValue   { get; set; } = null!;
     public DbSet<ProductAttributeMapping> ProductAttributeMapping { get; set; } = null!;
+
+    // ── Module 4: Orders ──────────────────────────────────────────────────────
+    public DbSet<Order>          Order          { get; set; } = null!;
+    public DbSet<OrderLine>      OrderLine      { get; set; } = null!;
+
+    // ── Module 5: Deliveries (entity needed for Buchen) ───────────────────────
+    public DbSet<DeliveryHeader> DeliveryHeader { get; set; } = null!;
+    public DbSet<DeliveryLine>   DeliveryLine   { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

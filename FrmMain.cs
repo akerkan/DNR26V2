@@ -2,6 +2,7 @@
 using DNR26V2.Domain.Configuration;
 using DNR26V2.Forms.Base;
 using DNR26V2.Forms.MasterData;
+using DNR26V2.Forms.Orders;
 using DNR26V2.Forms.Settings;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -61,10 +62,10 @@ public partial class FrmMain : Form
 
     // ── Stammdaten-Menü ───────────────────────────────────────────────────────
 
-    private FrmCustomerList?          FrmCustomerListInstance;
-    private FrmProductList?           FrmProductListInstance;
-    private FrmProductAttributeList?  FrmProductAttributeListInstance;
-    private FrmCustomerProductTemplate? FrmCustomerProductTemplateInstance;
+    private FrmCustomerList?             FrmCustomerListInstance;
+    private FrmProductList?              FrmProductListInstance;
+    private FrmProductAttributeList?     FrmProductAttributeListInstance;
+    private FrmCustomerProductTemplate?  FrmCustomerProductTemplateInstance;
 
     private void MenuKunden_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmCustomerList>(ref FrmCustomerListInstance, this, () => GetService<FrmCustomerList>());
@@ -76,7 +77,14 @@ public partial class FrmMain : Form
         => BaseListForm.GetOrCreateInstance<FrmProductAttributeList>(ref FrmProductAttributeListInstance, this, () => GetService<FrmProductAttributeList>());
 
     private void MenuKundenArtikelvorlage_Click(object? sender, EventArgs e)
-    => BaseListForm.GetOrCreateInstance<FrmCustomerProductTemplate>(ref FrmCustomerProductTemplateInstance, this,() => GetService<FrmCustomerProductTemplate>());
+        => BaseListForm.GetOrCreateInstance<FrmCustomerProductTemplate>(ref FrmCustomerProductTemplateInstance, this, () => GetService<FrmCustomerProductTemplate>());
+
+    // ── Verkauf-Menü ──────────────────────────────────────────────────────────
+
+    private FrmOrderEntry? FrmOrderEntryInstance;
+
+    private void MenuAuftragserfassung_Click(object? sender, EventArgs e)
+        => BaseListForm.GetOrCreateInstance<FrmOrderEntry>(ref FrmOrderEntryInstance, this, () => GetService<FrmOrderEntry>());
 
     private void OnMenuItemNotImplemented(object? sender, EventArgs e)
     {

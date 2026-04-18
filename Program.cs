@@ -1,10 +1,17 @@
-﻿using DNR26V2.Data.Context;
+﻿using DNR26V2.Data;
+using DNR26V2.Data.Context;
 using DNR26V2.Data.Seed;
 using DNR26V2.Domain.Configuration;
+using DNR26V2.Domain.Entities.Deliveries;
+using DNR26V2.Domain.Entities.MasterData;
+using DNR26V2.Domain.Entities.Orders;
 using DNR26V2.Forms.MasterData;
+using DNR26V2.Forms.Orders;
 using DNR26V2.Forms.Settings;
 using DNR26V2.Helpers;
+using DNR26V2.Services.Deliveries;
 using DNR26V2.Services.MasterData;
+using DNR26V2.Services.Orders;
 using DNR26V2.Services.System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -72,14 +79,16 @@ static class Program
         // --- Modul 2: Stammdaten-Services ---
         services.AddScoped<IRouteService,          RouteService>();
         services.AddScoped<IDriverService,         DriverService>();
+        services.AddScoped<ICustomerService,        CustomerService>();          // ← NEU
 
         // --- Modul 3: Produktstammdaten-Services ---
         services.AddScoped<IProductService,          ProductService>();
         services.AddScoped<IProductAttributeService, ProductAttributeService>();
+        services.AddScoped<ICustomerProductService,  CustomerProductService>();
 
         // --- Modul 4: Kunden-Bearbeitungs-Services ---
-        services.AddScoped<ICustomerService,        CustomerService>();          // ← NEU
-        services.AddScoped<ICustomerProductService, CustomerProductService>();
+        services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IDeliveryService, DeliveryService>();
 
         // --- Forms ---
         services.AddTransient<FrmMain>();
@@ -96,6 +105,8 @@ static class Program
                 sp.GetRequiredService<ICustomerService>(),
                 sp.GetRequiredService<IProductService>(),
                 sp.GetRequiredService<ICustomerProductService>()));
+        services.AddTransient<FrmOrderEntry>(sp =>
+            new FrmOrderEntry(sp.GetRequiredService<IOrderService>()));
 
         return services;
     }

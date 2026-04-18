@@ -39,7 +39,7 @@ partial class FrmMain
         // --- Verkauf ---
         var menuVerkauf = new ToolStripMenuItem("&Verkauf");
         var menuAuftraege = new ToolStripMenuItem("&Aufträge", null, OnMenuItemNotImplemented);
-        var menuTagesbestellung = new ToolStripMenuItem("&Tagesbestellung", null, OnMenuItemNotImplemented);
+        var menuTagesbestellung = new ToolStripMenuItem("&Tagesbestellung", null, MenuAuftragserfassung_Click);
         var menuLieferungen = new ToolStripMenuItem("&Lieferungen", null, OnMenuItemNotImplemented);
         var menuTouren = new ToolStripMenuItem("T&ouren", null, OnMenuItemNotImplemented);
         menuVerkauf.DropDownItems.AddRange(new ToolStripItem[]

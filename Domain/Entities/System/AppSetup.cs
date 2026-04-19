@@ -45,4 +45,15 @@ public class AppSetup : AuditableEntity
 
     // New: enforce that customer must have a Tour before saving/freigeben
     public bool TurKontrolle { get; set; } = false;
+
+    // Neue konfigurierbare Farben (hex), UI-Bereich
+    public string ColorOrderOffen { get; set; } = "#FFFFC8";        // Gelb (Default: 255,255,200)
+    public string ColorOrderFreigegeben { get; set; } = "#C8E6FF";  // Hellblau (Default: 200,230,255)
+    public string ColorOrderGebucht { get; set; } = "#C8FFC8";      // Grün (Default: 200,255,200)
+    public string ColorOrderStorniert { get; set; } = "#F0F0F0";    // Grau (Default: 240,240,240)
+    // Optional: Fore-Color für Status-Label (falls benötigt)
+    public string? ColorOrderLabelOffen { get; set; } = null;
+    public string? ColorOrderLabelFreigegeben { get; set; } = null;
+    public string? ColorOrderLabelGebucht { get; set; } = null;
+    public string? ColorOrderLabelStorniert { get; set; } = null;
 }

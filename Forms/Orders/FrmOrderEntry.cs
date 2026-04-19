@@ -6,6 +6,8 @@ using DNR26V2.Forms.Base;
 using DNR26V2.Services.Orders;
 using DNR26V2.Data.Context;
 using Microsoft.EntityFrameworkCore; // <-- Diese using-Direktive ergänzen
+// using-Liste: Ergänze
+using DNR26V2.Helpers;
 
 namespace DNR26V2.Forms.Orders;
 
@@ -160,6 +162,10 @@ public partial class FrmOrderEntry : BaseListForm
         {
             var setup = await _db.AppSetup.AsNoTracking().FirstOrDefaultAsync();
             _turKontrolleEnabled = setup?.TurKontrolle ?? false;
+
+            // Konfiguriere Farben aus AppSetup(wenn vorhanden)
+            StatusColorHelper.Configure(setup);
+
         }
         catch
         {
@@ -432,14 +438,17 @@ public partial class FrmOrderEntry : BaseListForm
         if (e.RowIndex < 0) return;
         if (dgwKunden.Rows[e.RowIndex].DataBoundItem is not OrderKundeListDto dto) return;
 
-        dgwKunden.Rows[e.RowIndex].DefaultCellStyle.BackColor = dto.AuftragStatus switch
-        {
-            OrderStatus.Gebucht => Color.FromArgb(200, 255, 200),   // green
-            OrderStatus.Freigegeben => Color.FromArgb(200, 230, 255),   // light blue
-            OrderStatus.Offen => Color.FromArgb(255, 255, 200),   // yellow
-            OrderStatus.Storniert => Color.FromArgb(240, 240, 240),   // grey
-            _ => SystemColors.Window
-        };
+        dgwKunden.Rows[e.RowIndex].DefaultCellStyle.BackColor =
+        StatusColorHelper.GetOrderStatusBackColor(dto.AuftragStatus);
+
+        //dgwKunden.Rows[e.RowIndex].DefaultCellStyle.BackColor = dto.AuftragStatus switch
+        //{
+        //    OrderStatus.Gebucht => Color.FromArgb(200, 255, 200),   // green
+        //    OrderStatus.Freigegeben => Color.FromArgb(200, 230, 255),   // light blue
+        //    OrderStatus.Offen => Color.FromArgb(255, 255, 200),   // yellow
+        //    OrderStatus.Storniert => Color.FromArgb(240, 240, 240),   // grey
+        //    _ => SystemColors.Window
+        //};
     }
 
     // ── Load order positions + FactBox ────────────────────────────────────────
@@ -471,14 +480,18 @@ public partial class FrmOrderEntry : BaseListForm
             OrderStatus.Geloescht => "GELÖSCHT",
             _ => string.Empty
         };
-        lblAuftragStatus.ForeColor = _currentStatus switch
-        {
-            OrderStatus.Gebucht => Color.DarkGreen,
-            OrderStatus.Freigegeben => Color.SteelBlue,
-            OrderStatus.Offen => Color.DarkOrange,
-            OrderStatus.Storniert => Color.Gray,
-            _ => SystemColors.ControlText
-        };
+
+        // Änderung: LoadPositionenAsync — Label-Farbe mit Helper setzen
+        lblAuftragStatus.ForeColor = StatusColorHelper.GetOrderStatusLabelColor(_currentStatus);
+
+        //lblAuftragStatus.ForeColor = _currentStatus switch
+        //{
+        //    OrderStatus.Gebucht => Color.DarkGreen,
+        //    OrderStatus.Freigegeben => Color.SteelBlue,
+        //    OrderStatus.Offen => Color.DarkOrange,
+        //    OrderStatus.Storniert => Color.Gray,
+        //    _ => SystemColors.ControlText
+        //};
 
         // Load positions and FactBox in parallel
         IReadOnlyList<OrderLineDto> positionen;

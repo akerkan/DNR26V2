@@ -15,62 +15,68 @@ partial class FrmOrderEntry
         components = new System.ComponentModel.Container();
         DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
         DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
-        splitMain             = new SplitContainer();
-        dgwKunden             = new DataGridView();
-        pnlLinksTop           = new Panel();
-        pnlDatum              = new Panel();
-        dtpLieferdatum        = new DateTimePicker();
-        lblDatumCaption       = new Label();
-        pnlTage               = new Panel();
-        btnAlle               = new Button();
-        btnSo                 = new Button();
-        btnSa                 = new Button();
-        btnFr                 = new Button();
-        btnDo                 = new Button();
-        btnMi                 = new Button();
-        btnDi                 = new Button();
-        btnMo                 = new Button();
-        dgwPositionen         = new DataGridView();
-        colZeileId            = new DataGridViewTextBoxColumn();
-        colArtikelId          = new DataGridViewTextBoxColumn();
-        colArtikelnummer      = new DataGridViewTextBoxColumn();
-        colProduktname        = new DataGridViewTextBoxColumn();
-        colMenge              = new DataGridViewTextBoxColumn();
-        colGewicht            = new DataGridViewTextBoxColumn();
-        colPreis              = new DataGridViewTextBoxColumn();
-        colNotiz              = new DataGridViewTextBoxColumn();
-        cmsPositionen         = new ContextMenuStrip(components);
-        cmsMenuZeileLoeschen  = new ToolStripMenuItem();
-        cmsMenuTrenner        = new ToolStripSeparator();
-        cmsMenuHinzufuegen    = new ToolStripMenuItem();
-        pnlAktionen           = new Panel();
-        lblStatusInfo         = new Label();
-        btnStornieren         = new Button();
-        btnLoeschen           = new Button();
-        btnNachlieferung      = new Button();
-        btnHinzufuegen        = new Button();
-        btnFreigeben          = new Button();
-        btnSpeichern          = new Button();
-        btnBuchen             = new Button();
-        pnlFactBox            = new Panel();
-        lblFBOffeneAuftraege  = new Label();
-        lblFBOffenCaption     = new Label();
-        lblFBLetzterAuftrag   = new Label();
-        lblFBLetzterCaption   = new Label();
-        lblFBSaldo            = new Label();
-        lblFBSaldoCaption     = new Label();
-        lblFBTour             = new Label();
-        lblFBTourCaption      = new Label();
-        lblFBTitle            = new Label();
-        pnlKopf               = new Panel();
-        lblAuftragStatus      = new Label();
-        lblKundenname         = new Label();
+        splitMain = new SplitContainer();
+        dgwKunden = new DataGridView();
+        colKundeChecked = new DataGridViewCheckBoxColumn();
+        pnlLinksTop = new Panel();
+        pnlFilter = new Panel();
+        btnAlleFreigeben = new Button();
+        cmbTourFilter = new ComboBox();
+        txtKundeFilter = new TextBox();
+        pnlDatum = new Panel();
+        dtpLieferdatum = new DateTimePicker();
+        lblDatumCaption = new Label();
+        pnlTage = new Panel();
+        btnAlle = new Button();
+        btnSo = new Button();
+        btnSa = new Button();
+        btnFr = new Button();
+        btnDo = new Button();
+        btnMi = new Button();
+        btnDi = new Button();
+        btnMo = new Button();
+        dgwPositionen = new DataGridView();
+        colZeileId = new DataGridViewTextBoxColumn();
+        colArtikelId = new DataGridViewTextBoxColumn();
+        colArtikelnummer = new DataGridViewTextBoxColumn();
+        colProduktname = new DataGridViewTextBoxColumn();
+        colMenge = new DataGridViewTextBoxColumn();
+        colGewicht = new DataGridViewTextBoxColumn();
+        colPreis = new DataGridViewTextBoxColumn();
+        colNotiz = new DataGridViewTextBoxColumn();
+        cmsPositionen = new ContextMenuStrip(components);
+        cmsMenuZeileLoeschen = new ToolStripMenuItem();
+        cmsMenuTrenner = new ToolStripSeparator();
+        cmsMenuHinzufuegen = new ToolStripMenuItem();
+        pnlAktionen = new Panel();
+        lblStatusInfo = new Label();
+        btnStornieren = new Button();
+        btnLoeschen = new Button();
+        btnNachlieferung = new Button();
+        btnHinzufuegen = new Button();
+        btnFreigeben = new Button();
+        btnSpeichern = new Button();
+        btnBuchen = new Button();
+        pnlFactBox = new Panel();
+        lblFBOffeneAuftraege = new Label();
+        lblFBOffenCaption = new Label();
+        lblFBLetzterAuftrag = new Label();
+        lblFBLetzterCaption = new Label();
+        lblFBSaldo = new Label();
+        lblFBSaldoCaption = new Label();
+        lblFBTour = new Label();
+        lblFBTourCaption = new Label();
+        lblFBTitle = new Label();
+        pnlKopf = new Panel();
+        lblAuftragStatus = new Label();
+        lblKundenname = new Label();
         ((System.ComponentModel.ISupportInitialize)splitMain).BeginInit();
         splitMain.Panel1.SuspendLayout();
         splitMain.Panel2.SuspendLayout();
         splitMain.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgwKunden).BeginInit();
         pnlLinksTop.SuspendLayout();
+        pnlFilter.SuspendLayout();
         pnlDatum.SuspendLayout();
         pnlTage.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgwPositionen).BeginInit();
@@ -109,32 +115,75 @@ partial class FrmOrderEntry
         dgwKunden.BackgroundColor = SystemColors.Window;
         dgwKunden.BorderStyle = BorderStyle.Fixed3D;
         dgwKunden.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        dgwKunden.Columns.Add(colKundeChecked);
         dgwKunden.Dock = DockStyle.Fill;
-        dgwKunden.Location = new Point(0, 76);
+        dgwKunden.Location = new Point(0, 112);
         dgwKunden.MultiSelect = false;
         dgwKunden.Name = "dgwKunden";
-        dgwKunden.ReadOnly = true;
         dgwKunden.RowHeadersVisible = false;
         dgwKunden.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        dgwKunden.Size = new Size(420, 644);
+        dgwKunden.Size = new Size(420, 608);
         dgwKunden.TabIndex = 1;
+        // 
+        // colKundeChecked
+        // 
+        colKundeChecked.HeaderText = string.Empty;
+        colKundeChecked.MinimumWidth = 28;
+        colKundeChecked.Name = "colKundeChecked";
+        colKundeChecked.Width = 28;
         // 
         // pnlLinksTop
         // 
+        pnlLinksTop.Controls.Add(pnlFilter);
         pnlLinksTop.Controls.Add(pnlDatum);
         pnlLinksTop.Controls.Add(pnlTage);
         pnlLinksTop.Dock = DockStyle.Top;
         pnlLinksTop.Location = new Point(0, 0);
         pnlLinksTop.Name = "pnlLinksTop";
         pnlLinksTop.Padding = new Padding(4, 2, 4, 2);
-        pnlLinksTop.Size = new Size(420, 76);
+        pnlLinksTop.Size = new Size(420, 112);
         pnlLinksTop.TabIndex = 0;
+        // 
+        // pnlFilter
+        // 
+        pnlFilter.Controls.Add(btnAlleFreigeben);
+        pnlFilter.Controls.Add(cmbTourFilter);
+        pnlFilter.Controls.Add(txtKundeFilter);
+        pnlFilter.Dock = DockStyle.Fill;
+        pnlFilter.Location = new Point(4, 74);
+        pnlFilter.Name = "pnlFilter";
+        pnlFilter.Size = new Size(412, 36);
+        pnlFilter.TabIndex = 2;
+        // 
+        // txtKundeFilter
+        // 
+        txtKundeFilter.Location = new Point(0, 6);
+        txtKundeFilter.Name = "txtKundeFilter";
+        txtKundeFilter.PlaceholderText = "Kunde...";
+        txtKundeFilter.Size = new Size(150, 23);
+        txtKundeFilter.TabIndex = 0;
+        // 
+        // cmbTourFilter
+        // 
+        cmbTourFilter.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbTourFilter.Location = new Point(155, 5);
+        cmbTourFilter.Name = "cmbTourFilter";
+        cmbTourFilter.Size = new Size(90, 23);
+        cmbTourFilter.TabIndex = 1;
+        // 
+        // btnAlleFreigeben
+        // 
+        btnAlleFreigeben.Location = new Point(250, 4);
+        btnAlleFreigeben.Name = "btnAlleFreigeben";
+        btnAlleFreigeben.Size = new Size(120, 26);
+        btnAlleFreigeben.TabIndex = 2;
+        btnAlleFreigeben.Text = "Alle Freigeben";
         // 
         // pnlDatum
         // 
         pnlDatum.Controls.Add(dtpLieferdatum);
         pnlDatum.Controls.Add(lblDatumCaption);
-        pnlDatum.Dock = DockStyle.Fill;
+        pnlDatum.Dock = DockStyle.Top;
         pnlDatum.Location = new Point(4, 38);
         pnlDatum.Name = "pnlDatum";
         pnlDatum.Size = new Size(412, 36);
@@ -606,6 +655,8 @@ partial class FrmOrderEntry
         splitMain.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)dgwKunden).EndInit();
         pnlLinksTop.ResumeLayout(false);
+        pnlFilter.ResumeLayout(false);
+        pnlFilter.PerformLayout();
         pnlDatum.ResumeLayout(false);
         pnlDatum.PerformLayout();
         pnlTage.ResumeLayout(false);
@@ -620,33 +671,38 @@ partial class FrmOrderEntry
 
     // ── Fields ────────────────────────────────────────────────────────────────
     private SplitContainer splitMain;
-    private Panel          pnlLinksTop;
-    private Panel          pnlTage;
-    private Button         btnMo;
-    private Button         btnDi;
-    private Button         btnMi;
-    private Button         btnDo;
-    private Button         btnFr;
-    private Button         btnSa;
-    private Button         btnSo;
-    private Button         btnAlle;
-    private Panel          pnlDatum;
-    private Label          lblDatumCaption;
+    private Panel pnlLinksTop;
+    private Panel pnlTage;
+    private Button btnMo;
+    private Button btnDi;
+    private Button btnMi;
+    private Button btnDo;
+    private Button btnFr;
+    private Button btnSa;
+    private Button btnSo;
+    private Button btnAlle;
+    private Panel pnlDatum;
+    private Label lblDatumCaption;
     private DateTimePicker dtpLieferdatum;
-    private DataGridView   dgwKunden;
-    private Panel          pnlKopf;
-    private Label          lblKundenname;
-    private Label          lblAuftragStatus;
-    private Panel          pnlAktionen;
-    private Button         btnBuchen;
-    private Button         btnSpeichern;
-    private Button         btnFreigeben;
-    private Button         btnHinzufuegen;
-    private Button         btnNachlieferung;
-    private Button         btnStornieren;
-    private Button         btnLoeschen;
-    private Label          lblStatusInfo;
-    private DataGridView   dgwPositionen;
+    private Panel pnlFilter;
+    private TextBox txtKundeFilter;
+    private ComboBox cmbTourFilter;
+    private Button btnAlleFreigeben;
+    private DataGridView dgwKunden;
+    private DataGridViewCheckBoxColumn colKundeChecked;
+    private Panel pnlKopf;
+    private Label lblKundenname;
+    private Label lblAuftragStatus;
+    private Panel pnlAktionen;
+    private Button btnBuchen;
+    private Button btnSpeichern;
+    private Button btnFreigeben;
+    private Button btnHinzufuegen;
+    private Button btnNachlieferung;
+    private Button btnStornieren;
+    private Button btnLoeschen;
+    private Label lblStatusInfo;
+    private DataGridView dgwPositionen;
     private DataGridViewTextBoxColumn colZeileId;
     private DataGridViewTextBoxColumn colArtikelId;
     private DataGridViewTextBoxColumn colArtikelnummer;
@@ -656,7 +712,7 @@ partial class FrmOrderEntry
     private DataGridViewTextBoxColumn colPreis;
     private DataGridViewTextBoxColumn colNotiz;
     // ── ContextMenu ───────────────────────────────────────────────────────────
-    private ContextMenuStrip  cmsPositionen;
+    private ContextMenuStrip cmsPositionen;
     private ToolStripMenuItem cmsMenuZeileLoeschen;
     private ToolStripSeparator cmsMenuTrenner;
     private ToolStripMenuItem cmsMenuHinzufuegen;

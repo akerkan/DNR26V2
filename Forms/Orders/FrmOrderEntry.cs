@@ -13,15 +13,22 @@ public partial class FrmOrderEntry : BaseListForm
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     private DayOfWeek? _selectedDay;
-    private Button?    _activeDayBtn;
-    private bool       _suppressKundenChanged;
-    private bool       _isLoading;
+    private Button? _activeDayBtn;
+    private bool _suppressKundenChanged;
+    private bool _isLoading;
+    private bool _suppressFilter;
 
-    private int          _selectedKundeId;
-    private string       _selectedKundename = string.Empty;
-    private bool         _preisAusblenden;
-    private int?         _currentAuftragId;
+    private int _selectedKundeId;
+    private string _selectedKundename = string.Empty;
+    private bool _preisAusblenden;
+    private int? _currentAuftragId;
     private OrderStatus? _currentStatus;
+
+    // Full loaded list — filter works in-memory on this
+    private IReadOnlyList<OrderKundeListDto> _kundenListe = [];
+
+    // Tracks which KundeIds are checked (checkbox column)
+    private readonly HashSet<int> _checkedKundeIds = new();
 
     // Cached article list for Hinzufügen dialog (refreshed once per form load)
     private IReadOnlyList<ArtikelSuchDto> _artikelCache = [];
@@ -45,14 +52,14 @@ public partial class FrmOrderEntry : BaseListForm
 
     private void FixPositionenColumnNames()
     {
-        colZeileId      .Name = "_ZeileId";
-        colArtikelId    .Name = "_ArtikelId";
+        colZeileId.Name = "_ZeileId";
+        colArtikelId.Name = "_ArtikelId";
         colArtikelnummer.Name = "Artikelnummer";
-        colProduktname  .Name = "Produktname";
-        colMenge        .Name = "Menge";
-        colGewicht      .Name = "Gewicht";
-        colPreis        .Name = "Preis";
-        colNotiz        .Name = "Notiz";
+        colProduktname.Name = "Produktname";
+        colMenge.Name = "Menge";
+        colGewicht.Name = "Gewicht";
+        colPreis.Name = "Preis";
+        colNotiz.Name = "Notiz";
     }
 
     private static bool IsDesignMode() =>
@@ -66,32 +73,39 @@ public partial class FrmOrderEntry : BaseListForm
 
         dtpLieferdatum.ValueChanged += async (_, _) => await ReloadAsync();
 
-        btnMo.Click   += (_, _) => SelectDay(btnMo,   DayOfWeek.Monday);
-        btnDi.Click   += (_, _) => SelectDay(btnDi,   DayOfWeek.Tuesday);
-        btnMi.Click   += (_, _) => SelectDay(btnMi,   DayOfWeek.Wednesday);
-        btnDo.Click   += (_, _) => SelectDay(btnDo,   DayOfWeek.Thursday);
-        btnFr.Click   += (_, _) => SelectDay(btnFr,   DayOfWeek.Friday);
-        btnSa.Click   += (_, _) => SelectDay(btnSa,   DayOfWeek.Saturday);
-        btnSo.Click   += (_, _) => SelectDay(btnSo,   DayOfWeek.Sunday);
+        btnMo.Click += (_, _) => SelectDay(btnMo, DayOfWeek.Monday);
+        btnDi.Click += (_, _) => SelectDay(btnDi, DayOfWeek.Tuesday);
+        btnMi.Click += (_, _) => SelectDay(btnMi, DayOfWeek.Wednesday);
+        btnDo.Click += (_, _) => SelectDay(btnDo, DayOfWeek.Thursday);
+        btnFr.Click += (_, _) => SelectDay(btnFr, DayOfWeek.Friday);
+        btnSa.Click += (_, _) => SelectDay(btnSa, DayOfWeek.Saturday);
+        btnSo.Click += (_, _) => SelectDay(btnSo, DayOfWeek.Sunday);
         btnAlle.Click += (_, _) => SelectDay(btnAlle, null);
 
+        txtKundeFilter.TextChanged += (_, _) => { if (!_suppressFilter) OnFilterChanged(); };
+        cmbTourFilter.SelectedIndexChanged += (_, _) => { if (!_suppressFilter) OnFilterChanged(); };
+
         dgwKunden.SelectionChanged += DgwKunden_SelectionChanged;
-        dgwKunden.CellFormatting   += DgwKunden_CellFormatting;
+        dgwKunden.CellFormatting += DgwKunden_CellFormatting;
+        dgwKunden.KeyDown += DgwKunden_KeyDown;
+        dgwKunden.CurrentCellDirtyStateChanged += DgwKunden_DirtyStateChanged;
+        dgwKunden.CellValueChanged += DgwKunden_CheckboxValueChanged;
 
         dgwPositionen.EditingControlShowing += DgwPositionen_EditingControlShowing;
         dgwPositionen.KeyDown += DgwPositionen_KeyDown;
 
-        btnBuchen.Click        += BtnBuchen_Click;
-        btnFreigeben.Click     += BtnFreigeben_Click;
-        btnSpeichern.Click     += BtnSpeichern_Click;
-        btnHinzufuegen.Click   += BtnHinzufuegen_Click;
+        btnBuchen.Click += BtnBuchen_Click;
+        btnFreigeben.Click += BtnFreigeben_Click;
+        btnSpeichern.Click += BtnSpeichern_Click;
+        btnHinzufuegen.Click += BtnHinzufuegen_Click;
         btnNachlieferung.Click += BtnNachlieferung_Click;
-        btnStornieren.Click    += BtnStornieren_Click;
-        btnLoeschen.Click      += BtnLoeschen_Click;
+        btnStornieren.Click += BtnStornieren_Click;
+        btnLoeschen.Click += BtnLoeschen_Click;
+        btnAlleFreigeben.Click += BtnAlleFreigeben_Click;
 
-        cmsPositionen.Opening          += CmsPositionen_Opening;
-        cmsMenuZeileLoeschen.Click     += (_, _) => DeleteSelectedZeile();
-        cmsMenuHinzufuegen.Click       += BtnHinzufuegen_Click;
+        cmsPositionen.Opening += CmsPositionen_Opening;
+        cmsMenuZeileLoeschen.Click += (_, _) => DeleteSelectedZeile();
+        cmsMenuHinzufuegen.Click += BtnHinzufuegen_Click;
     }
 
     // ── Load ──────────────────────────────────────────────────────────────────
@@ -113,14 +127,14 @@ public partial class FrmOrderEntry : BaseListForm
 
         var todayBtn = dtpLieferdatum.Value.DayOfWeek switch
         {
-            DayOfWeek.Monday    => btnMo,
-            DayOfWeek.Tuesday   => btnDi,
+            DayOfWeek.Monday => btnMo,
+            DayOfWeek.Tuesday => btnDi,
             DayOfWeek.Wednesday => btnMi,
-            DayOfWeek.Thursday  => btnDo,
-            DayOfWeek.Friday    => btnFr,
-            DayOfWeek.Saturday  => btnSa,
-            DayOfWeek.Sunday    => btnSo,
-            _                   => btnAlle
+            DayOfWeek.Thursday => btnDo,
+            DayOfWeek.Friday => btnFr,
+            DayOfWeek.Saturday => btnSa,
+            DayOfWeek.Sunday => btnSo,
+            _ => btnAlle
         };
         SelectDay(todayBtn, dtpLieferdatum.Value.DayOfWeek);
     }
@@ -149,12 +163,12 @@ public partial class FrmOrderEntry : BaseListForm
         btn.BackColor = Color.SteelBlue;
         btn.ForeColor = Color.White;
         _activeDayBtn = btn;
-        _selectedDay  = day;
+        _selectedDay = day;
 
         _ = ReloadAsync();
     }
 
-    // ── Reload customer list ──────────────────────────────────────────────────
+    // ── Reload customer list from DB ──────────────────────────────────────────
 
     private async Task ReloadAsync()
     {
@@ -166,19 +180,80 @@ public partial class FrmOrderEntry : BaseListForm
         try
         {
             Cursor = Cursors.WaitCursor;
-            liste  = await _orderService.GetKundenListeAsync(
+            liste = await _orderService.GetKundenListeAsync(
                 dtpLieferdatum.Value.Date, _selectedDay);
         }
         catch (Exception ex) { ShowError($"Ladefehler:\n{ex.Message}"); return; }
         finally { Cursor = Cursors.Default; _lock.Release(); }
 
+        // Store full list; auto-check all rows that already have an Auftrag
+        _kundenListe = liste;
+        _checkedKundeIds.Clear();
+        foreach (var k in _kundenListe)
+            if (k.AuftragId > 0)
+                _checkedKundeIds.Add(k.Id);
+
+        // Rebuild Tour-ComboBox without triggering the filter event
+        RefreshTourFilter();
+
+        // Bind filtered grid
+        ApplyFilter();
+
+        var id = SelectedKundeId();
+        if (id > 0) await LoadPositionenAsync(id);
+        else ClearRightPanel();
+    }
+
+    // ── Tour filter rebuild ───────────────────────────────────────────────────
+
+    private void RefreshTourFilter()
+    {
+        _suppressFilter = true;
+        try
+        {
+            var prevTour = cmbTourFilter.SelectedItem as string;
+            cmbTourFilter.Items.Clear();
+            cmbTourFilter.Items.Add("Alle");
+
+            foreach (var tour in _kundenListe
+                .Select(k => k.Tur)
+                .Where(t => t is not null)
+                .Distinct()
+                .OrderBy(t => t))
+                cmbTourFilter.Items.Add(tour!);
+
+            if (prevTour is not null && cmbTourFilter.Items.Contains(prevTour))
+                cmbTourFilter.SelectedItem = prevTour;
+            else
+                cmbTourFilter.SelectedIndex = 0;
+        }
+        finally { _suppressFilter = false; }
+    }
+
+    // ── Filter (in-memory, no DB call) ────────────────────────────────────────
+
+    private void ApplyFilter()
+    {
+        if (_isLoading) return;
+
+        var suche = txtKundeFilter.Text.Trim();
+        var tourWahl = cmbTourFilter.SelectedItem as string;
+
+        var gefiltert = _kundenListe
+            .Where(k => suche == string.Empty ||
+                        k.Kundenname.Contains(suche, StringComparison.OrdinalIgnoreCase))
+            .Where(k => tourWahl == null || tourWahl == "Alle" ||
+                        k.Tur == tourWahl)
+            .ToList();
+
         _suppressKundenChanged = true;
         try
         {
-            var prevId = SelectedKundeId();
+            var prevId = _selectedKundeId;
             dgwKunden.DataSource = null;
-            dgwKunden.DataSource = liste.ToList();
+            dgwKunden.DataSource = gefiltert;
             StyleKundenGrid();
+            ApplyKundenCheckmarks();
 
             if (prevId > 0) SelectKundeById(prevId);
             else if (dgwKunden.Rows.Count > 0)
@@ -186,27 +261,107 @@ public partial class FrmOrderEntry : BaseListForm
         }
         finally { _suppressKundenChanged = false; }
 
-        var id = SelectedKundeId();
-        if (id > 0) await LoadPositionenAsync(id);
-        else        ClearRightPanel();
+        UpdateAlleFreigebenButton();
+    }
+
+    // Triggered by user changing filter controls
+    private void OnFilterChanged()
+    {
+        var prevId = _selectedKundeId;
+        ApplyFilter();
+        var newId = SelectedKundeId();
+        if (newId != prevId)
+        {
+            if (newId > 0) _ = LoadPositionenAsync(newId);
+            else ClearRightPanel();
+        }
     }
 
     private void StyleKundenGrid()
     {
         if (dgwKunden.Columns.Count == 0) return;
-        foreach (DataGridViewColumn c in dgwKunden.Columns) c.Visible = false;
+
+        // Hide all except the checkbox column; mark bound columns read-only
+        foreach (DataGridViewColumn c in dgwKunden.Columns)
+        {
+            if (c.Name == "colKundeChecked") { c.Visible = true; continue; }
+            c.Visible = false;
+            c.ReadOnly = true;
+        }
+
         ShowKol("Kundenname", "Kunde", 0, fill: true);
-        ShowKol("Tur",        "Tour",  55);
+        ShowKol("Tur", "Tour", 55);
     }
 
     private void ShowKol(string name, string header, int width, bool fill = false)
     {
         if (!dgwKunden.Columns.Contains(name)) return;
         var col = dgwKunden.Columns[name];
-        col.Visible    = true;
+        col.Visible = true;
         col.HeaderText = header;
         if (fill) col.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
+    }
+
+    // ── Checkbox: apply state from _checkedKundeIds to visible rows ───────────
+
+    private void ApplyKundenCheckmarks()
+    {
+        foreach (DataGridViewRow row in dgwKunden.Rows)
+        {
+            if (row.DataBoundItem is not OrderKundeListDto dto) continue;
+            row.Cells["colKundeChecked"].Value = _checkedKundeIds.Contains(dto.Id);
+        }
+    }
+
+    // ── Checkbox: commit on single click ──────────────────────────────────────
+
+    private void DgwKunden_DirtyStateChanged(object? s, EventArgs e)
+    {
+        if (dgwKunden.IsCurrentCellDirty &&
+            dgwKunden.CurrentCell?.OwningColumn?.Name == "colKundeChecked")
+            dgwKunden.CommitEdit(DataGridViewDataErrorContexts.Commit);
+    }
+
+    private void DgwKunden_CheckboxValueChanged(object? s, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0) return;
+        if (dgwKunden.Columns[e.ColumnIndex]?.Name != "colKundeChecked") return;
+        if (dgwKunden.Rows[e.RowIndex].DataBoundItem is not OrderKundeListDto dto) return;
+
+        bool isChecked = dgwKunden.Rows[e.RowIndex].Cells["colKundeChecked"].Value is true;
+        if (isChecked) _checkedKundeIds.Add(dto.Id);
+        else _checkedKundeIds.Remove(dto.Id);
+
+        UpdateAlleFreigebenButton();
+    }
+
+    // ── Spacebar: toggle checkbox on current row ──────────────────────────────
+
+    private void DgwKunden_KeyDown(object? s, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Space) return;
+        if (dgwKunden.CurrentRow?.DataBoundItem is not OrderKundeListDto dto) return;
+
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+
+        bool current = _checkedKundeIds.Contains(dto.Id);
+        if (current) _checkedKundeIds.Remove(dto.Id);
+        else _checkedKundeIds.Add(dto.Id);
+
+        dgwKunden.CurrentRow.Cells["colKundeChecked"].Value = !current;
+        UpdateAlleFreigebenButton();
+    }
+
+    // ── "Alle Freigeben" button state ─────────────────────────────────────────
+
+    private void UpdateAlleFreigebenButton()
+    {
+        btnAlleFreigeben.Enabled = _kundenListe.Any(k =>
+            _checkedKundeIds.Contains(k.Id) &&
+            k.AuftragId > 0 &&
+            (k.AuftragStatus is null || k.AuftragStatus == OrderStatus.Offen));
     }
 
     // ── Customer grid color coding ────────────────────────────────────────────
@@ -218,11 +373,11 @@ public partial class FrmOrderEntry : BaseListForm
 
         dgwKunden.Rows[e.RowIndex].DefaultCellStyle.BackColor = dto.AuftragStatus switch
         {
-            OrderStatus.Gebucht     => Color.FromArgb(200, 255, 200),   // green
+            OrderStatus.Gebucht => Color.FromArgb(200, 255, 200),   // green
             OrderStatus.Freigegeben => Color.FromArgb(200, 230, 255),   // light blue
-            OrderStatus.Offen       => Color.FromArgb(255, 255, 200),   // yellow
-            OrderStatus.Storniert   => Color.FromArgb(240, 240, 240),   // grey
-            _                       => SystemColors.Window
+            OrderStatus.Offen => Color.FromArgb(255, 255, 200),   // yellow
+            OrderStatus.Storniert => Color.FromArgb(240, 240, 240),   // grey
+            _ => SystemColors.Window
         };
     }
 
@@ -239,43 +394,43 @@ public partial class FrmOrderEntry : BaseListForm
 
         var kundeDto = dgwKunden.CurrentRow?.DataBoundItem as OrderKundeListDto;
 
-        _selectedKundeId   = kundeId;
-        _selectedKundename = kundeDto?.Kundenname      ?? string.Empty;
-        _preisAusblenden   = kundeDto?.PreisAusblenden ?? false;
-        _currentAuftragId  = kundeDto?.AuftragId;
-        _currentStatus     = kundeDto?.AuftragStatus;
+        _selectedKundeId = kundeId;
+        _selectedKundename = kundeDto?.Kundenname ?? string.Empty;
+        _preisAusblenden = kundeDto?.PreisAusblenden ?? false;
+        _currentAuftragId = kundeDto?.AuftragId;
+        _currentStatus = kundeDto?.AuftragStatus;
 
-        lblKundenname.Text    = _selectedKundename;
+        lblKundenname.Text = _selectedKundename;
         lblAuftragStatus.Text = _currentStatus switch
         {
-            OrderStatus.Gebucht     => "✓ GEBUCHT",
+            OrderStatus.Gebucht => "✓ GEBUCHT",
             OrderStatus.Freigegeben => "FREIGEGEBEN",
-            OrderStatus.Offen       => "OFFEN",
-            OrderStatus.Storniert   => "STORNIERT",
-            OrderStatus.Geloescht   => "GELÖSCHT",
-            _                       => string.Empty
+            OrderStatus.Offen => "OFFEN",
+            OrderStatus.Storniert => "STORNIERT",
+            OrderStatus.Geloescht => "GELÖSCHT",
+            _ => string.Empty
         };
         lblAuftragStatus.ForeColor = _currentStatus switch
         {
-            OrderStatus.Gebucht     => Color.DarkGreen,
+            OrderStatus.Gebucht => Color.DarkGreen,
             OrderStatus.Freigegeben => Color.SteelBlue,
-            OrderStatus.Offen       => Color.DarkOrange,
-            OrderStatus.Storniert   => Color.Gray,
-            _                       => SystemColors.ControlText
+            OrderStatus.Offen => Color.DarkOrange,
+            OrderStatus.Storniert => Color.Gray,
+            _ => SystemColors.ControlText
         };
 
         // Load positions and FactBox in parallel
         IReadOnlyList<OrderLineDto> positionen;
-        KundenFactBoxDto?            factBox;
+        KundenFactBoxDto? factBox;
 
         await _lock.WaitAsync();
         try
         {
             var posTask = _orderService.GetPositionenAsync(kundeId, dtpLieferdatum.Value.Date);
-            var fbTask  = _orderService.GetKundenFactBoxAsync(kundeId);
+            var fbTask = _orderService.GetKundenFactBoxAsync(kundeId);
             await Task.WhenAll(posTask, fbTask);
             positionen = posTask.Result;
-            factBox    = fbTask.Result;
+            factBox = fbTask.Result;
         }
         catch (Exception ex) { ShowError($"Ladefehler:\n{ex.Message}"); return; }
         finally { _lock.Release(); }
@@ -287,44 +442,55 @@ public partial class FrmOrderEntry : BaseListForm
         {
             var idx = dgwPositionen.Rows.Add();
             var row = dgwPositionen.Rows[idx];
-            row.Cells["_ZeileId"]    .Value = pos.OrderLineId;
-            row.Cells["_ArtikelId"]  .Value = pos.ArtikelId;
+            row.Cells["_ZeileId"].Value = pos.OrderLineId;
+            row.Cells["_ArtikelId"].Value = pos.ArtikelId;
             row.Cells["Artikelnummer"].Value = pos.Artikelnummer;
-            row.Cells["Produktname"] .Value = pos.Produktname;
-            row.Cells["Menge"]       .Value = pos.Menge;
-            row.Cells["Gewicht"]     .Value = pos.Gewicht;
-            row.Cells["Preis"]       .Value = pos.Preis;
-            row.Cells["Notiz"]       .Value = pos.Notiz;
+            row.Cells["Produktname"].Value = pos.Produktname;
+            row.Cells["Menge"].Value = pos.Menge;
+            row.Cells["Gewicht"].Value = pos.Gewicht;
+            row.Cells["Preis"].Value = pos.Preis;
+            row.Cells["Notiz"].Value = pos.Notiz;
+        }
+
+        // Set focus to first editable cell (Menge) in first row and begin edit
+        if (dgwPositionen.Rows.Count > 0)
+        {
+            var startCell = GetFirstEditableCell(dgwPositionen.Rows[0]);
+            if (startCell is not null)
+            {
+                dgwPositionen.CurrentCell = startCell;
+                dgwPositionen.Focus();
+                dgwPositionen.BeginEdit(true);
+            }
         }
 
         colPreis.Visible = !_preisAusblenden;
 
         // ── Editability ───────────────────────────────────────────────────────
-        bool istOffen       = _currentStatus is null or OrderStatus.Offen;
-        bool istFreigeben   = _currentStatus == OrderStatus.Freigegeben;
-        bool istGebucht     = _currentStatus == OrderStatus.Gebucht;
+        bool istOffen = _currentStatus is null or OrderStatus.Offen;
+        bool istFreigeben = _currentStatus == OrderStatus.Freigegeben;
+        bool istGebucht = _currentStatus == OrderStatus.Gebucht;
 
-        // Configure editable columns: only Menge, Gewicht, Preis, Notiz editable when order is Offen
-        btnSpeichern.Enabled        = istOffen;
-        btnHinzufuegen.Enabled      = istOffen;
-        // Ensure grid overall is editable so per-column ReadOnly works
+        btnSpeichern.Enabled = istOffen;
+        btnHinzufuegen.Enabled = istOffen;
         dgwPositionen.ReadOnly = false;
-        // set columns readonly state
+
         foreach (DataGridViewColumn c in dgwPositionen.Columns)
         {
             if (c.Name is null) { c.ReadOnly = true; continue; }
             var editable = istOffen && (c.Name == "Menge" || c.Name == "Gewicht" || c.Name == "Preis" || c.Name == "Notiz");
             c.ReadOnly = !editable;
         }
-        btnFreigeben.Enabled        = istOffen && _currentAuftragId > 0;
-        btnFreigeben.Visible        = istOffen;
-        btnBuchen.Enabled           = istOffen || istFreigeben;
-        btnLoeschen.Enabled         = istOffen && _currentAuftragId > 0;
-        btnLoeschen.Visible         = istOffen;
-        btnStornieren.Enabled       = istFreigeben || istGebucht;
-        btnStornieren.Visible       = istFreigeben || istGebucht;
-        btnNachlieferung.Enabled    = istGebucht;
-        btnNachlieferung.Visible    = istGebucht;
+
+        btnFreigeben.Enabled = istOffen && _currentAuftragId > 0;
+        btnFreigeben.Visible = istOffen;
+        btnBuchen.Enabled = istOffen || istFreigeben;
+        btnLoeschen.Enabled = istOffen && _currentAuftragId > 0;
+        btnLoeschen.Visible = istOffen;
+        btnStornieren.Enabled = istFreigeben || istGebucht;
+        btnStornieren.Visible = istFreigeben || istGebucht;
+        btnNachlieferung.Enabled = istGebucht;
+        btnNachlieferung.Visible = istGebucht;
     }
 
     // Handle Enter navigation inside editing control
@@ -357,10 +523,7 @@ public partial class FrmOrderEntry : BaseListForm
             e.Handled = true;
             e.SuppressKeyPress = true;
             if (dgwPositionen.CurrentCell is not null && dgwPositionen.IsCurrentCellInEditMode)
-            {
-                // let editing control handler manage
                 return;
-            }
             MoveToNextEditableCell();
         }
     }
@@ -369,16 +532,12 @@ public partial class FrmOrderEntry : BaseListForm
     {
         if (dgwPositionen.CurrentCell is null) return;
         int row = dgwPositionen.CurrentCell.RowIndex;
-        int col = dgwPositionen.CurrentCell.ColumnIndex;
 
-        // list of editable column names in display order
         var editableNames = new[] { "Menge", "Gewicht", "Preis", "Notiz" };
-
-        // find current column name
         var curName = dgwPositionen.CurrentCell.OwningColumn?.Name;
         if (curName is null) return;
 
-        // if current is last editable column -> move to next row Menge
+        // Last editable column → jump to Menge of next row
         if (curName == "Notiz")
         {
             int nextRow = row + 1;
@@ -390,7 +549,7 @@ public partial class FrmOrderEntry : BaseListForm
             return;
         }
 
-        // otherwise move to next editable column in same row
+        // Move to next editable column in same row
         int startIndex = Array.IndexOf(editableNames, curName);
         for (int i = startIndex + 1; i < editableNames.Length; i++)
         {
@@ -403,7 +562,7 @@ public partial class FrmOrderEntry : BaseListForm
             return;
         }
 
-        // fallback: if none found, go to Menge of next row
+        // Fallback: Menge of next row
         int nr = row + 1;
         if (nr < dgwPositionen.Rows.Count)
         {
@@ -422,24 +581,24 @@ public partial class FrmOrderEntry : BaseListForm
     {
         if (fb is null)
         {
-            lblFBTour.Text            = string.Empty;
-            lblFBSaldo.Text           = string.Empty;
-            lblFBLetzterAuftrag.Text  = string.Empty;
+            lblFBTour.Text = string.Empty;
+            lblFBSaldo.Text = string.Empty;
+            lblFBLetzterAuftrag.Text = string.Empty;
             lblFBOffeneAuftraege.Text = string.Empty;
             lblFBSaldoCaption.Visible = true;
-            lblFBSaldo.Visible        = true;
+            lblFBSaldo.Visible = true;
             return;
         }
 
         lblFBTour.Text = fb.Tour ?? "—";
 
-        bool showSaldo            = !fb.PreisAusblenden;
+        bool showSaldo = !fb.PreisAusblenden;
         lblFBSaldoCaption.Visible = showSaldo;
-        lblFBSaldo.Visible        = showSaldo;
+        lblFBSaldo.Visible = showSaldo;
 
         if (showSaldo)
         {
-            lblFBSaldo.Text      = $"{fb.Saldo:N2} €";
+            lblFBSaldo.Text = $"{fb.Saldo:N2} €";
             lblFBSaldo.ForeColor = fb.Saldo < 0 ? Color.Crimson : Color.DarkGreen;
         }
 
@@ -447,7 +606,7 @@ public partial class FrmOrderEntry : BaseListForm
             ? fb.LetzterAuftrag.Value.ToString("dd.MM.yyyy")
             : "—";
 
-        lblFBOffeneAuftraege.Text      = fb.OffeneAuftraege.ToString();
+        lblFBOffeneAuftraege.Text = fb.OffeneAuftraege.ToString();
         lblFBOffeneAuftraege.ForeColor = fb.OffeneAuftraege > 0
             ? Color.DarkOrange
             : Color.DarkGreen;
@@ -455,26 +614,26 @@ public partial class FrmOrderEntry : BaseListForm
 
     private void ClearRightPanel()
     {
-        lblKundenname.Text    = "— Kunden auswählen —";
+        lblKundenname.Text = "— Kunden auswählen —";
         lblAuftragStatus.Text = string.Empty;
-        lblStatusInfo.Text    = string.Empty;
+        lblStatusInfo.Text = string.Empty;
         dgwPositionen.Rows.Clear();
         UpdateFactBox(null);
-        colPreis.Visible         = true;
-        _selectedKundeId         = 0;
-        _preisAusblenden         = false;
-        _currentAuftragId        = null;
-        _currentStatus           = null;
-        dgwPositionen.ReadOnly   = true;
-        btnBuchen.Enabled        = false;
-        btnSpeichern.Enabled     = false;
-        btnHinzufuegen.Enabled   = false;
-        btnFreigeben.Enabled     = false;
-        btnFreigeben.Visible     = true;
-        btnLoeschen.Enabled      = false;
-        btnLoeschen.Visible      = true;
-        btnStornieren.Enabled    = false;
-        btnStornieren.Visible    = false;
+        colPreis.Visible = true;
+        _selectedKundeId = 0;
+        _preisAusblenden = false;
+        _currentAuftragId = null;
+        _currentStatus = null;
+        dgwPositionen.ReadOnly = true;
+        btnBuchen.Enabled = false;
+        btnSpeichern.Enabled = false;
+        btnHinzufuegen.Enabled = false;
+        btnFreigeben.Enabled = false;
+        btnFreigeben.Visible = true;
+        btnLoeschen.Enabled = false;
+        btnLoeschen.Visible = true;
+        btnStornieren.Enabled = false;
+        btnStornieren.Visible = false;
         btnNachlieferung.Enabled = false;
         btnNachlieferung.Visible = false;
     }
@@ -494,20 +653,20 @@ public partial class FrmOrderEntry : BaseListForm
 
         var idx = dgwPositionen.Rows.Add();
         var row = dgwPositionen.Rows[idx];
-        row.Cells["_ZeileId"]    .Value = 0;
-        row.Cells["_ArtikelId"]  .Value = art.ArtikelId;
+        row.Cells["_ZeileId"].Value = 0;
+        row.Cells["_ArtikelId"].Value = art.ArtikelId;
         row.Cells["Artikelnummer"].Value = art.Artikelnummer;
-        row.Cells["Produktname"] .Value = art.Produktname;
-        row.Cells["Menge"]       .Value = 0m;
-        row.Cells["Gewicht"]     .Value = 0m;
-        row.Cells["Preis"]       .Value = art.VKPreis;
-        row.Cells["Notiz"]       .Value = string.Empty;
+        row.Cells["Produktname"].Value = art.Produktname;
+        row.Cells["Menge"].Value = 0m;
+        row.Cells["Gewicht"].Value = 0m;
+        row.Cells["Preis"].Value = art.VKPreis;
+        row.Cells["Notiz"].Value = string.Empty;
 
         dgwPositionen.CurrentCell = row.Cells["Menge"];
         dgwPositionen.BeginEdit(true);
     }
 
-    // ── Zeile löschen (Context menu + Delete key) ─────────────────────────────
+    // ── Zeile löschen ────────────────────────────────────────────────────────
 
     private void DeleteSelectedZeile()
     {
@@ -520,10 +679,10 @@ public partial class FrmOrderEntry : BaseListForm
 
     private void CmsPositionen_Opening(object? s, CancelEventArgs e)
     {
-        bool istOffen  = _currentStatus is null or OrderStatus.Offen;
-        bool hatZeile  = dgwPositionen.CurrentRow is not null && !dgwPositionen.CurrentRow.IsNewRow;
+        bool istOffen = _currentStatus is null or OrderStatus.Offen;
+        bool hatZeile = dgwPositionen.CurrentRow is not null && !dgwPositionen.CurrentRow.IsNewRow;
         cmsMenuZeileLoeschen.Enabled = istOffen && hatZeile;
-        cmsMenuHinzufuegen.Enabled   = istOffen && _selectedKundeId > 0;
+        cmsMenuHinzufuegen.Enabled = istOffen && _selectedKundeId > 0;
     }
 
     // ── Collect grid rows ─────────────────────────────────────────────────────
@@ -540,9 +699,9 @@ public partial class FrmOrderEntry : BaseListForm
 
             result.Add((
                 artikelId,
-                ParseDecimal(row.Cells["Menge"]  .Value),
-                ParseDecimal(row.Cells["Gewicht"] .Value),
-                ParseDecimal(row.Cells["Preis"]   .Value),
+                ParseDecimal(row.Cells["Menge"].Value),
+                ParseDecimal(row.Cells["Gewicht"].Value),
+                ParseDecimal(row.Cells["Preis"].Value),
                 row.Cells["Notiz"].Value?.ToString()
             ));
         }
@@ -555,7 +714,6 @@ public partial class FrmOrderEntry : BaseListForm
     {
         if (_selectedKundeId <= 0) return;
 
-        // Validate lines before calling service
         dgwPositionen.EndEdit();
         if (dgwPositionen.Rows.Count == 0)
         {
@@ -573,7 +731,7 @@ public partial class FrmOrderEntry : BaseListForm
                     dtpLieferdatum.Value.Date,
                     CollectPositionen());
                 _currentAuftragId = order.Id;
-                _currentStatus    = order.Status;
+                _currentStatus = order.Status;
             }
             finally { _lock.Release(); }
 
@@ -608,7 +766,41 @@ public partial class FrmOrderEntry : BaseListForm
             SelectKundeById(_selectedKundeId);
         }
         catch (ValidationException ex) { ShowError(ex.Message); }
-        catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
+        catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
+    }
+
+    // ── Alle Freigeben (checked Offen rows) ───────────────────────────────────
+
+    private async void BtnAlleFreigeben_Click(object? s, EventArgs e)
+    {
+        var targets = _kundenListe
+            .Where(k => _checkedKundeIds.Contains(k.Id) &&
+                        k.AuftragId > 0 &&
+                        (k.AuftragStatus is null || k.AuftragStatus == OrderStatus.Offen))
+            .Select(k => k.AuftragId!.Value)
+            .ToList();
+
+        if (targets.Count == 0)
+        {
+            ShowError("Keine freigebbaren Aufträge ausgewählt.\n(Nur gespeicherte Aufträge mit Status 'Offen' können freigegeben werden.)");
+            return;
+        }
+
+        try
+        {
+            await _lock.WaitAsync();
+            try
+            {
+                foreach (var id in targets)
+                    await _orderService.FreigebenAsync(id);
+            }
+            finally { _lock.Release(); }
+
+            lblStatusInfo.Text = $"{targets.Count} Auftrag/Aufträge freigegeben.";
+            await ReloadAsync();
+        }
+        catch (ValidationException ex) { ShowError(ex.Message); }
+        catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
     }
 
     // ── Buchen ────────────────────────────────────────────────────────────────
@@ -664,7 +856,7 @@ public partial class FrmOrderEntry : BaseListForm
         }
     }
 
-    // ── Advance to next unbooked (async — explicit navigation avoids race) ────
+    // ── Advance to next unbooked ──────────────────────────────────────────────
 
     private async Task AdvanceToNextUnbookedAsync(int justBookedKundeId)
     {
@@ -685,7 +877,6 @@ public partial class FrmOrderEntry : BaseListForm
             if (dgwKunden.Rows[idx].DataBoundItem is OrderKundeListDto dto
                 && dto.AuftragStatus is null)
             {
-                // Suppress SelectionChanged → we load explicitly below
                 _suppressKundenChanged = true;
                 try
                 {
@@ -699,7 +890,6 @@ public partial class FrmOrderEntry : BaseListForm
             }
         }
 
-        // No unbooked customer found → stay on current selection
         var id = SelectedKundeId();
         if (id > 0) await LoadPositionenAsync(id);
     }
@@ -722,7 +912,7 @@ public partial class FrmOrderEntry : BaseListForm
             ClearRightPanel();
         }
         catch (ValidationException ex) { ShowError(ex.Message); }
-        catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
+        catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
     }
 
     // ── Stornieren ────────────────────────────────────────────────────────────
@@ -743,7 +933,7 @@ public partial class FrmOrderEntry : BaseListForm
             SelectKundeById(_selectedKundeId);
         }
         catch (ValidationException ex) { ShowError(ex.Message); }
-        catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
+        catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
     }
 
     // ── Nachlieferung ─────────────────────────────────────────────────────────
@@ -763,7 +953,7 @@ public partial class FrmOrderEntry : BaseListForm
             SelectKundeById(_selectedKundeId);
         }
         catch (ValidationException ex) { ShowError(ex.Message); }
-        catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
+        catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -792,6 +982,21 @@ public partial class FrmOrderEntry : BaseListForm
         return null;
     }
 
+    private DataGridViewCell? GetFirstEditableCell(DataGridViewRow row)
+    {
+        var editableNames = new[] { "Menge", "Gewicht", "Preis", "Notiz" };
+        foreach (var name in editableNames)
+        {
+            if (!dgwPositionen.Columns.Contains(name)) continue;
+            var cell = row.Cells[name];
+            if (cell.OwningColumn?.Visible == true && !cell.OwningColumn.ReadOnly)
+                return cell;
+        }
+        foreach (DataGridViewCell c in row.Cells)
+            if (c.OwningColumn?.Visible == true && !c.OwningColumn.ReadOnly) return c;
+        return null;
+    }
+
     private static decimal ParseDecimal(object? val)
     {
         if (val is decimal d) return d;
@@ -807,7 +1012,6 @@ public partial class FrmOrderEntry : BaseListForm
     {
         if (IsDesignMode() || _suppressKundenChanged) return;
         var id = SelectedKundeId();
-        // clear right panel immediately to avoid stale status display
         ClearRightPanel();
         if (id > 0) await LoadPositionenAsync(id);
     }
@@ -815,13 +1019,13 @@ public partial class FrmOrderEntry : BaseListForm
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
         if (keyData == Keys.F5)
-            { BtnBuchen_Click(null, EventArgs.Empty); return true; }
+        { BtnBuchen_Click(null, EventArgs.Empty); return true; }
         if (keyData == (Keys.Control | Keys.S))
-            { BtnSpeichern_Click(null, EventArgs.Empty); return true; }
+        { BtnSpeichern_Click(null, EventArgs.Empty); return true; }
         if (keyData == Keys.Insert)
-            { BtnHinzufuegen_Click(null, EventArgs.Empty); return true; }
+        { BtnHinzufuegen_Click(null, EventArgs.Empty); return true; }
         if (keyData == Keys.Delete && dgwPositionen.Focused)
-            { DeleteSelectedZeile(); return true; }
+        { DeleteSelectedZeile(); return true; }
         return base.ProcessCmdKey(ref msg, keyData);
     }
 }

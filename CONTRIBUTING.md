@@ -35,6 +35,7 @@ These rules were violated multiple times. They are NON-NEGOTIABLE:
 7. **If Designer stops working after a change → immediately revert that change**
 8. **Do NOT remove or reorganize existing working controls** — only ADD what is asked
 9. **Detail panel (panelDetail) MUST always be visible on form load** — NEVER call `SetDetailVisible(false)` on load. If the grid is empty → automatically call `NewXxx()` to enter new-record mode. This was violated in FrmProductList and FrmCustomerList.
+10. **Do NOT rewrite entire files. Show only the changed/added blocks with minimal context.
 
 ---
 

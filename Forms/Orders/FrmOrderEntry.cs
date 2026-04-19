@@ -4,13 +4,19 @@ using DNR26V2.Domain.Enums;
 using DNR26V2.Domain.Exceptions;
 using DNR26V2.Forms.Base;
 using DNR26V2.Services.Orders;
+using DNR26V2.Data.Context;
+using Microsoft.EntityFrameworkCore; // <-- Diese using-Direktive ergänzen
 
 namespace DNR26V2.Forms.Orders;
 
 public partial class FrmOrderEntry : BaseListForm
 {
     private readonly IOrderService _orderService;
+    private readonly AppDbContext  _db;
     private readonly SemaphoreSlim _lock = new(1, 1);
+
+    // New runtime flag loaded from AppSetup
+    private bool _turKontrolleEnabled;
 
     private DayOfWeek? _selectedDay;
     private Button? _activeDayBtn;
@@ -33,9 +39,10 @@ public partial class FrmOrderEntry : BaseListForm
     // Cached article list for Hinzufügen dialog (refreshed once per form load)
     private IReadOnlyList<ArtikelSuchDto> _artikelCache = [];
 
-    public FrmOrderEntry(IOrderService orderService)
+    public FrmOrderEntry(IOrderService orderService, AppDbContext db)
     {
         _orderService = orderService;
+        _db = db;
         InitializeComponent();
         FixPositionenColumnNames();
         WireUpEvents();
@@ -45,6 +52,7 @@ public partial class FrmOrderEntry : BaseListForm
     public FrmOrderEntry()
     {
         _orderService = null!;
+        _db = null!;
         InitializeComponent();
         FixPositionenColumnNames();
         WireUpEvents();
@@ -82,6 +90,10 @@ public partial class FrmOrderEntry : BaseListForm
         btnSo.Click += (_, _) => SelectDay(btnSo, DayOfWeek.Sunday);
         btnAlle.Click += (_, _) => SelectDay(btnAlle, null);
 
+        // Neu: Button in Designer hinzufügen (siehe Hinweis unten)
+       btnAlleAuswaehlenGespeichert.Click += BtnAlleAuswaehlenGespeichert_Click;
+
+
         txtKundeFilter.TextChanged += (_, _) => { if (!_suppressFilter) OnFilterChanged(); };
         cmbTourFilter.SelectedIndexChanged += (_, _) => { if (!_suppressFilter) OnFilterChanged(); };
 
@@ -112,13 +124,16 @@ public partial class FrmOrderEntry : BaseListForm
 
     private void FrmOrderEntry_Load(object? sender, EventArgs e)
     {
-        if (IsDesignMode() || _orderService is null) return;
+        if (IsDesignMode() || _orderService is null || _db is null) return;
 
         WindowState = FormWindowState.Maximized;
 
         _isLoading = true;
         dtpLieferdatum.Value = DateTime.Today;
         _isLoading = false;
+
+        // Load AppSetup once (TurKontrolle)
+        _ = LoadAppSetupAsync();
 
         ClearRightPanel();
 
@@ -137,6 +152,19 @@ public partial class FrmOrderEntry : BaseListForm
             _ => btnAlle
         };
         SelectDay(todayBtn, dtpLieferdatum.Value.DayOfWeek);
+    }
+
+    private async Task LoadAppSetupAsync()
+    {
+        try
+        {
+            var setup = await _db.AppSetup.AsNoTracking().FirstOrDefaultAsync();
+            _turKontrolleEnabled = setup?.TurKontrolle ?? false;
+        }
+        catch
+        {
+            _turKontrolleEnabled = false;
+        }
     }
 
     // ── Article cache ─────────────────────────────────────────────────────────
@@ -329,10 +357,34 @@ public partial class FrmOrderEntry : BaseListForm
         if (dgwKunden.Columns[e.ColumnIndex]?.Name != "colKundeChecked") return;
         if (dgwKunden.Rows[e.RowIndex].DataBoundItem is not OrderKundeListDto dto) return;
 
+        // Prevent selecting rows without a saved Auftrag
+        if (dto.AuftragId <= 0)
+        {
+            // Revert checkbox change (mouse click already toggled it)
+            dgwKunden.Rows[e.RowIndex].Cells["colKundeChecked"].Value = false;
+            MessageBox.Show("Auftrag noch nicht gespeichert — Auswahl nicht möglich.", "Hinweis", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
         bool isChecked = dgwKunden.Rows[e.RowIndex].Cells["colKundeChecked"].Value is true;
         if (isChecked) _checkedKundeIds.Add(dto.Id);
         else _checkedKundeIds.Remove(dto.Id);
 
+        UpdateAlleFreigebenButton();
+    }
+
+    private void BtnAlleAuswaehlenGespeichert_Click(object? sender, EventArgs e)
+    {
+        // Wähle alle Kunden mit gespeichertem Auftrag und Status Offen (oder null)
+        var targets = _kundenListe
+            .Where(k => k.AuftragId > 0 && (k.AuftragStatus is null || k.AuftragStatus == OrderStatus.Offen))
+            .Select(k => k.Id)
+            .ToList();
+
+        _checkedKundeIds.Clear();
+        foreach (var id in targets) _checkedKundeIds.Add(id);
+
+        ApplyKundenCheckmarks();
         UpdateAlleFreigebenButton();
     }
 
@@ -342,6 +394,15 @@ public partial class FrmOrderEntry : BaseListForm
     {
         if (e.KeyCode != Keys.Space) return;
         if (dgwKunden.CurrentRow?.DataBoundItem is not OrderKundeListDto dto) return;
+
+        // Prevent toggling unsaved rows via Space
+        if (dto.AuftragId <= 0)
+        {
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            MessageBox.Show("Auftrag noch nicht gespeichert — Auswahl nicht möglich.", "Hinweis", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
 
         e.Handled = true;
         e.SuppressKeyPress = true;
@@ -714,6 +775,17 @@ public partial class FrmOrderEntry : BaseListForm
     {
         if (_selectedKundeId <= 0) return;
 
+        // Enforce TourKontrolle if enabled
+        if (_turKontrolleEnabled)
+        {
+            var kunde = _kundenListe.FirstOrDefault(k => k.Id == _selectedKundeId);
+            if (kunde is null || string.IsNullOrWhiteSpace(kunde.Tur))
+            {
+                ShowError("Kunde hat keine Tour zugewiesen. Auftrag kann nicht gespeichert werden.");
+                return;
+            }
+        }
+
         dgwPositionen.EndEdit();
         if (dgwPositionen.Rows.Count == 0)
         {
@@ -755,6 +827,16 @@ public partial class FrmOrderEntry : BaseListForm
     {
         if (_currentAuftragId is not int id || id <= 0) return;
 
+        if (_turKontrolleEnabled)
+        {
+            var kunde = _kundenListe.FirstOrDefault(k => k.Id == _selectedKundeId);
+            if (kunde is null || string.IsNullOrWhiteSpace(kunde.Tur))
+            {
+                ShowError("Kunde hat keine Tour zugewiesen. Auftrag kann nicht freigegeben werden.");
+                return;
+            }
+        }
+
         try
         {
             await _lock.WaitAsync();
@@ -773,10 +855,23 @@ public partial class FrmOrderEntry : BaseListForm
 
     private async void BtnAlleFreigeben_Click(object? s, EventArgs e)
     {
-        var targets = _kundenListe
-            .Where(k => _checkedKundeIds.Contains(k.Id) &&
-                        k.AuftragId > 0 &&
-                        (k.AuftragStatus is null || k.AuftragStatus == OrderStatus.Offen))
+        var selectedCustomers = _kundenListe
+            .Where(k => _checkedKundeIds.Contains(k.Id))
+            .ToList();
+
+        if (_turKontrolleEnabled)
+        {
+            var missing = selectedCustomers.Where(k => string.IsNullOrWhiteSpace(k.Tur)).ToList();
+            if (missing.Count > 0)
+            {
+                var names = string.Join(", ", missing.Select(m => m.Kundenname).Take(10));
+                ShowError($"Tour fehlt bei {missing.Count} Kunde(n): {names}{(missing.Count > 10 ? ", ..." : "")}\nFreigabe abgebrochen.");
+                return;
+            }
+        }
+
+        var targets = selectedCustomers
+            .Where(k => k.AuftragId > 0 && (k.AuftragStatus is null || k.AuftragStatus == OrderStatus.Offen))
             .Select(k => k.AuftragId!.Value)
             .ToList();
 

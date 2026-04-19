@@ -33,6 +33,7 @@ internal sealed class AppSetupConfiguration : IEntityTypeConfiguration<AppSetup>
         entity.Property(e => e.ZahlungPraefix)      .HasMaxLength(10).HasDefaultValue("ZA");
         entity.Property(e => e.SeitenGroesse)        .HasDefaultValue(20);
         entity.Property(e => e.AuftraegeArchivieren) .HasDefaultValue(false);
+        entity.Property(e => e.TurKontrolle)          .HasDefaultValue(false);
 
         entity.Property(e => e.ErstelltAm)  .HasDefaultValueSql("GETDATE()");
         entity.Property(e => e.ErstelltVon) .HasMaxLength(100).IsRequired();

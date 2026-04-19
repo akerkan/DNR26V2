@@ -106,7 +106,9 @@ static class Program
                 sp.GetRequiredService<IProductService>(),
                 sp.GetRequiredService<ICustomerProductService>()));
         services.AddTransient<FrmOrderEntry>(sp =>
-            new FrmOrderEntry(sp.GetRequiredService<IOrderService>()));
+            new FrmOrderEntry(
+                sp.GetRequiredService<IOrderService>(),
+                sp.GetRequiredService<AppDbContext>()));
 
         return services;
     }

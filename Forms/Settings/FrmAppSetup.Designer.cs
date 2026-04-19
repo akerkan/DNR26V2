@@ -25,6 +25,7 @@ partial class FrmAppSetup
     private DataGridView  dgwNoSeries    = null!;
     private Button      btnSpeichern     = null!;
     private Button      btnSchliessen    = null!;
+    private CheckBox chkTurKontrolle = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -88,6 +89,8 @@ partial class FrmAppSetup
             Value   = 20
         };
 
+        chkTurKontrolle = new CheckBox { Dock = DockStyle.Left };
+
         AddLabelAndControl(panelFirma, "Firmenname *",    txtFirmenname);
         AddLabelAndControl(panelFirma, "Adresse",         txtFirmenadresse);
         AddLabelAndControl(panelFirma, "PLZ",             txtFirmenPLZ);
@@ -99,6 +102,8 @@ partial class FrmAppSetup
         AddLabelAndControl(panelFirma, "USt-IdNr.",       txtUStIdNr);
         AddLabelAndControl(panelFirma, "MwSt. %",         nudMwst);
         AddLabelAndControl(panelFirma, "Zeilen / Seite",  nudSeitengroesse);
+        // New: Tour kontrol toggle
+        AddLabelAndControl(panelFirma, "Tour-Kontrolle aktivieren", chkTurKontrolle);
 
         tabFirma.Controls.Add(panelFirma);
 

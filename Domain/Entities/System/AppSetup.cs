@@ -42,4 +42,7 @@ public class AppSetup : AuditableEntity
     /// If false: order stays visible as Bestaetigt (BC-style "keep history").
     /// </summary>
     public bool AuftraegeArchivieren { get; set; } = false;
+
+    // New: enforce that customer must have a Tour before saving/freigeben
+    public bool TurKontrolle { get; set; } = false;
 }

@@ -52,6 +52,9 @@ public partial class FrmAppSetup : BaseCardForm
             nudMwst.Value               = (decimal)_setup.StandardMwstProzent;
             nudSeitengroesse.Value      = _setup.SeitenGroesse;
 
+            // New: TurKontrolle
+            chkTurKontrolle.Checked     = _setup.TurKontrolle;
+
             // NoSeries in DataGridView laden
             await LoadNoSeriesAsync();
         }
@@ -103,6 +106,9 @@ public partial class FrmAppSetup : BaseCardForm
             _setup.DruckerMitLogo      = txtDrucker2.Text.NullIfEmpty();
             _setup.StandardMwstProzent = nudMwst.Value;
             _setup.SeitenGroesse       = (int)nudSeitengroesse.Value;
+
+            // New: TurKontrolle speichern
+            _setup.TurKontrolle        = chkTurKontrolle.Checked;
 
             _db.AppSetup.Update(_setup);
             await _db.SaveChangesAsync();

@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using DNR26V2.Data;
 using DNR26V2.Data.Context;
 using DNR26V2.Domain.DTOs;
@@ -13,10 +13,10 @@ namespace DNR26V2.Services.Orders;
 
 public class OrderService : IOrderService
 {
-    private readonly AppDbContext      _db;
-    private readonly DapperContext     _dapper;
-    private readonly INoSeriesService  _noSeries;
-    private readonly IDeliveryService  _deliveryService;
+    private readonly AppDbContext     _db;
+    private readonly DapperContext    _dapper;
+    private readonly INoSeriesService _noSeries;
+    private readonly IDeliveryService _deliveryService;
 
     public OrderService(
         AppDbContext      db,
@@ -29,6 +29,8 @@ public class OrderService : IOrderService
         _noSeries        = noSeries;
         _deliveryService = deliveryService;
     }
+
+    // ── Customer list for order entry ─────────────────────────────────────────
 
     public async Task<IReadOnlyList<OrderKundeListDto>> GetKundenListeAsync(DateTime datum, DayOfWeek? tag)
     {
@@ -44,19 +46,21 @@ public class OrderService : IOrderService
             _                   => string.Empty
         };
 
+        // Exclude Storniert(3) and Geloescht(4) — show Offen, Freigegeben and Gebucht
         var sql = $"""
             SELECT c.Id,
                    c.Kundennummer,
                    c.Kundenname,
-                   tv.Bezeichnung  AS Tur,
+                   tv.Bezeichnung   AS Tur,
                    c.Routenfolge,
-                   o.Id            AS AuftragId,
-                   o.Status        AS AuftragStatus
+                   c.PreisAusblenden,
+                   o.Id             AS AuftragId,
+                   o.Status         AS AuftragStatus
             FROM   Customer c
             LEFT   JOIN ProductAttributeValue tv ON tv.Id = c.TurWertId
             LEFT   JOIN Orders o ON o.KundeId     = c.Id
                                 AND CAST(o.LieferDatum AS date) = CAST(@Datum AS date)
-                                AND o.Status      <> 2
+                                AND o.Status NOT IN (3, 4)
             WHERE  c.Aktiv = 1
             {dayFilter}
             ORDER  BY tv.Bezeichnung, c.Routenfolge, c.Kundenname
@@ -65,6 +69,59 @@ public class OrderService : IOrderService
         using var conn = _dapper.CreateConnection();
         return (await conn.QueryAsync<OrderKundeListDto>(sql, new { Datum = datum })).AsList();
     }
+
+    // ── FactBox data for selected customer ────────────────────────────────────
+
+    public async Task<KundenFactBoxDto?> GetKundenFactBoxAsync(int kundeId)
+    {
+        const string sql = """
+            SELECT c.Kundenname,
+                   c.PreisAusblenden,
+                   tv.Bezeichnung  AS Tour,
+                   0.00            AS Saldo,
+                   (
+                       SELECT MAX(o.LieferDatum)
+                       FROM   Orders o
+                       WHERE  o.KundeId = @KundeId
+                       AND    o.Status  NOT IN (3, 4)
+                   )               AS LetzterAuftrag,
+                   (
+                       SELECT COUNT(*)
+                       FROM   Orders o
+                       WHERE  o.KundeId = @KundeId
+                       AND    o.Status  IN (0, 1)
+                   )               AS OffeneAuftraege
+            FROM   Customer c
+            LEFT   JOIN ProductAttributeValue tv ON tv.Id = c.TurWertId
+            WHERE  c.Id = @KundeId
+            """;
+
+        using var conn = _dapper.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<KundenFactBoxDto>(sql, new { KundeId = kundeId });
+    }
+
+    // ── Product search for Hinzufügen dialog ─────────────────────────────────
+
+    public async Task<IReadOnlyList<ArtikelSuchDto>> GetArtikelListeAsync(string? suche = null)
+    {
+        const string sql = """
+            SELECT p.Id           AS ArtikelId,
+                   p.Artikelnummer,
+                   p.Bezeichnung  AS Produktname,
+                   p.VKPreis
+            FROM   Product p
+            WHERE  p.Aktiv = 1
+            AND    (@Suche IS NULL
+                    OR p.Bezeichnung   LIKE '%' + @Suche + '%'
+                    OR p.Artikelnummer LIKE '%' + @Suche + '%')
+            ORDER  BY p.Bezeichnung
+            """;
+
+        using var conn = _dapper.CreateConnection();
+        return (await conn.QueryAsync<ArtikelSuchDto>(sql, new { Suche = suche })).AsList();
+    }
+
+    // ── Order lines ───────────────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<OrderLineDto>> GetPositionenAsync(int kundeId, DateTime datum)
     {
@@ -112,15 +169,25 @@ public class OrderService : IOrderService
 
     public async Task<Order?> GetAuftragAsync(int kundeId, DateTime datum)
         => await _db.Order
+                    .AsNoTracking()
                     .Include(o => o.Zeilen)
                     .FirstOrDefaultAsync(o => o.KundeId          == kundeId
                                            && o.LieferDatum.Date == datum.Date
-                                           && o.Status           != OrderStatus.Storniert);
+                                           && o.Status           != OrderStatus.Storniert
+                                           && o.Status           != OrderStatus.Geloescht);
+
+    // ── Save ─────────────────────────────────────────────────────────────────
 
     public async Task<Order> SaveAuftragAsync(
         int kundeId, DateTime datum,
         IEnumerable<(int ArtikelId, decimal Menge, decimal Gewicht, decimal Preis, string? Notiz)> positionen)
     {
+        var positionenList = positionen.ToList();
+
+        // Validate: at least one line required
+        if (positionenList.Count == 0)
+            throw new ValidationException("Mindestens eine Position ist erforderlich.");
+
         var order = await GetAuftragAsync(kundeId, datum);
 
         if (order is null)
@@ -134,22 +201,23 @@ public class OrderService : IOrderService
                 Status         = OrderStatus.Offen
             };
             _db.Order.Add(order);
-            await _db.SaveChangesAsync();
+            await SaveChangesAsync();
         }
         else if (order.Status != OrderStatus.Offen)
         {
-            throw new ValidationException($"Auftrag '{order.Auftragsnummer}' ist bereits '{order.Status}'.");
-        }
+            throw new ValidationException($"Auftrag '{order.Auftragsnummer}' ist bereits '{order.Status}'.");        }
 
-        // Replace all lines
-        var existingLines = await _db.OrderLine.Where(l => l.AuftragId == order.Id).ToListAsync();
+        // Replace all lines — reload tracked entity by ID
+        var trackedOrder = await _db.Order.FindAsync(order.Id) ?? order;
+
+        var existingLines = await _db.OrderLine.Where(l => l.AuftragId == trackedOrder.Id).ToListAsync();
         _db.OrderLine.RemoveRange(existingLines);
 
-        foreach (var pos in positionen)
+        foreach (var pos in positionenList)
         {
             _db.OrderLine.Add(new OrderLine
             {
-                AuftragId = order.Id,
+                AuftragId = trackedOrder.Id,
                 ArtikelId = pos.ArtikelId,
                 Menge     = pos.Menge,
                 Gewicht   = pos.Gewicht,
@@ -158,9 +226,11 @@ public class OrderService : IOrderService
             });
         }
 
-        await _db.SaveChangesAsync();
-        return order;
+        await SaveChangesAsync();
+        return trackedOrder;
     }
+
+    // ── Buchen → creates Delivery ─────────────────────────────────────────────
 
     public async Task<Order> BuchenAsync(int auftragId)
     {
@@ -169,28 +239,89 @@ public class OrderService : IOrderService
             .FirstOrDefaultAsync(o => o.Id == auftragId)
             ?? throw new InvalidOperationException("Auftrag nicht gefunden.");
 
-        if (order.Status != OrderStatus.Offen)
-            throw new ValidationException($"Auftrag ist bereits '{order.Status}'.");
+        if (order.Status != OrderStatus.Offen && order.Status != OrderStatus.Freigegeben)
+            throw new ValidationException($"Auftrag kann nicht gebucht werden (Status: '{order.Status}').");
 
         if (!order.Zeilen.Any(z => z.Menge > 0))
             throw new ValidationException("Mindestens eine Position mit Menge > 0 erforderlich.");
 
-        order.Status = OrderStatus.Bestaetigt;
-        await _db.SaveChangesAsync();
+        order.Status = OrderStatus.Gebucht;
+        await SaveChangesAsync();
 
         await _deliveryService.CreateFromOrderAsync(order);
         return order;
     }
 
+    // ── Freigeben ────────────────────────────────────────────────────────────
+
+    public async Task FreigebenAsync(int auftragId)
+    {
+        // ExecuteUpdateAsync bypasses EF tracking → no stale-cache issues
+        var affected = await _db.Order
+            .Where(o => o.Id == auftragId && o.Status == OrderStatus.Offen)
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Freigegeben));
+
+        if (affected == 0)
+            throw new ValidationException("Nur offene Aufträge können freigegeben werden.");
+    }
+
+    // ── Löschen (soft-delete, nur Offen) ─────────────────────────────────────
+
+    public async Task LoeschenAsync(int auftragId)
+    {
+        var affected = await _db.Order
+            .Where(o => o.Id == auftragId && o.Status == OrderStatus.Offen)
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Geloescht));
+
+        if (affected == 0)
+            throw new ValidationException("Nur offene Aufträge können gelöscht werden.");
+    }
+
+    // ── Nachlieferung ────────────────────────────────────────────────────────
+
+    public async Task<Order> NachlieferungAsync(int kundeId, DateTime lieferdatum)
+    {
+        var nummer = await _noSeries.GetNextNumberAsync("AUF", lieferdatum);
+        var order  = new Order
+        {
+            Auftragsnummer = nummer,
+            KundeId        = kundeId,
+            LieferDatum    = lieferdatum.Date,
+            Status         = OrderStatus.Freigegeben
+        };
+        _db.Order.Add(order);
+        await SaveChangesAsync();
+        return order;
+    }
+
+    // ── Stornieren ────────────────────────────────────────────────────────────
+
     public async Task StornierenAsync(int auftragId)
     {
-        var order = await _db.Order.FindAsync(auftragId)
-            ?? throw new InvalidOperationException("Auftrag nicht gefunden.");
+        // ExecuteUpdateAsync reads directly from DB — avoids stale EF tracking
+        var affected = await _db.Order
+            .Where(o => o.Id == auftragId
+                     && o.Status != OrderStatus.Storniert
+                     && o.Status != OrderStatus.Geloescht)
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Storniert));
 
-        if (order.Status == OrderStatus.Storniert)
-            throw new ValidationException("Auftrag ist bereits storniert.");
+        if (affected == 0)
+            throw new ValidationException("Auftrag ist bereits storniert oder nicht gefunden.");
+    }
 
-        order.Status = OrderStatus.Storniert;
-        await _db.SaveChangesAsync();
+    // ── Helper: SaveChanges with automatic tracker cleanup on failure ─────────
+
+    private async Task SaveChangesAsync()
+    {
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch
+        {
+            // Reset EF in-memory state so subsequent calls work on clean context
+            _db.ChangeTracker.Clear();
+            throw;
+        }
     }
 }

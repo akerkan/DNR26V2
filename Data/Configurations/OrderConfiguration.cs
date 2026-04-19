@@ -1,4 +1,4 @@
-using DNR26V2.Domain.Entities.Orders;
+﻿using DNR26V2.Domain.Entities.Orders;
 using DNR26V2.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -18,9 +18,12 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         entity.Property(e => e.Notiz).HasMaxLength(500);
 
         entity.HasIndex(e => e.Auftragsnummer).IsUnique();
+
+        // Only Offen(0) and Freigegeben(1) must be unique per customer+date.
+        // Gebucht(2) is excluded → multiple Nachlieferungen allowed per day.
         entity.HasIndex(e => new { e.KundeId, e.LieferDatum })
               .IsUnique()
-              .HasFilter("[Status] <> 2");
+              .HasFilter("[Status] <> 2 AND [Status] <> 3 AND [Status] <> 4");
 
         entity.HasOne(e => e.Kunde)
               .WithMany()

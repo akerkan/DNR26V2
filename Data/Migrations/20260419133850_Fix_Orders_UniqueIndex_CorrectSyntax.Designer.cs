@@ -4,6 +4,7 @@ using DNR26V2.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNR26V2.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260419133850_Fix_Orders_UniqueIndex_CorrectSyntax")]
+    partial class Fix_Orders_UniqueIndex_CorrectSyntax
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -877,7 +880,7 @@ namespace DNR26V2.Data.Migrations
 
                     b.HasIndex("KundeId", "LieferDatum")
                         .IsUnique()
-                        .HasFilter("[Status] <> 2 AND [Status] <> 3 AND [Status] <> 4");
+                        .HasFilter("[Status] <> 2 AND [Status] <> 3");
 
                     b.ToTable("Orders", (string)null);
                 });

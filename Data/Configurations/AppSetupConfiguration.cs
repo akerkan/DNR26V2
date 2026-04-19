@@ -11,7 +11,6 @@ internal sealed class AppSetupConfiguration : IEntityTypeConfiguration<AppSetup>
         entity.ToTable("AppSetup");
         entity.HasKey(e => e.Id);
 
-        // Singleton: Id wird nie automatisch generiert, CHECK sperrt Id ≠ 1
         entity.Property(e => e.Id).ValueGeneratedNever();
         entity.HasCheckConstraint("CK_AppSetup_Singleton", "[Id] = 1");
 
@@ -33,6 +32,7 @@ internal sealed class AppSetupConfiguration : IEntityTypeConfiguration<AppSetup>
         entity.Property(e => e.GutschriftPraefix)   .HasMaxLength(10).HasDefaultValue("GS");
         entity.Property(e => e.ZahlungPraefix)      .HasMaxLength(10).HasDefaultValue("ZA");
         entity.Property(e => e.SeitenGroesse)        .HasDefaultValue(20);
+        entity.Property(e => e.AuftraegeArchivieren) .HasDefaultValue(false);
 
         entity.Property(e => e.ErstelltAm)  .HasDefaultValueSql("GETDATE()");
         entity.Property(e => e.ErstelltVon) .HasMaxLength(100).IsRequired();

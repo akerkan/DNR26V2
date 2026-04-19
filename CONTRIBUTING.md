@@ -1,4 +1,4 @@
-# DNR26V2 – GitHub Copilot Instructions
+﻿# DNR26V2 – GitHub Copilot Instructions
 
 You are acting as a **senior software architect, ERP process analyst, database architect, and lead .NET WinForms engineer** for this project.
 
@@ -128,6 +128,7 @@ modelBuilder.Entity<Customer>()
 ```
 
 5. **Every table needs a `IEntityTypeConfiguration<T>` class** in `Data\Configurations\`
+6. **Filtered index syntax for SQL Server**: use `[Col] <> x AND [Col] <> y` — NEVER `NOT IN (x, y)` (causes SQL Server syntax error)
 
 ---
 
@@ -145,6 +146,106 @@ modelBuilder.Entity<Customer>()
 
 - All code comments → **English or German only**
 - Turkish comments are **NOT allowed** anywhere in the codebase
+
+---
+
+## ⚠️ DOCUMENT STATUS & TERMINOLOGY
+
+### Core Rule
+> **"Löschen"** only when **no document number has been assigned yet** (Status = Offen, never posted).
+> **"Stornieren"** for all documents that already have a number or have been posted.
+
+### Auftrag Status Flow
+
+```
+Offen
+  → [Freigeben]   → Freigegeben
+  → [Löschen]     → Gelöscht        (soft-delete, Status = Gelöscht, no document number yet)
+
+Freigegeben
+  → [Buchen & Liefern (F5)] → Gebucht
+                              → DeliveryService.CreateFromOrderAsync() → Lieferschein (Offen)
+  → [Stornieren]  → Storniert       (no Lieferschein exists yet)
+
+Gebucht
+  → [Stornieren]  → Storniert       (linked Lieferschein → also Storniert)
+                                     (Auftrag zurück → Freigegeben if re-opened)
+```
+
+### Lieferschein Status Flow
+
+```
+Offen
+  → lines editable while Offen
+  → every line edit logged to DeliveryLineChanges (audit trail)
+  → [+ Nachlieferung] → New Auftrag (same Kunde, same Tag, prefilled)
+                         → F5 Buchen → new Lieferscheinnummer
+                         → both Lieferscheine combinable in one Rechnung
+  → [Stornieren]  → Storniert       (linked Auftrag zurück → Freigegeben)
+  → [Abschliessen]→ Abgeschlossen
+
+Abgeschlossen
+  → [Fakturieren] → Fakturiert      (via FrmDeliveryList or FrmBulkRechnung)
+```
+
+### Rechnung — 2 Erstellungswege
+
+- **Weg 1 (Einzeln):** `FrmDeliveryList` → Lieferschein auswählen → "Fakturieren" → Rechnung für diesen Lieferschein
+- **Weg 2 (Stapel):** `FrmBulkRechnung` → Kunde(n) + Datumsbereich → "Fakturieren" → eine Rechnung pro Kunde, alle offenen Lieferscheine, single transaction
+
+### Rechnung Status Flow
+
+```
+Offen
+  → [Buchen] → Gebucht              (linked Lieferscheine → Fakturiert)
+
+Gebucht
+  → [Stornieren] → Storniert        (linked Lieferscheine zurück → Abgeschlossen)
+                   + StornoRechnungId + StornoDatum + StornoGrund
+```
+
+### Document Status Summary
+
+| Beleg        | Stati                                                        |
+|--------------|--------------------------------------------------------------|
+| Auftrag      | Offen → Freigegeben → Gebucht → Storniert / Gelöscht        |
+| Lieferschein | Offen → Abgeschlossen → Fakturiert → Storniert               |
+| Rechnung     | Offen → Gebucht → Storniert                                  |
+
+### Button Visibility Rules
+
+| Beleg        | Status       | Löschen | Stornieren | Bearbeiten |
+|--------------|--------------|---------|------------|------------|
+| Auftrag      | Offen        | ✅      | ❌         | ✅         |
+| Auftrag      | Freigegeben  | ❌      | ✅         | ❌         |
+| Auftrag      | Gebucht      | ❌      | ✅         | ❌         |
+| Lieferschein | Offen        | ❌      | ✅         | ✅ (Zeilen)|
+| Lieferschein | Abgeschlossen| ❌      | ❌         | ❌         |
+| Rechnung     | Offen        | ❌      | ❌         | ✅         |
+| Rechnung     | Gebucht      | ❌      | ✅         | ❌         |
+
+---
+
+## ⚠️ ARCHIVIERUNG RULES
+
+- **Aufträge** are internal planning documents — not legally required for tax audit (GoBD)
+- **Lieferscheine** must be retained as long as the linked Rechnung exists
+- **Rechnungen** must be retained for **10 years** (German tax law — §147 AO)
+- **Archivierung feature**: planned, not yet implemented
+  - `AppSetup.AuftraegeArchivieren` column exists in DB — leave it, do not implement yet
+  - Future tables: `OrderArchives`, `OrderLineArchives`
+
+---
+
+## ⚠️ NACHLIEFERUNG RULE
+
+Same customer, same delivery day, additional delivery needed:
+1. User clicks "+ Nachlieferung" on open Lieferschein in `FrmDeliveryList`
+2. New `Auftrag` is created (Kunde + LieferDatum prefilled, Status = Freigegeben)
+3. User adds lines → F5 Buchen → new `Lieferscheinnummer` assigned
+4. Both Lieferscheine for that day/customer can be:
+   - Printed separately
+   - Combined into one Rechnung (Bulk or manual selection)
 
 ---
 
@@ -191,6 +292,7 @@ private void MenuXxx_Click(object? sender, EventArgs e)
 - **NO loops, NO conditions, NO SetChildIndex in `InitializeComponent()`**
 - **Soft-Delete** for CustomerProduct (`Aktiv = false`), no physical deletion
 - **No physical deletion** on any document record — use Status + Storno reference
+- **`_isLoading` flag pattern** in form Load handlers to suppress `ValueChanged` events during initialization
 
 ---
 
@@ -254,27 +356,38 @@ private void MenuXxx_Click(object? sender, EventArgs e)
   `System_UserGridSettings`, `AddIstVorlageToProductAttribute`
 
 ### 🔲 MODULE 4 – Auftragserfassung
-- Daily order per customer: which products, which quantities, which driver/tour
-- `CustomerProduct` template used as default for new orders
-- Planned entities: `Order` (table: `Orders`), `OrderLine` (table: `OrderLines`)
-- Planned services: `IOrderService`, `OrderService`
-- Planned forms: `FrmOrderEntry`
-- Key rule: posting an order (`btnBuchen`) immediately creates a Lieferschein via `DeliveryService.CreateFromOrderAsync`
+- Entities planned: `Order` (table: `Orders`), `OrderLine` (table: `OrderLines`)
+- Entities planned: `OrderArchive` (table: `OrderArchives`), `OrderLineArchive` (table: `OrderLineArchives`) — for future use
+- `AppSetup.AuftraegeArchivieren` → column exists in DB, not yet implemented
+- Services planned: `IOrderService`, `OrderService`
+- Forms planned: `FrmOrderEntry` (Tageserfassung), `FrmOrderList` (Archiv/Übersicht)
+- Key rules:
+  - **Freigeben** separates editing phase from posting phase
+  - **Buchen & Liefern (F5)** creates Lieferschein automatically via `DeliveryService.CreateFromOrderAsync`
+  - **Nachlieferung** creates new Auftrag + new Lieferschein (same Kunde/Tag)
+  - **Löschen** only when `Status = Offen` (soft-delete, no document number yet)
+  - **Stornieren** when `Status = Freigegeben` or `Gebucht`
+  - When Gebucht-Stornierung: linked Lieferschein also → Storniert
 
 ### 🔲 MODULE 5 – Lieferungen
-- Planned entities: `DeliveryHeader` (table: `Deliveries`), `DeliveryLine` (table: `DeliveryLines`), `DeliveryLineChange` (table: `DeliveryLineChanges`)
+- Entities planned: `DeliveryHeader` (table: `Deliveries`), `DeliveryLine` (table: `DeliveryLines`), `DeliveryLineChange` (table: `DeliveryLineChanges`)
 - `DeliveryLineChanges` → audit log for every line modification (no silent edits)
-- Planned services: `IDeliveryService`, `DeliveryService`
-- Planned forms: `FrmDeliveryList`
+- Services planned: `IDeliveryService`, `DeliveryService`
+- Forms planned: `FrmDeliveryList`
+- Key features:
+  - Stapeldruck (bulk print) of Lieferscheine
+  - Einzeldruck (single print)
+  - Nachlieferung button → creates new Auftrag (same Kunde/Tag, Status = Freigegeben)
+  - Stornieren → Delivery.Status = Storniert, linked Auftrag zurück → Freigegeben
 
 ### 🔲 MODULE 6 – Rechnungen
-- Planned entities: `InvoiceHeader` (table: `Invoices`), `InvoiceLine` (table: `InvoiceLines`), `InvoiceDelivery` (table: `InvoiceDeliveries`)
+- Entities planned: `InvoiceHeader` (table: `Invoices`), `InvoiceLine` (table: `InvoiceLines`), `InvoiceDelivery` (table: `InvoiceDeliveries`)
 - Three invoice creation modes:
-  1. Single Lieferschein → Rechnung
-  2. Customer + date range → Rechnung (all open deliveries)
+  1. `FrmDeliveryList` → single Lieferschein → "Fakturieren" → Rechnung
+  2. `FrmBulkRechnung` → Kunde + Datumsbereich → Rechnung (alle offenen Lieferscheine)
   3. **Bulk**: all customers, date range → one Rechnung per customer, single transaction
-- Planned services: `IInvoiceService`, `InvoiceService`
-- Planned forms: `FrmInvoiceList`, `FrmBulkRechnungserstellung`
+- Services planned: `IInvoiceService`, `InvoiceService`
+- Forms planned: `FrmInvoiceList`, `FrmBulkRechnungserstellung`
 - Storno: `Status = Storniert`, linked deliveries reset to `Abgeschlossen`, no physical deletion
 
 ### 🔲 MODULE 7 – Zahlungen
@@ -302,6 +415,8 @@ private void MenuXxx_Click(object? sender, EventArgs e)
 | `CustomerProductAttributeMapping` | `CustomerProductAttributeMappings` | Module3_ProductAttributes | ✅ |
 | `Order` | `Orders` | Module4_Orders *(planned)* | 🔲 |
 | `OrderLine` | `OrderLines` | Module4_Orders *(planned)* | 🔲 |
+| `OrderArchive` | `OrderArchives` | Module4_Archive *(future)* | 🔲 |
+| `OrderLineArchive` | `OrderLineArchives` | Module4_Archive *(future)* | 🔲 |
 | `DeliveryHeader` | `Deliveries` | Module5_Deliveries *(planned)* | 🔲 |
 | `DeliveryLine` | `DeliveryLines` | Module5_Deliveries *(planned)* | 🔲 |
 | `DeliveryLineChange` | `DeliveryLineChanges` | Module5_Deliveries *(planned)* | 🔲 |
@@ -314,19 +429,30 @@ private void MenuXxx_Click(object? sender, EventArgs e)
 ## DOCUMENT FLOW
 
 ```
-Order (Offen)
-  → btnBuchen → Status: Bestaetigt
-  → DeliveryService.CreateFromOrderAsync()
-      → Delivery (Offen)
-          → lines editable while Offen
-          → every edit logged to DeliveryLineChanges
-          → btnAbschliessen → Status: Abgeschlossen
-          → btnRechnung (single) OR included in Bulk
-              → Invoice (Offen)
-                  → Status: Gebucht
-                  → linked Delivery: Status → Fakturiert
-                  → Storno: Status → Storniert
-                             linked Deliveries → back to Abgeschlossen
+Auftrag (Offen)
+  → [Löschen]      → Gelöscht        (soft-delete, no number assigned)
+  → [Freigeben]    → Freigegeben
+
+Auftrag (Freigegeben)
+  → [Stornieren]   → Storniert
+  → [Buchen F5]    → Gebucht
+                   → DeliveryService.CreateFromOrderAsync()
+                       → Lieferschein (Offen)
+                           → lines editable while Offen
+                           → every edit → DeliveryLineChanges (audit)
+                           → [+ Nachlieferung] → New Auftrag (Freigegeben, same Kunde/Tag)
+                           → [Stornieren]      → Storniert
+                                                  linked Auftrag → Freigegeben
+                           → [Abschliessen]    → Abgeschlossen
+                               → [Fakturieren] → Invoice (Offen)
+                                   → [Buchen]  → Gebucht
+                                               → linked Delivery → Fakturiert
+                                   → [Stornieren] → Storniert
+                                                    linked Deliveries → Abgeschlossen
+
+Auftrag (Gebucht)
+  → [Stornieren]   → Storniert
+                   → linked Lieferschein → Storniert
 ```
 
 ---
@@ -341,7 +467,8 @@ All document numbers (`Auftragsnummer`, `Lieferscheinnummer`, `Rechnungsnummer`)
 
 | Document | Rule |
 |---|---|
-| `Order` | `Status = Storniert` — no physical delete |
+| `Order` (Offen) | `Status = Gelöscht` — soft-delete, no document number |
+| `Order` (Freigegeben/Gebucht) | `Status = Storniert` — no physical delete |
 | `DeliveryLine` | Edit logged to `DeliveryLineChanges` — original row preserved |
 | `Delivery` | `Status = Storniert` — no physical delete |
 | `Invoice` | `Status = Storniert` + `StornoRechnungId` + `StornoDatum` + `StornoGrund` — linked deliveries reset to `Abgeschlossen` |

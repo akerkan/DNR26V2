@@ -1,11 +1,11 @@
-namespace DNR26V2.Domain.Entities.System;
+﻿namespace DNR26V2.Domain.Entities.System;
 
 /// <summary>
-/// Zentrale Anwendungseinstellungen � immer genau 1 Zeile (Id = 1).
+/// Zentrale Anwendungseinstellungen – immer genau 1 Zeile (Id = 1).
 /// </summary>
 public class AppSetup : AuditableEntity
 {
-    /// <summary>Singleton-PK � darf nur den Wert 1 haben (CHECK-Constraint in DB).</summary>
+    /// <summary>Singleton-PK – darf nur den Wert 1 haben (CHECK-Constraint in DB).</summary>
     public int     Id                   { get; set; } = 1;
 
     // Firmendaten
@@ -27,7 +27,7 @@ public class AppSetup : AuditableEntity
     public string? DruckerWeissesPapier { get; set; }
     public string? DruckerMitLogo       { get; set; }
 
-    // Nummernserien-Pr�fixe
+    // Nummernserien-Präfixe
     public string RechnungPraefix      { get; set; } = "RE";
     public string LieferscheinPraefix  { get; set; } = "LS";
     public string GutschriftPraefix    { get; set; } = "GS";
@@ -35,4 +35,11 @@ public class AppSetup : AuditableEntity
 
     // UI
     public int SeitenGroesse           { get; set; } = 20;
+
+    // ── Order archiving (Module 4) ────────────────────────────────────────────
+    /// <summary>
+    /// If true: after booking, order Status = Archiviert (disappears from active list).
+    /// If false: order stays visible as Bestaetigt (BC-style "keep history").
+    /// </summary>
+    public bool AuftraegeArchivieren { get; set; } = false;
 }

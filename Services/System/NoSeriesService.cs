@@ -73,20 +73,20 @@ public class NoSeriesService : INoSeriesService
     private static string BerechneNaechsteNummer(NoSeriesRow row, DateTime datum)
     {
         char   sep    = row.Trennzeichen;
-        string format = string.IsNullOrWhiteSpace(row.Nummernformat) ? "000" : row.Nummernformat;
-        int    nextSeq = 1;
+        string format = string.IsNullOrWhiteSpace(row.Nummernformat) ? "000000" : row.Nummernformat;
 
-        // Gleiches Datum → Sequenz inkrementieren
-        if (row.LetztesVerwendetesDatum.HasValue
-            && row.LetztesVerwendetesDatum.Value.Date == datum.Date
-            && !string.IsNullOrWhiteSpace(row.LetzteVerwendeteNr))
+        int nextSeq = 1;
+
+        // Increment global sequence regardless of date — no date-based reset
+        if (!string.IsNullOrWhiteSpace(row.LetzteVerwendeteNr))
         {
             var parts = row.LetzteVerwendeteNr.Split(sep);
-            if (parts.Length >= 4 && int.TryParse(parts[^1], out int last))
+            if (parts.Length >= 2 && int.TryParse(parts[^1], out int last))
                 nextSeq = last + 1;
         }
 
-        return $"{row.Praefix}{sep}{datum:yy}{sep}{datum:MMdd}{sep}{nextSeq.ToString(format)}";
+        // Format: AUF-26-000001  (year + global sequence, no day/month)
+        return $"{row.Praefix}{sep}{datum:yy}{sep}{nextSeq.ToString(format)}";
     }
 
     // ── Dapper-DTO ────────────────────────────────────────────────────────────

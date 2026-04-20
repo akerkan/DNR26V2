@@ -1,6 +1,7 @@
 ﻿using DNR26V2.Data.Context;
 using DNR26V2.Domain.Configuration;
 using DNR26V2.Forms.Base;
+using DNR26V2.Forms.Deliveries;
 using DNR26V2.Forms.MasterData;
 using DNR26V2.Forms.Orders;
 using DNR26V2.Forms.Settings;
@@ -91,18 +92,10 @@ public partial class FrmMain : Form
     private FrmOrderList? FrmOrderListInstance;
 
     private void MenuAuftraege_Click(object? sender, EventArgs e)
-        => BaseListForm.GetOrCreateInstance<FrmOrderList>(
-               ref FrmOrderListInstance, this, () => GetService<FrmOrderList>());
-
-    /// <summary>
-    /// Navigiert zu FrmOrderEntry und setzt Datum + Kunden-Selektion.
-    /// Wird von FrmOrderList (Doppelklick) aufgerufen.
-    /// </summary>
+        => BaseListForm.GetOrCreateInstance<FrmOrderList>(ref FrmOrderListInstance, this, () => GetService<FrmOrderList>());
     public void OpenAuftragserfassung(int kundeId, DateTime lieferdatum)
     {
-        var frm = BaseListForm.GetOrCreateInstance<FrmOrderEntry>(
-            ref FrmOrderEntryInstance, this, () => GetService<FrmOrderEntry>());
-
+        var frm = BaseListForm.GetOrCreateInstance<FrmOrderEntry>(ref FrmOrderEntryInstance, this, () => GetService<FrmOrderEntry>());
         frm.NavigateToAuftrag(kundeId, lieferdatum);
     }
 
@@ -132,4 +125,11 @@ public partial class FrmMain : Form
 
     private void MenuSystemBeenden_Click(object? sender, EventArgs e)
         => Close();
+
+    // ── Lieferung-Menü (Erweiterung) ────────────────────────────────────────────
+
+    private FrmDeliveryList? FrmDeliveryListInstance;
+
+    private void MenuLieferungen_Click(object? sender, EventArgs e)
+        => BaseListForm.GetOrCreateInstance<FrmDeliveryList>(ref FrmDeliveryListInstance, this, () => GetService<FrmDeliveryList>());
 }

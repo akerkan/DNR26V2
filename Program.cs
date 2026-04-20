@@ -16,6 +16,7 @@ using DNR26V2.Services.System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using DNR26V2.Forms.Deliveries; // <-- Diesen using-Import ergänzen
 
 namespace DNR26V2;
 
@@ -110,6 +111,7 @@ static class Program
                 sp.GetRequiredService<IOrderService>(),
                 sp.GetRequiredService<AppDbContext>()));
         services.AddTransient<FrmOrderList>();
+        services.AddTransient<FrmDeliveryList>();
 
         return services;
     }

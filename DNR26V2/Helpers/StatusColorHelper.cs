@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using DNR26V2.Domain.Entities.System;
@@ -54,6 +54,27 @@ public static class StatusColorHelper
             _ => SystemColors.ControlText
         };
     }
+
+    // ── Delivery Status Colors ────────────────────────────────────────────────
+    // Mapped to same visual palette as Order for consistency
+
+    public static Color GetDeliveryStatusBackColor(DeliveryStatus status) => status switch
+    {
+        DeliveryStatus.Offen         => _offenBack,        // yellow
+        DeliveryStatus.Abgeschlossen => _freigegebenBack,  // blue
+        DeliveryStatus.Fakturiert    => _gebuchtBack,      // green
+        DeliveryStatus.Storniert     => _storniertBack,    // grey
+        _                            => SystemColors.Window
+    };
+
+    public static Color GetDeliveryStatusLabelColor(DeliveryStatus status) => status switch
+    {
+        DeliveryStatus.Offen         => _offenLabel         ?? Color.DarkOrange,
+        DeliveryStatus.Abgeschlossen => _freigegebenLabel   ?? Color.SteelBlue,
+        DeliveryStatus.Fakturiert    => _gebuchtLabel       ?? Color.DarkGreen,
+        DeliveryStatus.Storniert     => _storniertLabel     ?? Color.Gray,
+        _                            => SystemColors.ControlText
+    };
 
     private static Color TryParseHtmlColor(string? html, Color fallback)
     {

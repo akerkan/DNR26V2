@@ -39,6 +39,30 @@ These rules were violated multiple times. They are NON-NEGOTIABLE:
 
 ---
 
+## ⚠️ DESIGNER CRASH — ROOT CAUSE & PREVENTION
+
+**The Visual Studio Designer CANNOT open a form if the project has ANY compile error — even if the error is unrelated to that form.**
+
+The error message is:
+> *"Die Basisklasse 'DNR26V2.Forms.Base.BaseListForm' konnte nicht geladen werden."*
+
+### Why this happens:
+- The Designer needs to instantiate the base class at design time.
+- If the project does not compile cleanly, the Designer cannot load any assembly → fails on ALL forms.
+
+### Most common causes in this project:
+1. **An event hook in `WireUpEvents()` references a Button/Control that does NOT yet exist in `.Designer.cs`**
+   Example: `btnAlleAuswaehlenGespeichert.Click += ...` — if `btnAlleAuswaehlenGespeichert` is not declared in the Designer, the project won't compile → Designer breaks.
+2. **A new field is declared in `.cs` but not in `.Designer.cs`** (or vice versa).
+
+### RULE — NEVER VIOLATE:
+- **NEVER add an event hook in `WireUpEvents()` for a control that does not yet exist in `.Designer.cs`.**
+- **Always add the control to the Designer FIRST, then wire up the event in code.**
+- **After any code change: build the project (Strg+Shift+B) before opening the Designer.**
+- **If the Designer breaks → immediately revert the last code change.**
+
+---
+
 ## ⚠️ DESIGNER CODE RULES — ABSOLUTE, NEVER VIOLATE
 
 **The Designer can ONLY serialize linear, unconditional code. Any logic causes a Designer crash.**
@@ -60,8 +84,8 @@ These rules were violated multiple times. They are NON-NEGOTIABLE:
 tabDetail.Controls.Add(tabStamm);
 tabDetail.Controls.Add(tabAdresse);
 tabDetail.Controls.Add(tabEinstellungen);
-tabDetail.Controls.Add(tabLiefertage);   // position = order here
-tabDetail.Controls.Add(tabLeihgeraete);  // NOT SetChildIndex!
+tabDetail.Controls.Add(tabLiefertage);
+tabDetail.Controls.Add(tabLeihgeraete);
 
 // ✅ RowStyles: explicit individual lines, never in a loop
 tlpXxx.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
@@ -147,6 +171,88 @@ modelBuilder.Entity<Customer>()
 
 - All code comments → **English or German only**
 - Turkish comments are **NOT allowed** anywhere in the codebase
+
+---
+
+## ⚠️ STATUS COLOR HELPER — `Helpers\StatusColorHelper.cs`
+
+All grid row colors and status label colors for `OrderStatus`, `DeliveryStatus`, `InvoiceStatus` etc. MUST be routed through `StatusColorHelper`.
+
+- Colors are configured once at form load via `StatusColorHelper.Configure(AppSetup setup)`
+- Defaults are hardcoded as fallback (no DB = still works)
+- `AppSetup` stores hex color strings: `ColorOrderOffen`, `ColorOrderFreigegeben`, `ColorOrderGebucht`, `ColorOrderStorniert`
+- Optional label ForeColors: `ColorOrderLabelOffen`, `ColorOrderLabelFreigegeben`, `ColorOrderLabelGebucht`, `ColorOrderLabelStorniert`
+
+**Standard color mapping:**
+
+| Status       | Grid BackColor (hex) | Label ForeColor |
+|---|---|---|
+| kein Auftrag | `SystemColors.Window` | `SystemColors.ControlText` |
+| Offen        | `#FFFFC8` (gelb)     | `DarkOrange` |
+| Freigegeben  | `#C8E6FF` (hellblau) | `SteelBlue` |
+| Gebucht      | `#C8FFC8` (grün)     | `DarkGreen` |
+| Storniert    | `#F0F0F0` (grau)     | `Gray` |
+
+**Usage in forms:**
+```csharp
+// Grid row color (CellFormatting):
+row.DefaultCellStyle.BackColor = StatusColorHelper.GetOrderStatusBackColor(dto.AuftragStatus);
+
+// Status label:
+lblAuftragStatus.ForeColor = StatusColorHelper.GetOrderStatusLabelColor(_currentStatus);
+
+// Load once in LoadAppSetupAsync():
+StatusColorHelper.Configure(setup);
+```
+
+---
+
+## ⚠️ FRMORDERENTRY — COMPLETED PATTERNS
+
+`FrmOrderEntry` is the daily order entry form. Key patterns to follow for all future order-related forms:
+
+### Tagesauswahl (Wochentag-Buttons)
+- `btnMo`..`btnSo` + `btnAlle` — highlighted with `SteelBlue` on selection
+- Active button tracked in `_activeDayBtn`
+- `_selectedDay` filters the customer list
+
+### Kunden-Grid (left panel)
+- `dgwKunden` — DataSource = `List<OrderKundeListDto>` (in-memory filter, no re-query)
+- Checkbox column `colKundeChecked` — only rows with `AuftragId > 0` can be checked
+- Unchecking or checking rows without saved Auftrag → silently prevented (MessageBox)
+- `_checkedKundeIds: HashSet<int>` — tracks selections across filter changes
+- `BtnAlleAuswaehlenGespeichert` — selects all Offen+saved rows at once
+- `_suppressKundenChanged` flag prevents cascading SelectionChanged calls
+- `_suppressFilter` flag prevents Tour-ComboBox rebuild from triggering filter
+
+### Positions-Grid (right panel)
+- `dgwPositionen` — unbound, manual row management
+- Column names set programmatically in `FixPositionenColumnNames()` (not in Designer)
+- Enter key navigates: Menge → Gewicht → Preis → Notiz → next row Menge
+- Editable only when `Status = Offen` (or null)
+
+### Async locking
+- `SemaphoreSlim _lock = new(1,1)` — protects ALL `_orderService` + `_db` calls
+- Pattern: `await _lock.WaitAsync(); try { ... } finally { _lock.Release(); }`
+
+### FactBox (right side panel)
+- `pnlFactBox` — shows Saldo, LetzterAuftrag, OffeneAufträge, Tour
+- Hidden if `PreisAusblenden = true`
+
+### Button visibility rules (already implemented)
+| Status | Speichern | Hinzufügen | Freigeben | Buchen | Löschen | Stornieren | Nachlieferung |
+|---|---|---|---|---|---|---|---|
+| null/Offen | ✅ | ✅ | ✅ (if saved) | ✅ | ✅ (if saved) | ❌ | ❌ |
+| Freigegeben | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ | ❌ |
+| Gebucht | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Storniert | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+### TurKontrolle
+- `AppSetup.TurKontrolle` — if `true`, customer must have a Tour assigned before Speichern/Freigeben
+- Loaded once in `LoadAppSetupAsync()` into `_turKontrolleEnabled`
+
+### AdvanceToNextUnbooked
+- After F5 Buchen: automatically moves selection to next customer without an Auftrag (wrap-around)
 
 ---
 
@@ -294,6 +400,8 @@ private void MenuXxx_Click(object? sender, EventArgs e)
 - **Soft-Delete** for CustomerProduct (`Aktiv = false`), no physical deletion
 - **No physical deletion** on any document record — use Status + Storno reference
 - **`_isLoading` flag pattern** in form Load handlers to suppress `ValueChanged` events during initialization
+- **`_suppressKundenChanged` flag pattern** in grid forms with left/right panels to prevent cascading SelectionChanged
+- **`_suppressFilter` flag pattern** when rebuilding ComboBox items that have SelectedIndexChanged wired
 
 ---
 
@@ -356,19 +464,25 @@ private void MenuXxx_Click(object? sender, EventArgs e)
 - Migrations: `Module3_Product_Felder_Printfarbe`, `Module3_ProductAttributes`,
   `System_UserGridSettings`, `AddIstVorlageToProductAttribute`
 
-### 🔲 MODULE 4 – Auftragserfassung
-- Entities planned: `Order` (table: `Orders`), `OrderLine` (table: `OrderLines`)
-- Entities planned: `OrderArchive` (table: `OrderArchives`), `OrderLineArchive` (table: `OrderLineArchives`) — for future use
-- `AppSetup.AuftraegeArchivieren` → column exists in DB, not yet implemented
-- Services planned: `IOrderService`, `OrderService`
-- Forms planned: `FrmOrderEntry` (Tageserfassung), `FrmOrderList` (Archiv/Übersicht)
-- Key rules:
-  - **Freigeben** separates editing phase from posting phase
-  - **Buchen & Liefern (F5)** creates Lieferschein automatically via `DeliveryService.CreateFromOrderAsync`
-  - **Nachlieferung** creates new Auftrag + new Lieferschein (same Kunde/Tag)
-  - **Löschen** only when `Status = Offen` (soft-delete, no document number yet)
-  - **Stornieren** when `Status = Freigegeben` or `Gebucht`
-  - When Gebucht-Stornierung: linked Lieferschein also → Storniert
+### ✅ MODULE 4 – Auftragserfassung
+- Entities: `Order`, `OrderLine`
+- Services: `IOrderService`, `OrderService`
+- DTOs: `OrderKundeListDto`, `OrderLineDto`, `ArtikelSuchDto`, `KundenFactBoxDto`
+- Helpers: `StatusColorHelper` (`Helpers\StatusColorHelper.cs`) — centralized status colors
+- AppSetup extensions: `TurKontrolle`, `ColorOrderOffen/Freigegeben/Gebucht/Storniert`, label colors
+- Forms:
+  - `FrmOrderEntry` — daily order entry (SplitContainer left/right, day buttons, tour filter)
+    - Left: customer grid with checkbox column, `btnAlleFreigeben`, `btnAlleAuswaehlenGespeichert`
+    - Right: positions grid, FactBox panel, action buttons
+    - Keyboard: F5=Buchen, Ctrl+S=Speichern, Ins=Hinzufügen, Del=Zeile löschen, Space=Checkbox toggle
+    - Enter navigation: Menge→Gewicht→Preis→Notiz→next row
+    - Auto-advance after Buchen to next customer without Auftrag
+- Migrations: `Module4_Orders`, `Module4_AppSetup_StatusColors`
+- Key implementation rules:
+  - Checkbox in Kunden-Grid: only allowed when `AuftragId > 0`
+  - `_checkedKundeIds` HashSet survives filter changes
+  - `_lock` SemaphoreSlim protects all async service calls
+  - `StatusColorHelper.Configure(setup)` called once in `LoadAppSetupAsync()`
 
 ### 🔲 MODULE 5 – Lieferungen
 - Entities planned: `DeliveryHeader` (table: `Deliveries`), `DeliveryLine` (table: `DeliveryLines`), `DeliveryLineChange` (table: `DeliveryLineChanges`)
@@ -380,6 +494,7 @@ private void MenuXxx_Click(object? sender, EventArgs e)
   - Einzeldruck (single print)
   - Nachlieferung button → creates new Auftrag (same Kunde/Tag, Status = Freigegeben)
   - Stornieren → Delivery.Status = Storniert, linked Auftrag zurück → Freigegeben
+  - Abschliessen → Delivery.Status = Abgeschlossen
 
 ### 🔲 MODULE 6 – Rechnungen
 - Entities planned: `InvoiceHeader` (table: `Invoices`), `InvoiceLine` (table: `InvoiceLines`), `InvoiceDelivery` (table: `InvoiceDeliveries`)
@@ -414,8 +529,8 @@ private void MenuXxx_Click(object? sender, EventArgs e)
 | `ProductAttributeMapping` | `ProductAttributeMappings` | Module3_ProductAttributes | ✅ |
 | `CustomerProduct` | `CustomerProducts` | Module3_ProductAttributes | ✅ |
 | `CustomerProductAttributeMapping` | `CustomerProductAttributeMappings` | Module3_ProductAttributes | ✅ |
-| `Order` | `Orders` | Module4_Orders *(planned)* | 🔲 |
-| `OrderLine` | `OrderLines` | Module4_Orders *(planned)* | 🔲 |
+| `Order` | `Orders` | Module4_Orders | ✅ |
+| `OrderLine` | `OrderLines` | Module4_Orders | ✅ |
 | `OrderArchive` | `OrderArchives` | Module4_Archive *(future)* | 🔲 |
 | `OrderLineArchive` | `OrderLineArchives` | Module4_Archive *(future)* | 🔲 |
 | `DeliveryHeader` | `Deliveries` | Module5_Deliveries *(planned)* | 🔲 |

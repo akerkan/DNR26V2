@@ -309,6 +309,56 @@ public class OrderService : IOrderService
             throw new ValidationException("Auftrag ist bereits storniert oder nicht gefunden.");
     }
 
+    // ── Auftragsübersicht (für FrmOrderList) ──────────────────────────────────
+
+    public async Task<IReadOnlyList<AuftragListDto>> GetAuftragListeAsync(
+        DateTime? von, DateTime? bis, string? kunde, OrderStatus? status)
+    {
+        const string sql = """
+            SELECT o.Id,
+                   o.Auftragsnummer                  AS AuftragNr,
+                   o.LieferDatum                     AS Lieferdatum,
+                   c.Kundenname,
+                   tv.Bezeichnung                    AS Tour,
+                   o.Status,
+                   dh.Lieferscheinnummer             AS LieferscheinNr,
+                   ISNULL(pos.AnzahlPositionen, 0)   AS AnzahlPositionen,
+                   ISNULL(pos.Gesamtbetrag, 0)       AS Gesamtbetrag,
+                   o.KundeId
+            FROM   Orders o
+            INNER  JOIN Customer c ON c.Id = o.KundeId
+            LEFT   JOIN ProductAttributeValue tv ON tv.Id = c.TurWertId
+            LEFT   JOIN (
+                SELECT AuftragId,
+                       COUNT(*)            AS AnzahlPositionen,
+                       SUM(Menge * Preis)  AS Gesamtbetrag
+                FROM   OrderLines
+                GROUP  BY AuftragId
+            ) pos ON pos.AuftragId = o.Id
+            LEFT   JOIN (
+                SELECT AuftragId, MIN(Lieferscheinnummer) AS Lieferscheinnummer
+                FROM   Deliveries
+                WHERE  Status <> 3   -- not Storniert
+                GROUP  BY AuftragId
+            ) dh ON dh.AuftragId = o.Id
+            WHERE  o.Status <> 4   -- never show Geloescht
+            AND    (@Von    IS NULL OR CAST(o.LieferDatum AS date) >= CAST(@Von AS date))
+            AND    (@Bis    IS NULL OR CAST(o.LieferDatum AS date) <= CAST(@Bis AS date))
+            AND    (@Kunde  IS NULL OR c.Kundenname LIKE '%' + @Kunde + '%')
+            AND    (@Status IS NULL OR o.Status = @Status)
+            ORDER  BY o.LieferDatum DESC, c.Kundenname
+            """;
+
+        using var conn = _dapper.CreateConnection();
+        return (await conn.QueryAsync<AuftragListDto>(sql, new
+        {
+            Von    = von,
+            Bis    = bis,
+            Kunde  = kunde,
+            Status = status
+        })).AsList();
+    }
+
     // ── Helper: SaveChanges with automatic tracker cleanup on failure ─────────
 
     private async Task SaveChangesAsync()
@@ -323,5 +373,18 @@ public class OrderService : IOrderService
             _db.ChangeTracker.Clear();
             throw;
         }
+    }
+
+    // ── Öffnen (Freigegeben → Offen zurücksetzen) ─────────────────────────────
+
+    public async Task OeffnenAsync(int auftragId)
+    {
+        var affected = await _db.Order
+            .Where(o => o.Id == auftragId && o.Status == OrderStatus.Freigegeben)
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Offen));
+
+        if (affected == 0)
+            throw new ValidationException(
+                "Nur freigegebene Aufträge können zurück auf Offen gesetzt werden.");
     }
 }

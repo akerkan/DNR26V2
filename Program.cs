@@ -109,6 +109,7 @@ static class Program
             new FrmOrderEntry(
                 sp.GetRequiredService<IOrderService>(),
                 sp.GetRequiredService<AppDbContext>()));
+        services.AddTransient<FrmOrderList>();
 
         return services;
     }

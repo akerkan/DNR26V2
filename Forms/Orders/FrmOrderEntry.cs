@@ -14,7 +14,7 @@ namespace DNR26V2.Forms.Orders;
 public partial class FrmOrderEntry : BaseListForm
 {
     private readonly IOrderService _orderService;
-    private readonly AppDbContext  _db;
+    private readonly AppDbContext _db;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // New runtime flag loaded from AppSetup
@@ -93,7 +93,7 @@ public partial class FrmOrderEntry : BaseListForm
         btnAlle.Click += (_, _) => SelectDay(btnAlle, null);
 
         // Neu: Button in Designer hinzufügen (siehe Hinweis unten)
-       btnAlleAuswaehlenGespeichert.Click += BtnAlleAuswaehlenGespeichert_Click;
+        btnAlleAuswaehlenGespeichert.Click += BtnAlleAuswaehlenGespeichert_Click;
 
 
         txtKundeFilter.TextChanged += (_, _) => { if (!_suppressFilter) OnFilterChanged(); };
@@ -561,8 +561,10 @@ public partial class FrmOrderEntry : BaseListForm
         btnBuchen.Enabled = istOffen || istFreigeben;
         btnLoeschen.Enabled = istOffen && _currentAuftragId > 0;
         btnLoeschen.Visible = istOffen;
-        btnStornieren.Enabled = istFreigeben || istGebucht;
-        btnStornieren.Visible = istFreigeben || istGebucht;
+        // Freigegeben → "Öffnen" (zurück auf Offen); Gebucht → kein Zurück auf Auftrag-Ebene
+        btnStornieren.Text = istFreigeben ? "Öffnen" : "Stornieren";
+        btnStornieren.Enabled = istFreigeben;
+        btnStornieren.Visible = istFreigeben;
         btnNachlieferung.Enabled = istGebucht;
         btnNachlieferung.Visible = istGebucht;
     }
@@ -1023,26 +1025,56 @@ public partial class FrmOrderEntry : BaseListForm
         catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
     }
 
-    // ── Stornieren ────────────────────────────────────────────────────────────
+
+    // ── Öffnen / Stornieren ───────────────────────────────────────────────────
 
     private async void BtnStornieren_Click(object? s, EventArgs e)
     {
         if (_currentAuftragId is not int auftragId || auftragId <= 0) return;
-        if (!Confirm("Auftrag stornieren?")) return;
 
-        try
+        // Freigegeben → zurück auf Offen setzen ("Öffnen")
+        if (_currentStatus == OrderStatus.Freigegeben)
         {
-            await _lock.WaitAsync();
-            try { await _orderService.StornierenAsync(auftragId); }
-            finally { _lock.Release(); }
+            if (!Confirm("Auftrag wieder auf Offen setzen?")) return;
+            try
+            {
+                await _lock.WaitAsync();
+                try { await _orderService.OeffnenAsync(auftragId); }
+                finally { _lock.Release(); }
 
-            lblStatusInfo.Text = "Auftrag storniert.";
-            await ReloadAsync();
-            SelectKundeById(_selectedKundeId);
+                lblStatusInfo.Text = "Auftrag wieder geöffnet.";
+                await ReloadAsync();
+                SelectKundeById(_selectedKundeId);
+            }
+            catch (ValidationException ex) { ShowError(ex.Message); }
+            catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
+            return;
         }
-        catch (ValidationException ex) { ShowError(ex.Message); }
-        catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
+
+        // Gebucht → Stornieren (Lieferschein-Ebene, hier nicht erlaubt)
+        ShowError("Gebuchte Aufträge können nur über die Lieferungen storniert werden.");
     }
+
+    // ── Stornieren ────────────────────────────────────────────────────────────
+
+    //private async void BtnStornieren_Click(object? s, EventArgs e)
+    //{
+    //    if (_currentAuftragId is not int auftragId || auftragId <= 0) return;
+    //    if (!Confirm("Auftrag stornieren?")) return;
+
+    //    try
+    //    {
+    //        await _lock.WaitAsync();
+    //        try { await _orderService.StornierenAsync(auftragId); }
+    //        finally { _lock.Release(); }
+
+    //        lblStatusInfo.Text = "Auftrag storniert.";
+    //        await ReloadAsync();
+    //        SelectKundeById(_selectedKundeId);
+    //    }
+    //    catch (ValidationException ex) { ShowError(ex.Message); }
+    //    catch (Exception ex) { ShowError($"Fehler:\n{ex.Message}"); }
+    //}
 
     // ── Nachlieferung ─────────────────────────────────────────────────────────
 
@@ -1135,5 +1167,44 @@ public partial class FrmOrderEntry : BaseListForm
         if (keyData == Keys.Delete && dgwPositionen.Focused)
         { DeleteSelectedZeile(); return true; }
         return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    // ── Extern navigieren (von FrmOrderList aus) ──────────────────────────────
+
+    public async void NavigateToAuftrag(int kundeId, DateTime lieferdatum)
+    {
+        BringToFront();
+
+        _isLoading = true;
+        dtpLieferdatum.Value = lieferdatum.Date;
+        _isLoading = false;
+
+        // Always use "Alle" so the customer appears regardless of delivery-day settings
+        if (_activeDayBtn is not null)
+        {
+            _activeDayBtn.BackColor = SystemColors.Control;
+            _activeDayBtn.ForeColor = SystemColors.ControlText;
+        }
+        btnAlle.BackColor = Color.SteelBlue;
+        btnAlle.ForeColor = Color.White;
+        _activeDayBtn = btnAlle;
+        _selectedDay = null;
+
+        // Reload the customer list and then explicitly load the positions for the requested customer.
+        await ReloadAsync();
+
+        // Ensure the row is selected in the grid (visual) and then force-load positions for the requested Kunde.
+        SelectKundeById(kundeId);
+
+        // Directly load positions for the requested customer to avoid race conditions
+        // where SelectionChanged may not reliably fire before/after ReloadAsync.
+        try
+        {
+            await LoadPositionenAsync(kundeId);
+        }
+        catch
+        {
+            // swallow — LoadPositionenAsync already shows errors via ShowError
+        }
     }
 }

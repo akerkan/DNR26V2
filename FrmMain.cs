@@ -86,6 +86,26 @@ public partial class FrmMain : Form
     private void MenuAuftragserfassung_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmOrderEntry>(ref FrmOrderEntryInstance, this, () => GetService<FrmOrderEntry>());
 
+    // ── Verkauf-Menü (Erweiterung) ────────────────────────────────────────────
+
+    private FrmOrderList? FrmOrderListInstance;
+
+    private void MenuAuftraege_Click(object? sender, EventArgs e)
+        => BaseListForm.GetOrCreateInstance<FrmOrderList>(
+               ref FrmOrderListInstance, this, () => GetService<FrmOrderList>());
+
+    /// <summary>
+    /// Navigiert zu FrmOrderEntry und setzt Datum + Kunden-Selektion.
+    /// Wird von FrmOrderList (Doppelklick) aufgerufen.
+    /// </summary>
+    public void OpenAuftragserfassung(int kundeId, DateTime lieferdatum)
+    {
+        var frm = BaseListForm.GetOrCreateInstance<FrmOrderEntry>(
+            ref FrmOrderEntryInstance, this, () => GetService<FrmOrderEntry>());
+
+        frm.NavigateToAuftrag(kundeId, lieferdatum);
+    }
+
     private void OnMenuItemNotImplemented(object? sender, EventArgs e)
     {
         if (sender is ToolStripMenuItem item)

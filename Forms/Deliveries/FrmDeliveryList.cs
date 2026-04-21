@@ -24,11 +24,12 @@ public partial class FrmDeliveryList : BaseListForm
         ["Gesamtbetrag"]     = "Gesamtbetrag",
     };
 
-    private readonly IDeliveryService  _deliveryService;
-    private readonly SemaphoreSlim     _lock           = new(1, 1);
-    private readonly HashSet<int>      _checkedIds     = new();
-    private bool                       _isLoading;
-    private bool                       _suppressChecked;
+    private readonly IDeliveryService _deliveryService;
+    private readonly SemaphoreSlim    _lock            = new(1, 1);
+    private readonly HashSet<int>     _checkedIds      = new();
+    private bool                      _isLoading;
+    private bool                      _suppressChecked;
+    private bool                      _detailGridStyled;
 
     // ── Konstruktoren ─────────────────────────────────────────────────────────
 

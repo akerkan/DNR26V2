@@ -14,4 +14,7 @@ public class DeliveryLine : AuditableEntity
     // Navigation
     public DeliveryHeader         Lieferschein { get; set; } = null!;
     public MasterData.Product     Artikel      { get; set; } = null!;
+
+    // Bestehende Properties beibehalten — NUR HINZUFÜGEN:
+    public decimal MengeFakturiert { get; set; } = 0m;   // akkumuliert über mehrere Rechnungen
 }

@@ -4,6 +4,8 @@ using DNR26V2.Domain.Entities.System;
 using DNR26V2.Domain.Entities.Orders;
 using DNR26V2.Domain.Entities.Deliveries;
 using Microsoft.EntityFrameworkCore;
+using DNR26V2.Domain.Entities.Invoices;
+using DNR26V2.Data.Configurations.Invoices;
 
 namespace DNR26V2.Data.Context;
 
@@ -39,11 +41,15 @@ public class AppDbContext : DbContext
     // ── Module 5: Deliveries (entity needed for Buchen) ───────────────────────
     public DbSet<DeliveryHeader> DeliveryHeader { get; set; } = null!;
     public DbSet<DeliveryLine>   DeliveryLine   { get; set; } = null!;
+    public DbSet<InvoiceHeader> Invoices     { get; set; }
+    public DbSet<InvoiceLine>   InvoiceLines { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        new InvoiceHeaderConfiguration().Configure(modelBuilder.Entity<InvoiceHeader>());
+        new InvoiceLineConfiguration().Configure(modelBuilder.Entity<InvoiceLine>());
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

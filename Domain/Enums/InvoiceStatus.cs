@@ -2,11 +2,7 @@ namespace DNR26V2.Domain.Enums;
 
 public enum InvoiceStatus
 {
-    Offen       = 0,
-    TeilBezahlt = 1,
-    Bezahlt     = 2,
-    Storniert   = 3,
-    Mahnung1    = 4,
-    Mahnung2    = 5,
-    Inkasso     = 6
+    Offen      = 0,   // erfasst, noch nicht gebucht
+    Gebucht    = 1,   // finalisiert, LS als Fakturiert markiert
+    Storniert  = 2,   // storniert (Gutschrift — zukünftig)
 }

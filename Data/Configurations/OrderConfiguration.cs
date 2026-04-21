@@ -5,33 +5,30 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DNR26V2.Data.Configurations;
 
-internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
+public class OrderConfiguration : IEntityTypeConfiguration<Order>
 {
-    public void Configure(EntityTypeBuilder<Order> entity)
+    public void Configure(EntityTypeBuilder<Order> builder)
     {
-        entity.ToTable("Orders");
-        entity.HasKey(e => e.Id);
-        entity.Property(e => e.Id).UseIdentityColumn();
+        builder.ToTable("Orders");
+        builder.HasKey(o => o.Id);
+        builder.Property(o => o.Id).UseIdentityColumn();
 
-        entity.Property(e => e.Auftragsnummer).HasMaxLength(20).IsRequired();
-        entity.Property(e => e.Status).HasDefaultValue(OrderStatus.Offen);
-        entity.Property(e => e.Notiz).HasMaxLength(500);
+        builder.Property(o => o.Auftragsnummer).IsRequired().HasMaxLength(20);
+        builder.Property(o => o.Status).HasDefaultValue(OrderStatus.Offen);
+        builder.Property(o => o.Notiz).HasMaxLength(500);
 
-        entity.HasIndex(e => e.Auftragsnummer).IsUnique();
+        builder.HasIndex(o => o.Auftragsnummer).IsUnique();
+        builder.HasIndex(o => new { o.KundeId, o.LieferDatum })
+               .IsUnique()
+               .HasFilter("[Status] <> 3 AND [Status] <> 4");
 
-        // Only Offen(0) and Freigegeben(1) must be unique per customer+date.
-        // Gebucht(2) is excluded → multiple Nachlieferungen allowed per day.
-        entity.HasIndex(e => new { e.KundeId, e.LieferDatum })
-              .IsUnique()
-              .HasFilter("[Status] <> 2 AND [Status] <> 3 AND [Status] <> 4");
+        builder.HasOne(o => o.Kunde)
+               .WithMany()
+               .HasForeignKey(o => o.KundeId)
+               .OnDelete(DeleteBehavior.NoAction);
 
-        entity.HasOne(e => e.Kunde)
-              .WithMany()
-              .HasForeignKey(e => e.KundeId)
-              .OnDelete(DeleteBehavior.NoAction);
-
-        entity.Property(e => e.ErstelltAm).HasDefaultValueSql("GETDATE()");
-        entity.Property(e => e.ErstelltVon).HasMaxLength(100).IsRequired();
-        entity.Property(e => e.GeaendertVon).HasMaxLength(100);
+        builder.Property(o => o.ErstelltAm).HasDefaultValueSql("GETDATE()");
+        builder.Property(o => o.ErstelltVon).HasMaxLength(100).IsRequired();
+        builder.Property(o => o.GeaendertVon).HasMaxLength(100);
     }
 }

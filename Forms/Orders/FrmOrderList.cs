@@ -24,11 +24,11 @@ public partial class FrmOrderList : BaseListForm
         ["Gesamtbetrag"]     = "Gesamtbetrag",
     };
 
-    private readonly IOrderService     _orderService;
-    private readonly SemaphoreSlim     _lock      = new(1, 1);
-    private readonly HashSet<int>      _checkedIds = new();
-    private bool                       _isLoading;
-    private bool                       _suppressChecked;
+    private readonly IOrderService _orderService;
+    private readonly SemaphoreSlim _lock           = new(1, 1);
+    private readonly HashSet<int>  _checkedIds      = new();
+    private bool                   _isLoading;
+    private bool                   _suppressChecked;
 
     // ── Konstruktoren ─────────────────────────────────────────────────────────
 
@@ -65,10 +65,10 @@ public partial class FrmOrderList : BaseListForm
         dgwAuftraege.CellValueChanged             += DgwAuftraege_CellValueChanged;
         dgwAuftraege.KeyDown                      += DgwAuftraege_KeyDown;
 
-        btnFreigeben.Click    += BtnFreigeben_Click;
-        btnStornieren.Click   += BtnOeffnen_Click;
-        btnLoeschen.Click     += BtnLoeschen_Click;
-        btnBuchen.Click       += BtnBuchen_Click;
+        btnFreigeben.Click     += BtnFreigeben_Click;
+        btnStornieren.Click    += BtnOeffnen_Click;
+        btnLoeschen.Click      += BtnLoeschen_Click;
+        btnBuchen.Click        += BtnBuchen_Click;
         btnAlleMarkieren.Click += BtnAlleMarkieren_Click;
 
         EnableColumnChooser(dgwAuftraege);
@@ -86,7 +86,7 @@ public partial class FrmOrderList : BaseListForm
         dtpVon.Value = DateTime.Today.AddDays(-7);
         dtpBis.Value = DateTime.Today;
         _isLoading = false;
-        cmbStatus.SelectedIndex = 2;   // Standard: Freigegeben — bereit zum Buchen
+        cmbStatus.SelectedIndex = 2;   // Standard: Freigegeben
 
         await LoadListAsync();
     }
@@ -131,6 +131,7 @@ public partial class FrmOrderList : BaseListForm
         finally { _suppressChecked = false; }
 
         UpdateButtonStates();
+        ClearDetail();
     }
 
     // ── Grid stylen ───────────────────────────────────────────────────────────
@@ -142,12 +143,11 @@ public partial class FrmOrderList : BaseListForm
         ApplyColumnHeaders(dgwAuftraege, _columnHeaders);
         ConfigureGrid(dgwAuftraege);
 
-        // Keep checkbox column visible and not read-only
         if (dgwAuftraege.Columns.Contains("colAuftragChecked"))
         {
-            dgwAuftraege.Columns["colAuftragChecked"].Visible   = true;
-            dgwAuftraege.Columns["colAuftragChecked"].ReadOnly  = false;
-            dgwAuftraege.Columns["colAuftragChecked"].Width     = 30;
+            dgwAuftraege.Columns["colAuftragChecked"].Visible    = true;
+            dgwAuftraege.Columns["colAuftragChecked"].ReadOnly   = false;
+            dgwAuftraege.Columns["colAuftragChecked"].Width      = 30;
             dgwAuftraege.Columns["colAuftragChecked"].HeaderText = "";
         }
 
@@ -166,7 +166,6 @@ public partial class FrmOrderList : BaseListForm
         ShowCol("AnzahlPositionen", "Pos.",              50, right: true);
         ShowCol("Gesamtbetrag",     "Gesamt",            95, format: "N2", right: true);
 
-        // Checkbox column must stay non-readonly after ConfigureGrid sets ReadOnly=true
         dgwAuftraege.ReadOnly = false;
         if (dgwAuftraege.Columns.Contains("colAuftragChecked"))
             dgwAuftraege.Columns["colAuftragChecked"].ReadOnly = false;
@@ -219,7 +218,6 @@ public partial class FrmOrderList : BaseListForm
         if (dgwAuftraege.Columns[e.ColumnIndex]?.Name != "colAuftragChecked") return;
         if (dgwAuftraege.Rows[e.RowIndex].DataBoundItem is not AuftragListDto dto) return;
 
-        // Only Freigegeben orders can be checked (for Buchen)
         if (dto.Status != OrderStatus.Freigegeben)
         {
             _suppressChecked = true;
@@ -244,7 +242,7 @@ public partial class FrmOrderList : BaseListForm
         if (e.KeyCode != Keys.Space) return;
         if (dgwAuftraege.CurrentRow?.DataBoundItem is not AuftragListDto dto) return;
 
-        e.Handled         = true;
+        e.Handled          = true;
         e.SuppressKeyPress = true;
 
         if (dto.Status != OrderStatus.Freigegeben)
@@ -268,7 +266,6 @@ public partial class FrmOrderList : BaseListForm
 
     private void BtnAlleMarkieren_Click(object? s, EventArgs e)
     {
-        // Determine current status filter: 1 = Offen, 2 = Freigegeben
         OrderStatus? filterStatus = cmbStatus.SelectedIndex switch
         {
             1 => OrderStatus.Offen,
@@ -278,29 +275,25 @@ public partial class FrmOrderList : BaseListForm
 
         if (filterStatus is null) return;
 
-        // Count visible rows with matching status and how many of them are currently checked
-        int totalMatching = 0;
+        int totalMatching   = 0;
         int checkedMatching = 0;
 
         foreach (DataGridViewRow row in dgwAuftraege.Rows)
         {
             if (row.DataBoundItem is not AuftragListDto dto) continue;
             if (dto.Status != filterStatus) continue;
-
             totalMatching++;
             if (_checkedIds.Contains(dto.Id)) checkedMatching++;
         }
 
         if (totalMatching == 0) return;
 
-        // Toggle: if not all selected => select all; if all selected => deselect all
         if (checkedMatching < totalMatching)
         {
             foreach (DataGridViewRow row in dgwAuftraege.Rows)
             {
                 if (row.DataBoundItem is not AuftragListDto dto) continue;
-                if (dto.Status == filterStatus)
-                    _checkedIds.Add(dto.Id);
+                if (dto.Status == filterStatus) _checkedIds.Add(dto.Id);
             }
         }
         else
@@ -308,8 +301,7 @@ public partial class FrmOrderList : BaseListForm
             foreach (DataGridViewRow row in dgwAuftraege.Rows)
             {
                 if (row.DataBoundItem is not AuftragListDto dto) continue;
-                if (dto.Status == filterStatus)
-                    _checkedIds.Remove(dto.Id);
+                if (dto.Status == filterStatus) _checkedIds.Remove(dto.Id);
             }
         }
 
@@ -348,13 +340,15 @@ public partial class FrmOrderList : BaseListForm
     // ── Button-Zustände ───────────────────────────────────────────────────────
 
     private void DgwAuftraege_SelectionChanged(object? s, EventArgs e)
-        => UpdateButtonStates();
+    {
+        UpdateButtonStates();
+        _ = LoadDetailAsync(SelectedDto());
+    }
 
     private void UpdateButtonStates()
     {
         var dto = SelectedDto();
 
-        // Determine if there are visible rows matching Offen/Freigegeben
         bool hasFreigegeben = dgwAuftraege.Rows
             .Cast<DataGridViewRow>()
             .Any(r => r.DataBoundItem is AuftragListDto a && a.Status == OrderStatus.Freigegeben);
@@ -363,34 +357,24 @@ public partial class FrmOrderList : BaseListForm
             .Cast<DataGridViewRow>()
             .Any(r => r.DataBoundItem is AuftragListDto a && a.Status == OrderStatus.Offen);
 
-        // Any checked Offen entries?
         bool hasCheckedOffen = dgwAuftraege.Rows
             .Cast<DataGridViewRow>()
             .Any(r => r.DataBoundItem is AuftragListDto a && _checkedIds.Contains(a.Id) && a.Status == OrderStatus.Offen);
 
-        // Button states: Freigeben enabled when selected is Offen OR at least one checked Offen exists
-        ApplyBtnState(btnFreigeben, dto?.Status == OrderStatus.Offen || hasCheckedOffen);
-        ApplyBtnState(btnStornieren, dto?.Status == OrderStatus.Freigegeben);
-        ApplyBtnState(btnLoeschen, dto?.Status == OrderStatus.Offen);
-        ApplyBtnState(btnBuchen, _checkedIds.Count > 0);
-
-        // Enable "Alle markieren" when the grid contains at least one Offen or Freigegeben row,
-        // depending on which status the user filtered to — simplify: enable if either present,
-        // but earlier logic will toggle only the currently filtered status.
+        ApplyBtnState(btnFreigeben,   dto?.Status == OrderStatus.Offen || hasCheckedOffen);
+        ApplyBtnState(btnStornieren,  dto?.Status == OrderStatus.Freigegeben);
+        ApplyBtnState(btnLoeschen,    dto?.Status == OrderStatus.Offen);
+        ApplyBtnState(btnBuchen,      _checkedIds.Count > 0);
         ApplyBtnState(btnAlleMarkieren, hasFreigegeben || hasOffen);
     }
 
-    /// <summary>
-    /// Setzt Enabled und setzt ForeColor hart zurück — verhindert
-    /// den "grau aber klickbar" Effekt durch veraltete ForeColor-Overrides.
-    /// </summary>
     private static void ApplyBtnState(Button btn, bool enabled)
     {
-        btn.Enabled = enabled;
-        btn.ForeColor = SystemColors.ControlText;   // WinForms grayt bei Enabled=false selbst
+        btn.Enabled   = enabled;
+        btn.ForeColor = SystemColors.ControlText;
     }
 
-    // ── Doppelklick → FrmOrderEntry navigieren ────────────────────────────────
+    // ── Doppelklick: Offen/Freigegeben → OrderEntry | Gebucht → DeliveryList ─
 
     private void DgwAuftraege_CellDoubleClick(object? s, DataGridViewCellEventArgs e)
     {
@@ -398,11 +382,15 @@ public partial class FrmOrderList : BaseListForm
         if (dgwAuftraege.Columns[e.ColumnIndex]?.Name == "colAuftragChecked") return;
         if (dgwAuftraege.Rows[e.RowIndex].DataBoundItem is not AuftragListDto dto) return;
 
-        if (MdiParent is FrmMain main)
+        if (MdiParent is not FrmMain main) return;
+
+        if (dto.Status == OrderStatus.Gebucht && dto.LieferscheinNr is not null)
+            main.OpenDeliveryListForLieferschein(dto.LieferscheinNr);
+        else if (dto.Status is OrderStatus.Offen or OrderStatus.Freigegeben)
             main.OpenAuftragserfassung(dto.KundeId, dto.Lieferdatum);
     }
 
-    // ── Buchen (Lieferschein erstellen für markierte Freigegeben-Aufträge) ────
+    // ── Buchen (Batch) ────────────────────────────────────────────────────────
 
     private async void BtnBuchen_Click(object? s, EventArgs e)
     {
@@ -444,7 +432,6 @@ public partial class FrmOrderList : BaseListForm
 
     private async void BtnFreigeben_Click(object? s, EventArgs e)
     {
-        // Collect targets: checked Offen orders first
         var targets = new List<int>();
 
         foreach (DataGridViewRow row in dgwAuftraege.Rows)
@@ -454,7 +441,6 @@ public partial class FrmOrderList : BaseListForm
                 targets.Add(dto.Id);
         }
 
-        // If no checked Offen orders, fall back to single selected Offen row
         if (targets.Count == 0)
         {
             var sel = SelectedDto();
@@ -467,7 +453,7 @@ public partial class FrmOrderList : BaseListForm
         if (!Confirm($"{targets.Count} Auftrag/Aufträge freigeben?")) return;
 
         int success = 0;
-        var errors = new List<string>();
+        var errors  = new List<string>();
 
         await _lock.WaitAsync();
         try
@@ -482,14 +468,10 @@ public partial class FrmOrderList : BaseListForm
                     _checkedIds.Remove(id);
                 }
                 catch (ValidationException ex) { errors.Add(ex.Message); }
-                catch (Exception ex) { errors.Add($"Id {id}: {ex.Message}"); }
+                catch (Exception ex)           { errors.Add($"Id {id}: {ex.Message}"); }
             }
         }
-        finally
-        {
-            Cursor = Cursors.Default;
-            _lock.Release();
-        }
+        finally { Cursor = Cursors.Default; _lock.Release(); }
 
         if (errors.Count > 0)
             ShowError($"{success} Auftrag/Aufträge freigegeben.\n\nFehler:\n{string.Join("\n", errors)}");
@@ -501,7 +483,6 @@ public partial class FrmOrderList : BaseListForm
 
     private async void BtnOeffnen_Click(object? s, EventArgs e)
     {
-        // Collect checked Freigegeben-Aufträge
         var targets = new List<int>();
         foreach (DataGridViewRow row in dgwAuftraege.Rows)
         {
@@ -510,7 +491,6 @@ public partial class FrmOrderList : BaseListForm
                 targets.Add(dto.Id);
         }
 
-        // Fallback: wenn nichts markiert ist → die aktuell ausgewählte Zeile verwenden
         if (targets.Count == 0)
         {
             var sel = SelectedDto();
@@ -521,7 +501,7 @@ public partial class FrmOrderList : BaseListForm
         if (!Confirm($"{targets.Count} Auftrag/Aufträge wieder auf Offen setzen?")) return;
 
         int success = 0;
-        var errors = new List<string>();
+        var errors  = new List<string>();
 
         await _lock.WaitAsync();
         try
@@ -536,40 +516,16 @@ public partial class FrmOrderList : BaseListForm
                     _checkedIds.Remove(id);
                 }
                 catch (ValidationException ex) { errors.Add(ex.Message); }
-                catch (Exception ex) { errors.Add($"Id {id}: {ex.Message}"); }
+                catch (Exception ex)           { errors.Add($"Id {id}: {ex.Message}"); }
             }
         }
-        finally
-        {
-            Cursor = Cursors.Default;
-            _lock.Release();
-        }
+        finally { Cursor = Cursors.Default; _lock.Release(); }
 
         if (errors.Count > 0)
             ShowError($"{success} Auftrag/Aufträge geöffnet.\n\nFehler:\n{string.Join("\n", errors)}");
 
         await LoadListAsync();
     }
-
-    // ── Stornieren ────────────────────────────────────────────────────────────
-
-    //private async void BtnStornieren_Click(object? s, EventArgs e)
-    //{
-    //    var dto = SelectedDto();
-    //    if (dto is null) return;
-    //    if (!Confirm($"Auftrag '{dto.AuftragNr}' stornieren?")) return;
-
-    //    try
-    //    {
-    //        await _lock.WaitAsync();
-    //        try { await _orderService.StornierenAsync(dto.Id); }
-    //        finally { _lock.Release(); }
-
-    //        await LoadListAsync();
-    //    }
-    //    catch (ValidationException ex) { ShowError(ex.Message); }
-    //    catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
-    //}
 
     // ── Löschen ───────────────────────────────────────────────────────────────
 
@@ -589,6 +545,103 @@ public partial class FrmOrderList : BaseListForm
         }
         catch (ValidationException ex) { ShowError(ex.Message); }
         catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
+    }
+
+    private bool _detailGridStyled;
+
+    // ── Detail-Panel laden ────────────────────────────────────────────────────
+
+    private async Task LoadDetailAsync(AuftragListDto? dto)
+    {
+        if (dto is null)
+        {
+            ClearDetail();
+            return;
+        }
+
+        lblDetailAuftragNrWert.Text = dto.AuftragNr;
+        lblDetailKundeWert.Text     = dto.Kundenname;
+        lblDetailDatumWert.Text     = dto.Lieferdatum.ToString("dd.MM.yyyy");
+        lblDetailGesamtWert.Text    = dto.Gesamtbetrag.ToString("N2") + " €";
+
+        lblDetailStatusWert.Text = dto.Status switch
+        {
+            OrderStatus.Offen       => "Offen",
+            OrderStatus.Freigegeben => "Freigegeben",
+            OrderStatus.Gebucht     => "Gebucht",
+            OrderStatus.Storniert   => "Storniert",
+            _                       => dto.Status.ToString()
+        };
+        lblDetailStatusWert.ForeColor = StatusColorHelper.GetOrderStatusLabelColor(dto.Status);
+
+        if (_orderService is null) return;
+
+        try
+        {
+            var positionen = await _orderService.GetPositionenByAuftragIdAsync(dto.Id);
+            dgwAuftragPositionen.DataSource = positionen.ToList();
+
+            // Always style — reliable column configuration on every load
+            StyleGridPositionen();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"LoadDetailAsync error AuftragId={dto.Id}: {ex.Message}");
+            dgwAuftragPositionen.DataSource = null;
+        }
+    }
+
+    private void ClearDetail()
+    {
+        lblDetailAuftragNrWert.Text     = "-";
+        lblDetailKundeWert.Text         = "-";
+        lblDetailDatumWert.Text         = "-";
+        lblDetailStatusWert.Text        = "-";
+        lblDetailStatusWert.ForeColor   = SystemColors.ControlText;
+        lblDetailGesamtWert.Text        = "-";
+        dgwAuftragPositionen.DataSource = null;
+    }
+
+    // ── Positionen-Grid stylen ────────────────────────────────────────────────
+
+    private void StyleGridPositionen()
+    {
+        // AutoGenerated columns only exist when DataSource has rows
+        if (dgwAuftragPositionen.Columns.Count == 0) return;
+
+        dgwAuftragPositionen.SuspendLayout();
+        try
+        {
+            ConfigureGrid(dgwAuftragPositionen);
+
+            foreach (DataGridViewColumn col in dgwAuftragPositionen.Columns)
+                col.Visible = false;
+
+            ShowDetailCol("Artikelnummer", "Art.-Nr.",     80);
+            ShowDetailCol("Produktname",   "Bezeichnung",   0, fill: true);
+            ShowDetailCol("Menge",         "Menge",         70, format: "N3", right: true);
+            ShowDetailCol("Gewicht",       "Gewicht",       70, format: "N3", right: true);
+            ShowDetailCol("Preis",         "Preis",         80, format: "N2", right: true);
+            ShowDetailCol("Notiz",         "Notiz",        150);
+        }
+        finally
+        {
+            dgwAuftragPositionen.ResumeLayout();
+        }
+    }
+
+    private void ShowDetailCol(string name, string header, int width,
+        bool fill = false, string? format = null, bool right = false)
+    {
+        if (!dgwAuftragPositionen.Columns.Contains(name)) return;
+        var col = dgwAuftragPositionen.Columns[name];
+        col.Visible    = true;
+        col.HeaderText = header;
+        col.ReadOnly   = true;
+        if (fill) col.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
+        if (format is not null) col.DefaultCellStyle.Format = format;
+        if (right) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

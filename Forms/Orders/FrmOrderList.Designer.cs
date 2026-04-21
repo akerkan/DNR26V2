@@ -14,33 +14,55 @@ partial class FrmOrderList
     private void InitializeComponent()
     {
         pnlFilter = new Panel();
+        btnFreigeben = new Button();
+        btnStornieren = new Button();
         lblVon = new Label();
+        btnLoeschen = new Button();
         dtpVon = new DateTimePicker();
+        btnBuchen = new Button();
         lblBis = new Label();
+        btnAlleMarkieren = new Button();
         dtpBis = new DateTimePicker();
         lblKunde = new Label();
         txtKunde = new TextBox();
         lblStatus = new Label();
         cmbStatus = new ComboBox();
         btnSuchen = new Button();
-        pnlToolbar = new Panel();
-        btnFreigeben = new Button();
-        btnStornieren = new Button();
-        btnLoeschen = new Button();
-        btnBuchen = new Button();
-        btnAlleMarkieren = new Button();
+        splitMain = new SplitContainer();
         dgwAuftraege = new DataGridView();
         colAuftragChecked = new DataGridViewCheckBoxColumn();
+        pnlDetailHeader = new Panel();
+        lblDetailAuftragNr = new Label();
+        lblDetailAuftragNrWert = new Label();
+        lblDetailKunde = new Label();
+        lblDetailKundeWert = new Label();
+        lblDetailDatum = new Label();
+        lblDetailDatumWert = new Label();
+        lblDetailStatus = new Label();
+        lblDetailStatusWert = new Label();
+        lblDetailGesamt = new Label();
+        lblDetailGesamtWert = new Label();
+        dgwAuftragPositionen = new DataGridView();
         pnlFilter.SuspendLayout();
-        pnlToolbar.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)splitMain).BeginInit();
+        splitMain.Panel1.SuspendLayout();
+        splitMain.Panel2.SuspendLayout();
+        splitMain.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgwAuftraege).BeginInit();
+        pnlDetailHeader.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)dgwAuftragPositionen).BeginInit();
         SuspendLayout();
         // 
         // pnlFilter
         // 
+        pnlFilter.Controls.Add(btnFreigeben);
+        pnlFilter.Controls.Add(btnStornieren);
         pnlFilter.Controls.Add(lblVon);
+        pnlFilter.Controls.Add(btnLoeschen);
         pnlFilter.Controls.Add(dtpVon);
+        pnlFilter.Controls.Add(btnBuchen);
         pnlFilter.Controls.Add(lblBis);
+        pnlFilter.Controls.Add(btnAlleMarkieren);
         pnlFilter.Controls.Add(dtpBis);
         pnlFilter.Controls.Add(lblKunde);
         pnlFilter.Controls.Add(txtKunde);
@@ -51,8 +73,26 @@ partial class FrmOrderList
         pnlFilter.Location = new Point(0, 0);
         pnlFilter.Name = "pnlFilter";
         pnlFilter.Padding = new Padding(4, 0, 4, 0);
-        pnlFilter.Size = new Size(1100, 44);
+        pnlFilter.Size = new Size(1400, 84);
         pnlFilter.TabIndex = 0;
+        // 
+        // btnFreigeben
+        // 
+        btnFreigeben.Enabled = false;
+        btnFreigeben.Location = new Point(6, 50);
+        btnFreigeben.Name = "btnFreigeben";
+        btnFreigeben.Size = new Size(105, 26);
+        btnFreigeben.TabIndex = 0;
+        btnFreigeben.Text = "Freigeben";
+        // 
+        // btnStornieren
+        // 
+        btnStornieren.Enabled = false;
+        btnStornieren.Location = new Point(117, 50);
+        btnStornieren.Name = "btnStornieren";
+        btnStornieren.Size = new Size(105, 26);
+        btnStornieren.TabIndex = 1;
+        btnStornieren.Text = "Öffnen";
         // 
         // lblVon
         // 
@@ -63,6 +103,15 @@ partial class FrmOrderList
         lblVon.TabIndex = 0;
         lblVon.Text = "Datum Von:";
         // 
+        // btnLoeschen
+        // 
+        btnLoeschen.Enabled = false;
+        btnLoeschen.Location = new Point(228, 50);
+        btnLoeschen.Name = "btnLoeschen";
+        btnLoeschen.Size = new Size(105, 26);
+        btnLoeschen.TabIndex = 2;
+        btnLoeschen.Text = "Löschen";
+        // 
         // dtpVon
         // 
         dtpVon.Format = DateTimePickerFormat.Short;
@@ -70,6 +119,14 @@ partial class FrmOrderList
         dtpVon.Name = "dtpVon";
         dtpVon.Size = new Size(105, 23);
         dtpVon.TabIndex = 1;
+        // 
+        // btnBuchen
+        // 
+        btnBuchen.Location = new Point(339, 50);
+        btnBuchen.Name = "btnBuchen";
+        btnBuchen.Size = new Size(145, 26);
+        btnBuchen.TabIndex = 3;
+        btnBuchen.Text = "Buchen (Lieferschein)";
         // 
         // lblBis
         // 
@@ -79,6 +136,14 @@ partial class FrmOrderList
         lblBis.Size = new Size(64, 15);
         lblBis.TabIndex = 2;
         lblBis.Text = "Datum Bis:";
+        // 
+        // btnAlleMarkieren
+        // 
+        btnAlleMarkieren.Location = new Point(492, 50);
+        btnAlleMarkieren.Name = "btnAlleMarkieren";
+        btnAlleMarkieren.Size = new Size(130, 26);
+        btnAlleMarkieren.TabIndex = 4;
+        btnAlleMarkieren.Text = "Alle markieren";
         // 
         // dtpBis
         // 
@@ -130,61 +195,23 @@ partial class FrmOrderList
         btnSuchen.TabIndex = 8;
         btnSuchen.Text = "Suchen";
         // 
-        // pnlToolbar
+        // splitMain
         // 
-        pnlToolbar.Controls.Add(btnFreigeben);
-        pnlToolbar.Controls.Add(btnStornieren);
-        pnlToolbar.Controls.Add(btnLoeschen);
-        pnlToolbar.Controls.Add(btnBuchen);
-        pnlToolbar.Controls.Add(btnAlleMarkieren);
-        pnlToolbar.Dock = DockStyle.Bottom;
-        pnlToolbar.Location = new Point(0, 614);
-        pnlToolbar.Name = "pnlToolbar";
-        pnlToolbar.Size = new Size(1100, 36);
-        pnlToolbar.TabIndex = 2;
+        splitMain.Dock = DockStyle.Fill;
+        splitMain.Location = new Point(0, 84);
+        splitMain.Name = "splitMain";
         // 
-        // btnFreigeben
+        // splitMain.Panel1
         // 
-        btnFreigeben.Enabled = false;
-        btnFreigeben.Location = new Point(6, 6);
-        btnFreigeben.Name = "btnFreigeben";
-        btnFreigeben.Size = new Size(105, 26);
-        btnFreigeben.TabIndex = 0;
-        btnFreigeben.Text = "Freigeben";
+        splitMain.Panel1.Controls.Add(dgwAuftraege);
         // 
-        // btnStornieren
+        // splitMain.Panel2
         // 
-        btnStornieren.Enabled = false;
-        btnStornieren.Location = new Point(117, 6);
-        btnStornieren.Name = "btnStornieren";
-        btnStornieren.Size = new Size(105, 26);
-        btnStornieren.TabIndex = 1;
-        btnStornieren.Text = "Öffnen";
-        // 
-        // btnLoeschen
-        // 
-        btnLoeschen.Enabled = false;
-        btnLoeschen.Location = new Point(228, 6);
-        btnLoeschen.Name = "btnLoeschen";
-        btnLoeschen.Size = new Size(105, 26);
-        btnLoeschen.TabIndex = 2;
-        btnLoeschen.Text = "Löschen";
-        // 
-        // btnBuchen
-        // 
-        btnBuchen.Location = new Point(339, 6);
-        btnBuchen.Name = "btnBuchen";
-        btnBuchen.Size = new Size(145, 26);
-        btnBuchen.TabIndex = 3;
-        btnBuchen.Text = "Buchen (Lieferschein)";
-        // 
-        // btnAlleMarkieren
-        // 
-        btnAlleMarkieren.Location = new Point(492, 6);
-        btnAlleMarkieren.Name = "btnAlleMarkieren";
-        btnAlleMarkieren.Size = new Size(130, 26);
-        btnAlleMarkieren.TabIndex = 4;
-        btnAlleMarkieren.Text = "Alle markieren";
+        splitMain.Panel2.Controls.Add(pnlDetailHeader);
+        splitMain.Panel2.Controls.Add(dgwAuftragPositionen);
+        splitMain.Size = new Size(1400, 666);
+        splitMain.SplitterDistance = 709;
+        splitMain.TabIndex = 1;
         // 
         // dgwAuftraege
         // 
@@ -192,14 +219,14 @@ partial class FrmOrderList
         dgwAuftraege.AllowUserToDeleteRows = false;
         dgwAuftraege.Columns.AddRange(new DataGridViewColumn[] { colAuftragChecked });
         dgwAuftraege.Dock = DockStyle.Fill;
-        dgwAuftraege.Location = new Point(0, 44);
+        dgwAuftraege.Location = new Point(0, 0);
         dgwAuftraege.MultiSelect = false;
         dgwAuftraege.Name = "dgwAuftraege";
         dgwAuftraege.ReadOnly = true;
         dgwAuftraege.RowHeadersVisible = false;
         dgwAuftraege.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        dgwAuftraege.Size = new Size(1100, 570);
-        dgwAuftraege.TabIndex = 1;
+        dgwAuftraege.Size = new Size(709, 666);
+        dgwAuftraege.TabIndex = 0;
         // 
         // colAuftragChecked
         // 
@@ -209,39 +236,185 @@ partial class FrmOrderList
         colAuftragChecked.ReadOnly = true;
         colAuftragChecked.Width = 30;
         // 
+        // pnlDetailHeader
+        // 
+        pnlDetailHeader.BackColor = Color.WhiteSmoke;
+        pnlDetailHeader.Controls.Add(lblDetailAuftragNr);
+        pnlDetailHeader.Controls.Add(lblDetailAuftragNrWert);
+        pnlDetailHeader.Controls.Add(lblDetailKunde);
+        pnlDetailHeader.Controls.Add(lblDetailKundeWert);
+        pnlDetailHeader.Controls.Add(lblDetailDatum);
+        pnlDetailHeader.Controls.Add(lblDetailDatumWert);
+        pnlDetailHeader.Controls.Add(lblDetailStatus);
+        pnlDetailHeader.Controls.Add(lblDetailStatusWert);
+        pnlDetailHeader.Controls.Add(lblDetailGesamt);
+        pnlDetailHeader.Controls.Add(lblDetailGesamtWert);
+        pnlDetailHeader.Dock = DockStyle.Top;
+        pnlDetailHeader.Location = new Point(0, 0);
+        pnlDetailHeader.Name = "pnlDetailHeader";
+        pnlDetailHeader.Padding = new Padding(8, 6, 8, 6);
+        pnlDetailHeader.Size = new Size(687, 66);
+        pnlDetailHeader.TabIndex = 0;
+        // 
+        // lblDetailAuftragNr
+        // 
+        lblDetailAuftragNr.AutoSize = true;
+        lblDetailAuftragNr.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblDetailAuftragNr.Location = new Point(8, 10);
+        lblDetailAuftragNr.Name = "lblDetailAuftragNr";
+        lblDetailAuftragNr.Size = new Size(74, 15);
+        lblDetailAuftragNr.TabIndex = 0;
+        lblDetailAuftragNr.Text = "Auftrag-Nr.:";
+        // 
+        // lblDetailAuftragNrWert
+        // 
+        lblDetailAuftragNrWert.AutoSize = true;
+        lblDetailAuftragNrWert.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblDetailAuftragNrWert.Location = new Point(88, 10);
+        lblDetailAuftragNrWert.Name = "lblDetailAuftragNrWert";
+        lblDetailAuftragNrWert.Size = new Size(12, 15);
+        lblDetailAuftragNrWert.TabIndex = 1;
+        lblDetailAuftragNrWert.Text = "-";
+        // 
+        // lblDetailKunde
+        // 
+        lblDetailKunde.AutoSize = true;
+        lblDetailKunde.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblDetailKunde.Location = new Point(220, 10);
+        lblDetailKunde.Name = "lblDetailKunde";
+        lblDetailKunde.Size = new Size(46, 15);
+        lblDetailKunde.TabIndex = 2;
+        lblDetailKunde.Text = "Kunde:";
+        // 
+        // lblDetailKundeWert
+        // 
+        lblDetailKundeWert.AutoSize = true;
+        lblDetailKundeWert.Location = new Point(265, 10);
+        lblDetailKundeWert.Name = "lblDetailKundeWert";
+        lblDetailKundeWert.Size = new Size(12, 15);
+        lblDetailKundeWert.TabIndex = 3;
+        lblDetailKundeWert.Text = "-";
+        // 
+        // lblDetailDatum
+        // 
+        lblDetailDatum.AutoSize = true;
+        lblDetailDatum.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblDetailDatum.Location = new Point(490, 10);
+        lblDetailDatum.Name = "lblDetailDatum";
+        lblDetailDatum.Size = new Size(79, 15);
+        lblDetailDatum.TabIndex = 4;
+        lblDetailDatum.Text = "Lieferdatum:";
+        // 
+        // lblDetailDatumWert
+        // 
+        lblDetailDatumWert.AutoSize = true;
+        lblDetailDatumWert.Location = new Point(565, 10);
+        lblDetailDatumWert.Name = "lblDetailDatumWert";
+        lblDetailDatumWert.Size = new Size(12, 15);
+        lblDetailDatumWert.TabIndex = 5;
+        lblDetailDatumWert.Text = "-";
+        // 
+        // lblDetailStatus
+        // 
+        lblDetailStatus.AutoSize = true;
+        lblDetailStatus.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblDetailStatus.Location = new Point(8, 42);
+        lblDetailStatus.Name = "lblDetailStatus";
+        lblDetailStatus.Size = new Size(45, 15);
+        lblDetailStatus.TabIndex = 6;
+        lblDetailStatus.Text = "Status:";
+        // 
+        // lblDetailStatusWert
+        // 
+        lblDetailStatusWert.AutoSize = true;
+        lblDetailStatusWert.Location = new Point(55, 42);
+        lblDetailStatusWert.Name = "lblDetailStatusWert";
+        lblDetailStatusWert.Size = new Size(12, 15);
+        lblDetailStatusWert.TabIndex = 7;
+        lblDetailStatusWert.Text = "-";
+        // 
+        // lblDetailGesamt
+        // 
+        lblDetailGesamt.AutoSize = true;
+        lblDetailGesamt.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblDetailGesamt.Location = new Point(220, 42);
+        lblDetailGesamt.Name = "lblDetailGesamt";
+        lblDetailGesamt.Size = new Size(90, 15);
+        lblDetailGesamt.TabIndex = 8;
+        lblDetailGesamt.Text = "Gesamtbetrag:";
+        // 
+        // lblDetailGesamtWert
+        // 
+        lblDetailGesamtWert.AutoSize = true;
+        lblDetailGesamtWert.Location = new Point(308, 42);
+        lblDetailGesamtWert.Name = "lblDetailGesamtWert";
+        lblDetailGesamtWert.Size = new Size(12, 15);
+        lblDetailGesamtWert.TabIndex = 9;
+        lblDetailGesamtWert.Text = "-";
+        // 
+        // dgwAuftragPositionen
+        // 
+        dgwAuftragPositionen.AllowUserToAddRows = false;
+        dgwAuftragPositionen.AllowUserToDeleteRows = false;
+        dgwAuftragPositionen.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        dgwAuftragPositionen.Location = new Point(0, 72);
+        dgwAuftragPositionen.Name = "dgwAuftragPositionen";
+        dgwAuftragPositionen.ReadOnly = true;
+        dgwAuftragPositionen.RowHeadersVisible = false;
+        dgwAuftragPositionen.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        dgwAuftragPositionen.Size = new Size(687, 594);
+        dgwAuftragPositionen.TabIndex = 1;
+        // 
         // FrmOrderList
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1100, 650);
-        Controls.Add(dgwAuftraege);
-        Controls.Add(pnlToolbar);
+        ClientSize = new Size(1400, 750);
+        Controls.Add(splitMain);
         Controls.Add(pnlFilter);
         Name = "FrmOrderList";
         Text = "Aufträge";
         pnlFilter.ResumeLayout(false);
         pnlFilter.PerformLayout();
-        pnlToolbar.ResumeLayout(false);
+        splitMain.Panel1.ResumeLayout(false);
+        splitMain.Panel2.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)splitMain).EndInit();
+        splitMain.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)dgwAuftraege).EndInit();
+        pnlDetailHeader.ResumeLayout(false);
+        pnlDetailHeader.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)dgwAuftragPositionen).EndInit();
         ResumeLayout(false);
     }
 
-    private System.Windows.Forms.Panel          pnlFilter;
-    private System.Windows.Forms.Label          lblVon;
-    private System.Windows.Forms.DateTimePicker dtpVon;
-    private System.Windows.Forms.Label          lblBis;
-    private System.Windows.Forms.DateTimePicker dtpBis;
-    private System.Windows.Forms.Label          lblKunde;
-    private System.Windows.Forms.TextBox        txtKunde;
-    private System.Windows.Forms.Label          lblStatus;
-    private System.Windows.Forms.ComboBox       cmbStatus;
-    private System.Windows.Forms.Button         btnSuchen;
-    private System.Windows.Forms.Panel          pnlToolbar;
-    private System.Windows.Forms.Button         btnFreigeben;
-    private System.Windows.Forms.Button         btnStornieren;
-    private System.Windows.Forms.Button         btnLoeschen;
-    private System.Windows.Forms.Button         btnBuchen;
-    private System.Windows.Forms.Button         btnAlleMarkieren;
-    private System.Windows.Forms.DataGridView   dgwAuftraege;
+    private System.Windows.Forms.Panel                      pnlFilter;
+    private System.Windows.Forms.Label                      lblVon;
+    private System.Windows.Forms.DateTimePicker             dtpVon;
+    private System.Windows.Forms.Label                      lblBis;
+    private System.Windows.Forms.DateTimePicker             dtpBis;
+    private System.Windows.Forms.Label                      lblKunde;
+    private System.Windows.Forms.TextBox                    txtKunde;
+    private System.Windows.Forms.Label                      lblStatus;
+    private System.Windows.Forms.ComboBox                   cmbStatus;
+    private System.Windows.Forms.Button                     btnSuchen;
+    private System.Windows.Forms.Button                     btnFreigeben;
+    private System.Windows.Forms.Button                     btnStornieren;
+    private System.Windows.Forms.Button                     btnLoeschen;
+    private System.Windows.Forms.Button                     btnBuchen;
+    private System.Windows.Forms.Button                     btnAlleMarkieren;
+    private System.Windows.Forms.SplitContainer             splitMain;
+    private System.Windows.Forms.DataGridView               dgwAuftraege;
     private System.Windows.Forms.DataGridViewCheckBoxColumn colAuftragChecked;
+    private System.Windows.Forms.Panel                      pnlDetailHeader;
+    private System.Windows.Forms.Label                      lblDetailAuftragNr;
+    private System.Windows.Forms.Label                      lblDetailAuftragNrWert;
+    private System.Windows.Forms.Label                      lblDetailKunde;
+    private System.Windows.Forms.Label                      lblDetailKundeWert;
+    private System.Windows.Forms.Label                      lblDetailDatum;
+    private System.Windows.Forms.Label                      lblDetailDatumWert;
+    private System.Windows.Forms.Label                      lblDetailStatus;
+    private System.Windows.Forms.Label                      lblDetailStatusWert;
+    private System.Windows.Forms.Label                      lblDetailGesamt;
+    private System.Windows.Forms.Label                      lblDetailGesamtWert;
+    private System.Windows.Forms.DataGridView               dgwAuftragPositionen;
 }

@@ -74,6 +74,7 @@ static class Program
         // --- System-Services ---
         services.AddScoped<INoSeriesService,  NoSeriesService>();
         services.AddScoped<IAuditLogService,  AuditLogService>();
+        services.AddScoped<IAppSetupService,  AppSetupService>(); // ← HINZUGEFÜGT
         services.AddScoped<DatabaseSeeder>();
         services.AddSingleton<IGridSettingsService, GridSettingsService>();
 

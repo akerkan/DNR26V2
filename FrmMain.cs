@@ -5,28 +5,33 @@ using DNR26V2.Forms.Deliveries;
 using DNR26V2.Forms.MasterData;
 using DNR26V2.Forms.Orders;
 using DNR26V2.Forms.Settings;
+using DNR26V2.Helpers;
+using DNR26V2.Services.System;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DNR26V2;
 
 public partial class FrmMain : Form
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly AppSettings      _appSettings;
-    private readonly DapperContext    _dapperContext;
+    private readonly IServiceProvider  _serviceProvider;
+    private readonly AppSettings       _appSettings;
+    private readonly DapperContext     _dapperContext;
+    private readonly IAppSetupService  _appSetupService;
 
     private ToolStripStatusLabel _statusLabelDb         = null!;
     private ToolStripStatusLabel _statusLabelVersion    = null!;
     private ToolStripStatusLabel _statusLabelConnection = null!;
 
     public FrmMain(
-        IServiceProvider serviceProvider,
-        AppSettings      appSettings,
-        DapperContext    dapperContext)
+        IServiceProvider  serviceProvider,
+        AppSettings       appSettings,
+        DapperContext     dapperContext,
+        IAppSetupService  appSetupService)
     {
-        _serviceProvider = serviceProvider;
-        _appSettings     = appSettings;
-        _dapperContext   = dapperContext;
+        _serviceProvider  = serviceProvider;
+        _appSettings      = appSettings;
+        _dapperContext    = dapperContext;
+        _appSetupService  = appSetupService;
 
         InitializeComponent();
 
@@ -50,10 +55,17 @@ public partial class FrmMain : Form
         _statusLabelConnection.ForeColor = ok ? Color.Green        : Color.Red;
 
         if (!ok)
+        {
             MessageBox.Show(
                 "Die Datenbankverbindung konnte nicht hergestellt werden.\n\n" +
                 "Bitte prüfen Sie appsettings.json.",
                 "Verbindungsfehler", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        // ✅ Jetzt korrekt:
+        var setup = await _appSetupService.GetAsync();
+        StatusColorHelper.Configure(setup);
     }
 
     // ── DI-Helfer ─────────────────────────────────────────────────────────────
@@ -126,10 +138,17 @@ public partial class FrmMain : Form
     private void MenuSystemBeenden_Click(object? sender, EventArgs e)
         => Close();
 
-    // ── Lieferung-Menü (Erweiterung) ────────────────────────────────────────────
+    // ── Lieferung-Menü (Erweiterung) ─────────────────────────────────────────
 
     private FrmDeliveryList? FrmDeliveryListInstance;
 
     private void MenuLieferungen_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmDeliveryList>(ref FrmDeliveryListInstance, this, () => GetService<FrmDeliveryList>());
+
+    /// <summary>Öffnet FrmDeliveryList und selektiert den Lieferschein zum gegebenen Auftrag.</summary>
+    public void OpenDeliveryListForLieferschein(string lieferscheinNr)
+    {
+        var frm = BaseListForm.GetOrCreateInstance<FrmDeliveryList>(ref FrmDeliveryListInstance, this, () => GetService<FrmDeliveryList>());
+        frm.NavigateToLieferschein(lieferscheinNr);
+    }
 }

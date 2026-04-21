@@ -29,7 +29,6 @@ public partial class FrmDeliveryList : BaseListForm
     private readonly HashSet<int>     _checkedIds      = new();
     private bool                      _isLoading;
     private bool                      _suppressChecked;
-    private bool                      _detailGridStyled;
 
     // ── Konstruktoren ─────────────────────────────────────────────────────────
 
@@ -65,9 +64,13 @@ public partial class FrmDeliveryList : BaseListForm
         dgwLieferscheine.CellValueChanged             += DgwLieferscheine_CellValueChanged;
         dgwLieferscheine.KeyDown                      += DgwLieferscheine_KeyDown;
 
-        btnAbschliessen.Click  += BtnAbschliessen_Click;
         btnStornieren.Click    += BtnStornieren_Click;
         btnAlleMarkieren.Click += BtnAlleMarkieren_Click;
+
+        dgwLsPositionen.CellFormatting += DgwLsPositionen_CellFormatting;
+
+        ctxZeileStornieren.Click          += CtxZeileStornieren_Click;
+        contextMenuLsPositionen.Opening   += ContextMenuLsPositionen_Opening;
 
         EnableColumnChooser(dgwLieferscheine);
     }
@@ -84,7 +87,7 @@ public partial class FrmDeliveryList : BaseListForm
         dtpVon.Value = DateTime.Today.AddDays(-7);
         dtpBis.Value = DateTime.Today;
         _isLoading = false;
-        cmbStatus.SelectedIndex = 1;   // Standard: Offen — bereit zum Abschliessen
+        cmbStatus.SelectedIndex = 1;   // Standard: Offen
 
         await LoadListAsync();
     }
@@ -100,10 +103,10 @@ public partial class FrmDeliveryList : BaseListForm
         string?         kunde  = string.IsNullOrWhiteSpace(txtKunde.Text) ? null : txtKunde.Text.Trim();
         DeliveryStatus? status = cmbStatus.SelectedIndex switch
         {
-            1 => DeliveryStatus.Offen,
-            2 => DeliveryStatus.Abgeschlossen,
-            3 => DeliveryStatus.Fakturiert,
-            4 => DeliveryStatus.Storniert,
+            1 => DeliveryStatus.Offen,           // Aktiv
+            2 => DeliveryStatus.TeilStorniert,   // Teil-Storniert
+            3 => DeliveryStatus.Storniert,
+            4 => DeliveryStatus.Fakturiert,
             _ => null
         };
 
@@ -129,6 +132,7 @@ public partial class FrmDeliveryList : BaseListForm
         finally { _suppressChecked = false; }
 
         UpdateButtonStates();
+        ClearDetail();
     }
 
     // ── Grid stylen ───────────────────────────────────────────────────────────
@@ -263,7 +267,6 @@ public partial class FrmDeliveryList : BaseListForm
 
     private void BtnAlleMarkieren_Click(object? s, EventArgs e)
     {
-        // Only Offen rows can be batch-processed
         const DeliveryStatus filterStatus = DeliveryStatus.Offen;
 
         int total = 0, checked_ = 0;
@@ -308,10 +311,10 @@ public partial class FrmDeliveryList : BaseListForm
         {
             e.Value = dto.Status switch
             {
-                DeliveryStatus.Offen         => "Offen",
-                DeliveryStatus.Abgeschlossen => "Abgeschlossen",
-                DeliveryStatus.Fakturiert    => "Fakturiert",
-                DeliveryStatus.Storniert     => "Storniert",
+                DeliveryStatus.Offen => "Aktiv",
+                DeliveryStatus.TeilStorniert => "Teil-Storniert",
+                DeliveryStatus.Fakturiert => "Fakturiert",
+                DeliveryStatus.Storniert => "Storniert",
                 _                            => dto.Status.ToString()
             };
             e.FormattingApplied = true;
@@ -321,7 +324,10 @@ public partial class FrmDeliveryList : BaseListForm
     // ── Button-Zustände ───────────────────────────────────────────────────────
 
     private void DgwLieferscheine_SelectionChanged(object? s, EventArgs e)
-        => UpdateButtonStates();
+    {
+        UpdateButtonStates();
+        _ = LoadDetailAsync(SelectedDto());
+    }
 
     private void UpdateButtonStates()
     {
@@ -331,16 +337,9 @@ public partial class FrmDeliveryList : BaseListForm
             .Cast<DataGridViewRow>()
             .Any(r => r.DataBoundItem is LieferscheinListDto a && a.Status == DeliveryStatus.Offen);
 
-        bool hasCheckedOffen = _checkedIds.Count > 0;
-
-        // Abschliessen: selected Offen OR at least one checked
-        ApplyBtnState(btnAbschliessen,
-            dto?.Status == DeliveryStatus.Offen || hasCheckedOffen);
-
-        // Stornieren: Offen or Abgeschlossen (single selection)
         ApplyBtnState(btnStornieren,
             dto?.Status == DeliveryStatus.Offen ||
-            dto?.Status == DeliveryStatus.Abgeschlossen);
+            dto?.Status == DeliveryStatus.TeilStorniert);
 
         ApplyBtnState(btnAlleMarkieren, hasOffen);
     }
@@ -351,57 +350,7 @@ public partial class FrmDeliveryList : BaseListForm
         btn.ForeColor = SystemColors.ControlText;
     }
 
-    // ── Abschliessen (Batch) ──────────────────────────────────────────────────
-
-    private async void BtnAbschliessen_Click(object? s, EventArgs e)
-    {
-        var targets = new List<int>();
-
-        foreach (DataGridViewRow row in dgwLieferscheine.Rows)
-        {
-            if (row.DataBoundItem is not LieferscheinListDto dto) continue;
-            if (dto.Status == DeliveryStatus.Offen && _checkedIds.Contains(dto.Id))
-                targets.Add(dto.Id);
-        }
-
-        // Fallback: single selected row
-        if (targets.Count == 0)
-        {
-            var sel = SelectedDto();
-            if (sel is null || sel.Status != DeliveryStatus.Offen) return;
-            targets.Add(sel.Id);
-        }
-
-        if (!Confirm($"{targets.Count} Lieferschein(e) abschliessen?")) return;
-
-        int success = 0;
-        var errors = new List<string>();
-
-        await _lock.WaitAsync();
-        try
-        {
-            Cursor = Cursors.WaitCursor;
-            foreach (var id in targets)
-            {
-                try
-                {
-                    await _deliveryService.AbschliessenAsync(id);
-                    success++;
-                    _checkedIds.Remove(id);
-                }
-                catch (ValidationException ex) { errors.Add(ex.Message); }
-                catch (Exception ex)           { errors.Add($"Id {id}: {ex.Message}"); }
-            }
-        }
-        finally { Cursor = Cursors.Default; _lock.Release(); }
-
-        if (errors.Count > 0)
-            ShowError($"{success} Lieferschein(e) abgeschlossen.\n\nFehler:\n{string.Join("\n", errors)}");
-
-        await LoadListAsync();
-    }
-
-    // ── Stornieren (Einzel) ───────────────────────────────────────────────────
+    // ── Header Stornieren ─────────────────────────────────────────────────────
 
     private async void BtnStornieren_Click(object? s, EventArgs e)
     {
@@ -412,7 +361,7 @@ public partial class FrmDeliveryList : BaseListForm
             ShowError("Fakturierte Lieferscheine können nicht storniert werden.");
             return;
         }
-        if (!Confirm($"Lieferschein '{dto.LieferscheinNr}' stornieren?\n\nDer verknüpfte Auftrag wird wieder auf 'Freigegeben' gesetzt."))
+        if (!Confirm($"Lieferschein '{dto.LieferscheinNr}' komplett stornieren?\n\nAlle Zeilen werden ungültig."))
             return;
 
         try
@@ -425,6 +374,180 @@ public partial class FrmDeliveryList : BaseListForm
         }
         catch (ValidationException ex) { ShowError(ex.Message); }
         catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
+    }
+
+    // ── Zeile Stornieren (Rechtsklick-Kontextmenü) ────────────────────────────
+
+    private void ContextMenuLsPositionen_Opening(object? s, System.ComponentModel.CancelEventArgs e)
+    {
+        var dto      = SelectedDto();
+        var zeileDuo = dgwLsPositionen.CurrentRow?.DataBoundItem as OrderLineDto;
+
+        // Only show storno option for non-storno lines on open Lieferscheine
+        bool canStorno = dto?.Status == DeliveryStatus.Offen
+                      && zeileDuo is not null
+                      && zeileDuo.Menge > 0;   // storno lines (negative) cannot be storniert again
+
+        ctxZeileStornieren.Enabled = canStorno;
+
+        if (!canStorno && zeileDuo is null)
+            e.Cancel = true;   // no row selected — suppress menu entirely
+    }
+
+    private async void CtxZeileStornieren_Click(object? s, EventArgs e)
+    {
+        var lsDatum = SelectedDto();
+        if (lsDatum is null) return;
+
+        if (dgwLsPositionen.CurrentRow?.DataBoundItem is not OrderLineDto zeile) return;
+        if (zeile.Menge <= 0)
+        {
+            ShowError("Storno-Zeilen können nicht erneut storniert werden.");
+            return;
+        }
+
+        if (!Confirm($"Zeile '{zeile.Produktname}' (Menge: {zeile.Menge:N3}) stornieren?\n\nEine Storno-Zeile mit negativer Menge wird erstellt."))
+            return;
+
+        try
+        {
+            await _lock.WaitAsync();
+            try { await _deliveryService.StornierenZeileAsync(lsDatum.Id, zeile.OrderLineId); }
+            finally { _lock.Release(); }
+
+            // Reload detail grid only — no full list reload needed
+            await LoadDetailAsync(lsDatum);
+        }
+        catch (ValidationException ex) { ShowError(ex.Message); }
+        catch (Exception ex)           { ShowError($"Fehler:\n{ex.Message}"); }
+    }
+
+    // ── Detail-Panel laden (Read-Only) ────────────────────────────────────────
+
+    private async Task LoadDetailAsync(LieferscheinListDto? dto)
+    {
+        if (dto is null)
+        {
+            ClearDetail();
+            return;
+        }
+
+        lblDetailLsNrWert.Text      = dto.LieferscheinNr;
+        lblDetailAuftragNrWert.Text = dto.AuftragNr ?? "-";
+        lblDetailKundeWert.Text     = dto.Kundenname;
+        lblDetailDatumWert.Text     = dto.Lieferdatum.ToString("dd.MM.yyyy");
+        lblDetailGesamtWert.Text    = dto.Gesamtbetrag.ToString("N2") + " €";
+
+        lblDetailStatusWert.Text = dto.Status switch
+        {
+            DeliveryStatus.Offen         => "Offen",
+            DeliveryStatus.TeilStorniert => "Teil-Storniert",
+            DeliveryStatus.Fakturiert    => "Fakturiert",
+            DeliveryStatus.Storniert     => "Storniert",
+            _                            => dto.Status.ToString()
+        };
+        lblDetailStatusWert.ForeColor = StatusColorHelper.GetDeliveryStatusLabelColor(dto.Status);
+
+        if (_deliveryService is null) return;
+
+        try
+        {
+            var positionen = await _deliveryService.GetPositionenByLieferscheinIdAsync(dto.Id);
+            dgwLsPositionen.DataSource = positionen.ToList();
+            StyleGridLsPositionen();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"LoadDetailAsync error LsId={dto.Id}: {ex.Message}");
+            dgwLsPositionen.DataSource = null;
+        }
+    }
+
+    private void ClearDetail()
+    {
+        lblDetailLsNrWert.Text        = "-";
+        lblDetailAuftragNrWert.Text   = "-";
+        lblDetailKundeWert.Text       = "-";
+        lblDetailDatumWert.Text       = "-";
+        lblDetailStatusWert.Text      = "-";
+        lblDetailStatusWert.ForeColor = SystemColors.ControlText;
+        lblDetailGesamtWert.Text      = "-";
+        dgwLsPositionen.DataSource    = null;
+    }
+
+    // ── Positions-Grid stylen (Read-Only) ─────────────────────────────────────
+
+    private void StyleGridLsPositionen()
+    {
+        if (dgwLsPositionen.Columns.Count == 0) return;
+
+        dgwLsPositionen.SuspendLayout();
+        try
+        {
+            ConfigureGrid(dgwLsPositionen);
+
+            foreach (DataGridViewColumn col in dgwLsPositionen.Columns)
+                col.Visible = false;
+
+            ShowLsDetailCol("Artikelnummer", "Art.-Nr.",     80);
+            ShowLsDetailCol("Produktname",   "Bezeichnung",   0, fill: true);
+            ShowLsDetailCol("Menge",         "Menge",         70, format: "N3", right: true);
+            ShowLsDetailCol("Gewicht",       "Gewicht",       70, format: "N3", right: true);
+            ShowLsDetailCol("Preis",         "Preis",         80, format: "N2", right: true);
+            ShowLsDetailCol("Notiz",         "Notiz",        150);
+        }
+        finally
+        {
+            dgwLsPositionen.ResumeLayout();
+        }
+    }
+
+    private void ShowLsDetailCol(string name, string header, int width,
+        bool fill = false, string? format = null, bool right = false)
+    {
+        if (!dgwLsPositionen.Columns.Contains(name)) return;
+        var col = dgwLsPositionen.Columns[name];
+        col.Visible    = true;
+        col.HeaderText = header;
+        col.ReadOnly   = true;
+        if (fill) col.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+        else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
+        if (format is not null) col.DefaultCellStyle.Format = format;
+        if (right) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+    }
+
+    // ── Storno-Zeilen rot hinterlegen ─────────────────────────────────────────
+
+    private void DgwLsPositionen_CellFormatting(object? s, DataGridViewCellFormattingEventArgs e)
+    {
+        if (e.RowIndex < 0) return;
+        if (dgwLsPositionen.Rows[e.RowIndex].DataBoundItem is not OrderLineDto dto) return;
+
+        if (dto.Menge < 0)
+        {
+            dgwLsPositionen.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.FromArgb(255, 220, 220);
+            dgwLsPositionen.Rows[e.RowIndex].DefaultCellStyle.ForeColor = Color.DarkRed;
+        }
+    }
+
+    // ── Navigation von FrmOrderList (Doppelklick Gebucht) ────────────────────
+
+    public async void NavigateToLieferschein(string lieferscheinNr)
+    {
+        BringToFront();
+        cmbStatus.SelectedIndex = 0;
+        await LoadListAsync();
+
+        foreach (DataGridViewRow row in dgwLieferscheine.Rows)
+        {
+            if (row.DataBoundItem is not LieferscheinListDto dto) continue;
+            if (dto.LieferscheinNr != lieferscheinNr) continue;
+
+            dgwLieferscheine.ClearSelection();
+            row.Selected = true;
+            dgwLieferscheine.FirstDisplayedScrollingRowIndex = row.Index;
+            break;
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

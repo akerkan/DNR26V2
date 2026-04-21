@@ -21,9 +21,11 @@ public interface IOrderService
 
     Task        LoeschenAsync(int auftragId);
     Task<Order> NachlieferungAsync(int kundeId, DateTime lieferdatum);
-    Task        StornierenAsync(int auftragId);
 
     // ── Auftragsübersicht ─────────────────────────────────────────────────────
     Task<IReadOnlyList<AuftragListDto>> GetAuftragListeAsync(
         DateTime? von, DateTime? bis, string? kunde, OrderStatus? status);
+
+    // Neue Methode am Ende der Interface-Definition hinzufügen:
+    Task<IReadOnlyList<OrderLineDto>> GetPositionenByAuftragIdAsync(int auftragId);
 }

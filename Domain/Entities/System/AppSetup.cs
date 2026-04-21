@@ -56,4 +56,13 @@ public class AppSetup : AuditableEntity
     public string? ColorOrderLabelFreigegeben { get; set; } = null;
     public string? ColorOrderLabelGebucht { get; set; } = null;
     public string? ColorOrderLabelStorniert { get; set; } = null;
+
+    // ── Zahlungskonditionen (für Rechnungen) ──────────────────────────────────
+    public string? BankName           { get; set; }
+    public string? IBAN               { get; set; }
+    public string? BIC                { get; set; }
+    public string? Kontoinhaber       { get; set; }
+    public int     ZahlungszielTage   { get; set; } = 14;
+    public decimal SkontoProzent      { get; set; } = 0.00m;
+    public int     SkontoTage         { get; set; } = 7;
 }

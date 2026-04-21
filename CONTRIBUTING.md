@@ -221,7 +221,7 @@ Offen
   → [Löschen]    → Gelöscht        (soft-delete, no document number)
 
 Freigegeben
-  → [Buchen]     → Gebucht         → Lieferschein (Offen) created
+  → [Buchen]     → Gebucht         → Lieferschein (Aktiv) created
   → [Öffnen]     → Offen           (NOT Stornieren — Stornieren only for Lieferschein/Rechnung)
 
 Gebucht
@@ -233,6 +233,63 @@ Gebucht
 > **"Löschen" only when Status = Offen (before any document number is assigned).**
 
 ### Lieferschein Status Flow
-```
-Offen → [Abschliessen] → Abgeschlossen → [Fakturieren] → Fakturiert
-     → [Stornieren]    → Storniert     (linked Auftrag → back to Freigegeben)
+​```
+Aktiv
+  → [Stornieren]  → Storniert
+                    linked Auftrag → Status = Offen
+                    (full cancellation — user must Freigeben again to re-book)
+  → [Fakturieren] → Fakturiert
+​```
+
+> Partial line cancellation (Zeilen-Storno) is NOT implemented.
+> Planned for a future release after Module 6 is complete.
+> Current rule: Storno is always full (all lines), always rolls Auftrag back to Offen.
+
+---
+
+## MODULE STATUS
+
+### ✅ MODULE 1 – Stammdaten (Kunden, Produkte, Einheiten)
+### ✅ MODULE 2 – App-Setup & Konfiguration
+### ✅ MODULE 3 – Aufträge (FrmOrderEntry, FrmOrderList)
+### ✅ MODULE 4 – Auftragsübersicht & Status-Verwaltung
+- Forms: `FrmOrderList` (Batch-Freigeben, Batch-Buchen, Öffnen, Löschen)
+- "Öffnen" = Freigegeben → Offen (NOT Stornieren)
+- "Stornieren" does NOT exist at Auftrag level
+### ✅ MODULE 5 – Lieferungen
+- Entities: `DeliveryHeader` (table: `Deliveries`), `DeliveryLine` (table: `DeliveryLines`)
+- Services: `IDeliveryService`, `DeliveryService`
+  - `CreateFromOrderAsync` — creates Lieferschein from Auftrag, sets Auftrag → Gebucht
+  - `StornierenAsync` — full header storno, sets Auftrag → Offen
+  - `GetLieferscheinListeAsync` — filtered list query via Dapper
+  - `GetPositionenByLieferscheinIdAsync` — line detail query
+- Forms: `FrmDeliveryList`
+  - Filter: Datum Von/Bis, Kunde, Status (Alle / Aktiv / TeilStorniert* / Storniert / Fakturiert)
+  - Checkbox batch: nur Aktiv (Offen) markierbar
+  - "Alle markieren" toggle
+  - Header-Storno button
+  - Detail panel: Lieferschein header info + Positions-Grid (read-only)
+  - Context menu on positions: Zeilen-Storno → **DEACTIVATED** (infrastructure exists, enabled in future release)
+  - Navigation: `NavigateToLieferschein(nr)` — called from FrmOrderList double-click on Gebucht
+  - F5 = Refresh
+  - StatusColorHelper for row/label colors
+- Migrations: `Module5_Deliveries`
+- Key rules:
+  - `DeliveryStatus.Offen` displayed as "Aktiv" in UI
+  - `DeliveryStatus.TeilStorniert` exists in enum and combo filter but no UI action creates it
+  - No "Abschliessen" step — flow is: Aktiv → Fakturiert or Storniert only
+  - Storno always full (all lines), always rolls linked Auftrag back to Offen
+
+---
+
+### 🔲 MODULE 6 – Rechnungen (planned)
+
+---
+
+## ENTITY TABLE
+
+| Entity | Table | Migration | Status |
+|---|---|---|---|
+| `DeliveryHeader` | `Deliveries` | Module5_Deliveries | ✅ |
+| `DeliveryLine` | `DeliveryLines` | Module5_Deliveries | ✅ |
+| `DeliveryLineChange` | `DeliveryLineChanges` | — (not implemented, future) | 🔲 |

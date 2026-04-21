@@ -17,17 +17,20 @@ public class OrderService : IOrderService
     private readonly DapperContext    _dapper;
     private readonly INoSeriesService _noSeries;
     private readonly IDeliveryService _deliveryService;
+    private readonly IAuditLogService _auditLog;  // ← ADD in Konstruktor
 
     public OrderService(
         AppDbContext      db,
         DapperContext     dapper,
         INoSeriesService  noSeries,
-        IDeliveryService  deliveryService)
+        IDeliveryService  deliveryService,
+        IAuditLogService  auditLogService) // ← ADD
     {
         _db              = db;
         _dapper          = dapper;
         _noSeries        = noSeries;
         _deliveryService = deliveryService;
+        _auditLog        = auditLogService; // ← ADD
     }
 
     // ── Customer list for order entry ─────────────────────────────────────────
@@ -235,9 +238,9 @@ public class OrderService : IOrderService
     public async Task<Order> BuchenAsync(int auftragId)
     {
         var order = await _db.Order
-            .Include(o => o.Zeilen)
-            .FirstOrDefaultAsync(o => o.Id == auftragId)
-            ?? throw new InvalidOperationException("Auftrag nicht gefunden.");
+         .Include(o => o.Zeilen)
+         .FirstOrDefaultAsync(o => o.Id == auftragId)
+         ?? throw new InvalidOperationException("Auftrag nicht gefunden.");
 
         if (order.Status != OrderStatus.Offen && order.Status != OrderStatus.Freigegeben)
             throw new ValidationException($"Auftrag kann nicht gebucht werden (Status: '{order.Status}').");
@@ -245,10 +248,35 @@ public class OrderService : IOrderService
         if (!order.Zeilen.Any(z => z.Menge > 0))
             throw new ValidationException("Mindestens eine Position mit Menge > 0 erforderlich.");
 
-        order.Status = OrderStatus.Gebucht;
-        await SaveChangesAsync();
+        var oldStatus = order.Status;
 
-        await _deliveryService.CreateFromOrderAsync(order);
+        using var tx = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            order.Status = OrderStatus.Gebucht;
+            await SaveChangesAsync();
+
+            await _auditLog.LogAsync(
+                tabellenname: "Orders",
+                datensatzId: auftragId,
+                belegnummer: order.Auftragsnummer,
+                aktion: "Buchen",
+                alterWert: oldStatus.ToString(),
+                neuerWert: OrderStatus.Gebucht.ToString()
+            );
+
+            // CreateFromOrderAsync erwartet das Order-Objekt (oder Id) — vorhandene Signatur beibehalten
+            await _deliveryService.CreateFromOrderAsync(order);
+
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            _db.ChangeTracker.Clear();
+            throw;
+        }
+
         return order;
     }
 
@@ -256,13 +284,23 @@ public class OrderService : IOrderService
 
     public async Task FreigebenAsync(int auftragId)
     {
-        // ExecuteUpdateAsync bypasses EF tracking → no stale-cache issues
-        var affected = await _db.Order
-            .Where(o => o.Id == auftragId && o.Status == OrderStatus.Offen)
-            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Freigegeben));
-
-        if (affected == 0)
+        var order = await _db.Order.FindAsync(auftragId);
+        if (order is null || order.Status != OrderStatus.Offen)
             throw new ValidationException("Nur offene Aufträge können freigegeben werden.");
+
+        var oldStatus = order.Status;
+        order.Status = OrderStatus.Freigegeben;
+        await _db.SaveChangesAsync();
+
+        // ← ADD
+        await _auditLog.LogAsync(
+            tabellenname: "Orders",
+            datensatzId: auftragId,
+            belegnummer: order.Auftragsnummer,
+            aktion: "Freigeben",
+            alterWert: oldStatus.ToString(),
+            neuerWert: OrderStatus.Freigegeben.ToString()
+        );
     }
 
     // ── Löschen (soft-delete, nur Offen) ─────────────────────────────────────
@@ -294,21 +332,7 @@ public class OrderService : IOrderService
         return order;
     }
 
-    // ── Stornieren ────────────────────────────────────────────────────────────
-
-    public async Task StornierenAsync(int auftragId)
-    {
-        // ExecuteUpdateAsync reads directly from DB — avoids stale EF tracking
-        var affected = await _db.Order
-            .Where(o => o.Id == auftragId
-                     && o.Status != OrderStatus.Storniert
-                     && o.Status != OrderStatus.Geloescht)
-            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Storniert));
-
-        if (affected == 0)
-            throw new ValidationException("Auftrag ist bereits storniert oder nicht gefunden.");
-    }
-
+   
     // ── Auftragsübersicht (für FrmOrderList) ──────────────────────────────────
 
     public async Task<IReadOnlyList<AuftragListDto>> GetAuftragListeAsync(
@@ -379,12 +403,45 @@ public class OrderService : IOrderService
 
     public async Task OeffnenAsync(int auftragId)
     {
-        var affected = await _db.Order
-            .Where(o => o.Id == auftragId && o.Status == OrderStatus.Freigegeben)
-            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Offen));
+        var order = await _db.Order.FindAsync(auftragId)
+        ?? throw new InvalidOperationException("Auftrag nicht gefunden.");
 
-        if (affected == 0)
-            throw new ValidationException(
-                "Nur freigegebene Aufträge können zurück auf Offen gesetzt werden.");
+        if (order.Status != OrderStatus.Freigegeben)
+            throw new ValidationException("Nur freigegebene Aufträge können zurück auf Offen gesetzt werden.");
+
+        var oldStatus = order.Status;
+        order.Status = OrderStatus.Offen;
+        await SaveChangesAsync();
+
+        await _auditLog.LogAsync(
+            tabellenname: "Orders",
+            datensatzId: auftragId,
+            belegnummer: order.Auftragsnummer,
+            aktion: "Öffnen",
+            alterWert: oldStatus.ToString(),
+            neuerWert: OrderStatus.Offen.ToString()
+        );
+    }
+
+    // ── Positionen nach Auftrag-ID (für Detail-Panel) ─────────────────────────
+
+    public async Task<IReadOnlyList<OrderLineDto>> GetPositionenByAuftragIdAsync(int auftragId)
+    {
+        const string sql = """
+            SELECT ol.Id          AS OrderLineId,
+                   ol.ArtikelId,
+                   p.Artikelnummer,
+                   p.Bezeichnung  AS Produktname,
+                   ol.Menge,
+                   ol.Gewicht,
+                   ol.Preis,
+                   ol.Notiz
+            FROM   OrderLines ol
+            LEFT   JOIN Product p ON p.Id = ol.ArtikelId
+            WHERE  ol.AuftragId = @AuftragId
+            ORDER  BY p.Bezeichnung
+            """;
+        using var conn = _dapper.CreateConnection();
+        return (await conn.QueryAsync<OrderLineDto>(sql, new { AuftragId = auftragId })).AsList();
     }
 }

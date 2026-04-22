@@ -5,9 +5,11 @@ public class OrderLine : AuditableEntity
     public int     Id        { get; set; }
     public int     AuftragId { get; set; }
     public int     ArtikelId { get; set; }
-    public decimal Menge     { get; set; }
-    public decimal Gewicht   { get; set; }
-    public decimal Preis     { get; set; }
+    public decimal Menge             { get; set; }
+    public decimal MengeGeliefert   { get; set; } = 0m;   // kumuliert geliefert
+    public decimal MengeFakturiert  { get; set; } = 0m;   // kumuliert fakturiert
+    public decimal Gewicht          { get; set; }
+    public decimal Preis            { get; set; }
     public string? Notiz     { get; set; }
 
     // ── Calculated amount fields ──────────────────────────────────────────────

@@ -28,6 +28,13 @@ internal sealed class DeliveryLineConfiguration : IEntityTypeConfiguration<Deliv
               .HasForeignKey(e => e.ArtikelId)
               .OnDelete(DeleteBehavior.NoAction);
 
+        entity.Property(e => e.AuftragZeileId).HasColumnType("int").IsRequired(false);
+
+        entity.HasOne(e => e.AuftragZeile)
+              .WithMany()
+              .HasForeignKey(e => e.AuftragZeileId)
+              .OnDelete(DeleteBehavior.NoAction);
+
         entity.Property(e => e.ErstelltAm).HasDefaultValueSql("GETDATE()");
         entity.Property(e => e.ErstelltVon).HasMaxLength(100).IsRequired();
         entity.Property(e => e.GeaendertVon).HasMaxLength(100);

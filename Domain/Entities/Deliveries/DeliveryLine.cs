@@ -1,4 +1,6 @@
-﻿namespace DNR26V2.Domain.Entities.Deliveries;
+﻿using DNR26V2.Domain.Entities.Orders;
+
+namespace DNR26V2.Domain.Entities.Deliveries;
 
 public class DeliveryLine : AuditableEntity
 {
@@ -12,8 +14,11 @@ public class DeliveryLine : AuditableEntity
     public string? Notiz          { get; set; }
 
     // Navigation
-    public DeliveryHeader         Lieferschein { get; set; } = null!;
-    public MasterData.Product     Artikel      { get; set; } = null!;
+    public DeliveryHeader         Lieferschein  { get; set; } = null!;
+    public MasterData.Product     Artikel       { get; set; } = null!;
+
+    public int?        AuftragZeileId { get; set; }   // nullable FK → OrderLine
+    public OrderLine?  AuftragZeile   { get; set; }   // navigation
 
     // Bestehende Properties beibehalten — NUR HINZUFÜGEN:
     public decimal MengeFakturiert { get; set; } = 0m;   // akkumuliert über mehrere Rechnungen

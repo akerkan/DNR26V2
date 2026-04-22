@@ -3,6 +3,7 @@ using DNR26V2.Data;
 using DNR26V2.Data.Context;
 using DNR26V2.Domain.DTOs;
 using DNR26V2.Domain.Entities.Invoices;
+using DNR26V2.Domain.Entities.Orders;
 using DNR26V2.Domain.Enums;
 using DNR26V2.Domain.Helpers;
 using Microsoft.Data.SqlClient;
@@ -145,6 +146,20 @@ public class InvoiceService : IInvoiceService
             ErstelltVon       = Environment.UserName,
         };
 
+        // Load OrderLines for cumulative MengeFakturiert tracking
+        var auftragZeileIds = deliveries
+            .SelectMany(d => d.Zeilen)
+            .Where(z => z.AuftragZeileId.HasValue)
+            .Select(z => z.AuftragZeileId!.Value)
+            .Distinct()
+            .ToList();
+
+        var orderLineMap = auftragZeileIds.Count > 0
+            ? await _db.OrderLine
+                .Where(ol => auftragZeileIds.Contains(ol.Id))
+                .ToDictionaryAsync(ol => ol.Id)
+            : new Dictionary<int, OrderLine>();
+
         foreach (var ls in deliveries)
         {
             foreach (var dl in ls.Zeilen)
@@ -162,7 +177,7 @@ public class InvoiceService : IInvoiceService
                 var vat      = InvoiceCalculator.CalcVatAmount(line, dl.MwstProzent);
                 var incl     = InvoiceCalculator.CalcAmountInclVat(line, vat);
 
-                header.Zeilen.Add(new InvoiceLine
+                var il = new InvoiceLine
                 {
                     LieferscheinId   = ls.Id,
                     DeliveryLineId   = dl.Id,
@@ -180,9 +195,15 @@ public class InvoiceService : IInvoiceService
                     AmountInclVat    = incl,
                     ErstelltAm       = DateTime.Now,
                     ErstelltVon      = Environment.UserName,
-                });
+                };
+                header.Zeilen.Add(il);
 
-                dl.MengeFakturiert += fakturiert;
+                // cumulative invoiced quantity — always from InvoiceLine.Menge
+                dl.MengeFakturiert += il.Menge;
+
+                if (dl.AuftragZeileId.HasValue &&
+                    orderLineMap.TryGetValue(dl.AuftragZeileId.Value, out var orderLine))
+                    orderLine.MengeFakturiert += il.Menge;
             }
 
             // Mark delivery as Fakturiert

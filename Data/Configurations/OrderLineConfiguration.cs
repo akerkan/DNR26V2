@@ -13,6 +13,8 @@ internal sealed class OrderLineConfiguration : IEntityTypeConfiguration<OrderLin
         entity.Property(e => e.Id).UseIdentityColumn();
 
         entity.Property(e => e.Menge).HasPrecision(10, 3).HasDefaultValue(0m);
+        entity.Property(e => e.MengeGeliefert).HasColumnType("decimal(10,3)").HasDefaultValue(0m);
+        entity.Property(e => e.MengeFakturiert).HasColumnType("decimal(10,3)").HasDefaultValue(0m);
         entity.Property(e => e.Gewicht).HasPrecision(10, 3).HasDefaultValue(0m);
         entity.Property(e => e.Preis).HasPrecision(10, 2).HasDefaultValue(0m);
         entity.Property(e => e.Notiz).HasMaxLength(500);

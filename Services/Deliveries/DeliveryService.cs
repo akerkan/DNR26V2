@@ -53,10 +53,11 @@ public class DeliveryService : IDeliveryService
 
         foreach (var zeile in order.Zeilen.Where(z => z.Menge > 0))
         {
-            _db.DeliveryLine.Add(new DeliveryLine
+            var dl = new DeliveryLine
             {
                 LieferscheinId  = lieferschein.Id,
                 ArtikelId       = zeile.ArtikelId,
+                AuftragZeileId  = zeile.Id,          // traceability: source OrderLine
                 Menge           = zeile.Menge,
                 MengeGeliefert  = 0,
                 Gewicht         = zeile.Gewicht,
@@ -69,10 +70,14 @@ public class DeliveryService : IDeliveryService
                 MwstProzent     = zeile.MwstProzent,
                 VatAmount       = zeile.VatAmount,
                 AmountInclVat   = zeile.AmountInclVat
-            });
+            };
+            _db.DeliveryLine.Add(dl);
+
+            // cumulative: delivered quantity comes from DeliveryLine, not OrderLine
+            zeile.MengeGeliefert += dl.Menge;
         }
 
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(); // persists DeliveryLines + OrderLine.MengeGeliefert
 
         // Load saved lines — MwstProzent copied from OrderLine, no recalculation
         await _db.Entry(lieferschein).Collection(l => l.Zeilen).LoadAsync();

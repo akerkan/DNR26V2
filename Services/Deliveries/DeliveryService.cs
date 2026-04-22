@@ -51,7 +51,7 @@ public class DeliveryService : IDeliveryService
         _db.DeliveryHeader.Add(lieferschein);
         await _db.SaveChangesAsync();
 
-        foreach (var zeile in order.Zeilen)
+        foreach (var zeile in order.Zeilen.Where(z => z.Menge > 0))
         {
             _db.DeliveryLine.Add(new DeliveryLine
             {

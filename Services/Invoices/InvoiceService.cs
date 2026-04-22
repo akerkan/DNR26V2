@@ -167,7 +167,7 @@ public class InvoiceService : IInvoiceService
                     LieferscheinId   = ls.Id,
                     DeliveryLineId   = dl.Id,
                     ArtikelId        = dl.ArtikelId,
-                    Menge            = dl.MengeGeliefert,
+                    Menge            = fakturiert,
                     FakturierteMenge = fakturiert,
                     Gewicht          = gewicht,
                     Preis            = dl.Preis,

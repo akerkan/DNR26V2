@@ -208,7 +208,6 @@ public partial class FrmRechnungList : BaseListForm
         ShowZCol("Lieferscheinnummer", "Lieferschein",       120);
         ShowZCol("Lieferdatum",        "Lieferdatum",         90, format: "dd.MM.yyyy");
         ShowZCol("Menge",              "Menge",               70, format: "N3", right: true);
-        ShowZCol("FakturierteMenge",   "Fakt. Menge",         80, format: "N3", right: true);
         ShowZCol("Preis",              "Preis €",             80, format: "N2", right: true);
         ShowZCol("MwstProzent",        "MwSt %",              60, format: "N2", right: true);
         ShowZCol("LineAmount",         "Gesamt €",            90, format: "N2", right: true);

@@ -222,6 +222,12 @@ public class OrderService : IOrderService
 
         var user = Environment.UserName;
 
+        // Skip lines with Menge = 0 — do not persist them
+        positionenList = positionenList.Where(p => p.Menge > 0).ToList();
+
+        if (positionenList.Count == 0)
+            throw new ValidationException("Mindestens eine Position mit Menge > 0 ist erforderlich.");
+
         // Load MwstProzent and PreisFormel from Product once — per-product, never global
         var artikelIds = positionenList.Select(p => p.ArtikelId).ToList();
         var productMap = await _db.Product

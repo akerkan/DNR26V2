@@ -4,6 +4,7 @@ using DNR26V2.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNR26V2.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422091604_Module6_InvoiceLine_Gewicht_AmountFields")]
+    partial class Module6_InvoiceLine_Gewicht_AmountFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -861,11 +864,6 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
-                    b.Property<int>("PreisFormel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
                     b.Property<string>("Printfarbe")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1218,11 +1216,6 @@ namespace DNR26V2.Data.Migrations
                         .HasPrecision(10, 3)
                         .HasColumnType("decimal(10,3)")
                         .HasDefaultValue(0m);
-
-                    b.Property<decimal>("MwstProzent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(5,2)")
-                        .HasDefaultValue(7.00m);
 
                     b.Property<string>("Notiz")
                         .HasMaxLength(500)

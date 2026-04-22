@@ -30,5 +30,9 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.ErstelltAm).HasDefaultValueSql("GETDATE()");
         builder.Property(o => o.ErstelltVon).HasMaxLength(100).IsRequired();
         builder.Property(o => o.GeaendertVon).HasMaxLength(100);
+
+        builder.Property(e => e.Gesamtnetto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        builder.Property(e => e.Gesamtmwst).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        builder.Property(e => e.Gesamtbrutto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
     }
 }

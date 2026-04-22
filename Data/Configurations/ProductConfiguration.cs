@@ -1,4 +1,5 @@
 using DNR26V2.Domain.Entities.MasterData;
+using DNR26V2.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,6 +20,7 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         entity.Property(e => e.VKPreis)      .HasPrecision(18, 4).HasDefaultValue(0m);
         entity.Property(e => e.EKPreis)      .HasPrecision(18, 4).HasDefaultValue(0m);
         entity.Property(e => e.MwstProzent)  .HasPrecision(5, 2).HasDefaultValue(7m);
+        entity.Property(e => e.PreisFormel)  .HasDefaultValue(PreisFormel.MengeXPreis);
 
         entity.Property(e => e.Feld1)        .HasMaxLength(2000);
         entity.Property(e => e.Feld2)        .HasMaxLength(2000);

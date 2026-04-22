@@ -32,5 +32,9 @@ internal sealed class DeliveryHeaderConfiguration : IEntityTypeConfiguration<Del
         entity.Property(e => e.ErstelltAm).HasDefaultValueSql("GETDATE()");
         entity.Property(e => e.ErstelltVon).HasMaxLength(100).IsRequired();
         entity.Property(e => e.GeaendertVon).HasMaxLength(100);
+
+        entity.Property(e => e.Gesamtnetto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        entity.Property(e => e.Gesamtmwst).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        entity.Property(e => e.Gesamtbrutto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
     }
 }

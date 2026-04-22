@@ -4,6 +4,7 @@ using DNR26V2.Data.Context;
 using DNR26V2.Domain.DTOs;
 using DNR26V2.Domain.Entities.Invoices;
 using DNR26V2.Domain.Enums;
+using DNR26V2.Domain.Helpers;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,7 +59,7 @@ public class InvoiceService : IInvoiceService
                 c.Kundennummer,
                 c.Kundenname                                  AS Kundenname,
                 COUNT(DISTINCT dh.Id)                         AS AnzahlOffeneLs,
-                ISNULL(SUM(COALESCE(NULLIF(dl.MengeGeliefert,0), dl.Menge) * dl.Preis), 0)  AS GesamtbetragOffen
+                ISNULL(SUM(dl.LineAmount), 0)  AS GesamtbetragOffen
             FROM Customer c
             INNER JOIN Deliveries dh
                 ON dh.KundeId = c.Id
@@ -85,7 +86,8 @@ public class InvoiceService : IInvoiceService
                 dh.Lieferscheinnummer,
                 dh.LieferDatum                       AS Lieferdatum,
                 COUNT(dl.Id)                         AS AnzahlPositionen,
-                ISNULL(SUM(COALESCE(NULLIF(dl.MengeGeliefert,0), dl.Menge) * dl.Preis), 0) AS Gesamtbetrag
+                ISNULL(SUM(dl.LineAmount), 0)     AS Gesamtbetrag,
+                ISNULL(SUM(dl.AmountInclVat), 0)  AS Gesamtbrutto
             FROM Deliveries dh
             INNER JOIN DeliveryLines dl ON dl.LieferscheinId = dh.Id
             WHERE dh.KundeId   = @KundeId
@@ -119,9 +121,15 @@ public class InvoiceService : IInvoiceService
         if (deliveries.Count == 0)
             throw new InvalidOperationException("Keine aktiven Lieferscheine gefunden.");
 
-        var setup    = await _db.AppSetup.AsNoTracking().FirstAsync();
-        var mwst     = setup.StandardMwstProzent;
+        var setup       = await _db.AppSetup.AsNoTracking().FirstAsync();
         var rechnungsnr = await GenerateRechnungsnummerAsync();
+
+        // Load PreisFormel per product — each product has its own formula
+        var artikelIds     = deliveries.SelectMany(d => d.Zeilen).Select(z => z.ArtikelId).Distinct().ToList();
+        var produktFormelMap = await _db.Product
+            .Where(p => artikelIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.PreisFormel })
+            .ToDictionaryAsync(p => p.Id, p => p.PreisFormel);
 
         var header = new InvoiceHeader
         {
@@ -141,10 +149,19 @@ public class InvoiceService : IInvoiceService
         {
             foreach (var dl in ls.Zeilen)
             {
-                var fakturiert = dl.MengeGeliefert;   // full delivery → full invoice
-                var gesamt     = Math.Round(fakturiert * dl.Preis, 2);
+                // Use delivered quantity; fall back to ordered quantity if not yet recorded
+                var fakturiert = dl.MengeGeliefert > 0 ? dl.MengeGeliefert : dl.Menge;
+                var gewicht    = fakturiert > 0 && dl.Menge > 0
+                                     ? Math.Round(dl.Gewicht * fakturiert / dl.Menge, 3)
+                                     : dl.Gewicht;
 
-                // BuchenAsync — InvoiceLine erstellen: Gewicht ergänzen
+                var formel   = produktFormelMap.GetValueOrDefault(dl.ArtikelId, DNR26V2.Domain.Enums.PreisFormel.MengeXPreis);
+                var gross    = InvoiceCalculator.CalcGrossAmount(fakturiert, gewicht, dl.Preis, formel);
+                var discount = InvoiceCalculator.CalcDiscountAmount(gross, dl.DiscountProzent);
+                var line     = InvoiceCalculator.CalcLineAmount(gross, discount);
+                var vat      = InvoiceCalculator.CalcVatAmount(line, dl.MwstProzent);
+                var incl     = InvoiceCalculator.CalcAmountInclVat(line, vat);
+
                 header.Zeilen.Add(new InvoiceLine
                 {
                     LieferscheinId   = ls.Id,
@@ -152,17 +169,19 @@ public class InvoiceService : IInvoiceService
                     ArtikelId        = dl.ArtikelId,
                     Menge            = dl.MengeGeliefert,
                     FakturierteMenge = fakturiert,
-                    Gewicht          = fakturiert > 0 && dl.Menge > 0
-                                           ? Math.Round(dl.Gewicht * fakturiert / dl.Menge, 3)
-                                           : dl.Gewicht,
+                    Gewicht          = gewicht,
                     Preis            = dl.Preis,
-                    MwstProzent      = mwst,
-                    Gesamtpreis      = gesamt,
+                    MwstProzent      = dl.MwstProzent,
+                    DiscountProzent  = dl.DiscountProzent,
+                    GrossAmount      = gross,
+                    DiscountAmount   = discount,
+                    LineAmount       = line,
+                    VatAmount        = vat,
+                    AmountInclVat    = incl,
                     ErstelltAm       = DateTime.Now,
                     ErstelltVon      = Environment.UserName,
                 });
 
-                // Track fakturierte Menge on DeliveryLine
                 dl.MengeFakturiert += fakturiert;
             }
 
@@ -173,6 +192,15 @@ public class InvoiceService : IInvoiceService
         }
 
         _db.Invoices.Add(header);
+        await _db.SaveChangesAsync();
+
+        // Header totals
+        await _db.Entry(header).Collection(r => r.Zeilen).LoadAsync();
+        var (netto, mwstTotal, brutto) = InvoiceCalculator.CalcHeader(
+            header.Zeilen.Select(z => (z.LineAmount, z.MwstProzent)));
+        header.Gesamtnetto = netto;
+        header.Gesamtmwst = mwstTotal;
+        header.Gesamtbrutto = brutto;
         await _db.SaveChangesAsync();
         return header;
     }
@@ -224,9 +252,9 @@ public class InvoiceService : IInvoiceService
                 c.Kundenname                          AS Kundenname,
                 i.Status,
                 i.IstSammelrechnung,
-                COUNT(il.Id)                          AS AnzahlPositionen,
-                ISNULL(SUM(il.Gesamtpreis), 0)        AS Gesamtnetto,
-                ISNULL(SUM(il.Gesamtpreis * (1 + il.MwstProzent / 100)), 0) AS Gesamtbrutto
+                i.Gesamtnetto,
+                i.Gesamtbrutto,
+                COUNT(il.Id)                          AS AnzahlPositionen
             FROM Invoices i
             INNER JOIN Customer c      ON c.Id  = i.KundeId
             LEFT  JOIN InvoiceLines il ON il.RechnungId = i.Id
@@ -238,7 +266,8 @@ public class InvoiceService : IInvoiceService
             GROUP BY
                 i.Id, i.Rechnungsnummer, i.Rechnungsdatum,
                 i.Von, i.Bis, c.Kundenname,
-                i.Status, i.IstSammelrechnung
+                i.Status, i.IstSammelrechnung,
+                i.Gesamtnetto, i.Gesamtbrutto
             ORDER BY i.Rechnungsdatum DESC, i.Rechnungsnummer DESC
             """;
 
@@ -268,7 +297,7 @@ public class InvoiceService : IInvoiceService
                 il.FakturierteMenge,
                 il.Preis,
                 il.MwstProzent,
-                il.Gesamtpreis,
+                il.LineAmount,
                 il.Notiz
             FROM InvoiceLines il
             INNER JOIN Deliveries dh ON dh.Id = il.LieferscheinId
@@ -343,7 +372,7 @@ public class InvoiceService : IInvoiceService
                 dl.Gewicht,
                 COALESCE(NULLIF(dl.MengeGeliefert, 0), dl.Menge) AS FakturierteMenge,
                 dl.Preis,
-                ROUND(COALESCE(NULLIF(dl.MengeGeliefert, 0), dl.Menge) * dl.Preis, 2) AS Gesamtpreis
+                dl.LineAmount
             FROM DeliveryLines dl
             INNER JOIN Product p ON p.Id = dl.ArtikelId
             WHERE dl.LieferscheinId = @LieferscheinId

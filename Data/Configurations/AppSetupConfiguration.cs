@@ -1,4 +1,5 @@
 ﻿using DNR26V2.Domain.Entities.System;
+using DNR26V2.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -38,5 +39,6 @@ internal sealed class AppSetupConfiguration : IEntityTypeConfiguration<AppSetup>
         entity.Property(e => e.ErstelltAm)  .HasDefaultValueSql("GETDATE()");
         entity.Property(e => e.ErstelltVon) .HasMaxLength(100).IsRequired();
         entity.Property(e => e.GeaendertVon).HasMaxLength(100);
+        entity.Property(e => e.PreisFormel)  .HasDefaultValue(PreisFormel.MengeXPreis);
     }
 }

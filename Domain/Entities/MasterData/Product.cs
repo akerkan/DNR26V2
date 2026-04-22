@@ -1,4 +1,5 @@
 using DNR26V2.Domain.Entities;
+using DNR26V2.Domain.Enums;
 
 namespace DNR26V2.Domain.Entities.MasterData;
 
@@ -17,6 +18,7 @@ public class Product : AuditableEntity
     public decimal VKPreis      { get; set; } = 0m;
     public decimal EKPreis      { get; set; } = 0m;
     public decimal MwstProzent  { get; set; } = 7m;
+    public PreisFormel PreisFormel { get; set; } = PreisFormel.MengeXPreis;
 
     // Etikett-Felder (werden auf dem Label gedruckt)
     public string? Feld1       { get; set; }

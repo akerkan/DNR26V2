@@ -1,5 +1,6 @@
 using DNR26V2.Data.Context;
 using DNR26V2.Domain.Entities.System;
+using DNR26V2.Domain.Enums;
 using DNR26V2.Forms.Base;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,6 +58,9 @@ public partial class FrmAppSetup : BaseCardForm
 
             // NoSeries in DataGridView laden
             await LoadNoSeriesAsync();
+
+            // In LoadDataAsync() — nach bestehendem Binding:
+            cmbPreisFormel.SelectedIndex = (int)_setup.PreisFormel;
         }
         catch (Exception ex)
         {
@@ -109,6 +113,9 @@ public partial class FrmAppSetup : BaseCardForm
 
             // New: TurKontrolle speichern
             _setup.TurKontrolle        = chkTurKontrolle.Checked;
+
+            // In BtnSpeichern_Click() — vor SaveAsync():
+            _setup.PreisFormel          = (PreisFormel)cmbPreisFormel.SelectedIndex;
 
             _db.AppSetup.Update(_setup);
             await _db.SaveChangesAsync();

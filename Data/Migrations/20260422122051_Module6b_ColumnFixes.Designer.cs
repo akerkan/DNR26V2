@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNR26V2.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260422065552_Module6_InvoiceLine_Gewicht")]
-    partial class Module6_InvoiceLine_Gewicht
+    [Migration("20260422122051_Module6b_ColumnFixes")]
+    partial class Module6b_ColumnFixes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -52,6 +52,21 @@ namespace DNR26V2.Data.Migrations
                     b.Property<string>("GeaendertVon")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Gesamtbrutto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Gesamtmwst")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Gesamtnetto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<int>("KundeId")
                         .HasColumnType("int");
@@ -93,8 +108,23 @@ namespace DNR26V2.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("AmountInclVat")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<int>("ArtikelId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("DiscountProzent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<DateTime>("ErstelltAm")
                         .ValueGeneratedOnAdd()
@@ -119,8 +149,18 @@ namespace DNR26V2.Data.Migrations
                         .HasColumnType("decimal(10,3)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("GrossAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<int>("LieferscheinId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("LineAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<decimal>("Menge")
                         .ValueGeneratedOnAdd()
@@ -137,6 +177,11 @@ namespace DNR26V2.Data.Migrations
                         .HasColumnType("decimal(10,3)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("MwstProzent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(7.00m);
+
                     b.Property<string>("Notiz")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -145,6 +190,11 @@ namespace DNR26V2.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("VatAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
 
                     b.HasKey("Id");
@@ -183,6 +233,21 @@ namespace DNR26V2.Data.Migrations
                     b.Property<string>("GeaendertVon")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Gesamtbrutto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Gesamtmwst")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Gesamtnetto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<bool>("IstSammelrechnung")
                         .ValueGeneratedOnAdd()
@@ -230,11 +295,26 @@ namespace DNR26V2.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("AmountInclVat")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<int>("ArtikelId")
                         .HasColumnType("int");
 
                     b.Property<int>("DeliveryLineId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("DiscountProzent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<DateTime>("ErstelltAm")
                         .ValueGeneratedOnAdd()
@@ -259,20 +339,25 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal>("Gesamtpreis")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)")
-                        .HasDefaultValue(0m);
-
                     b.Property<decimal>("Gewicht")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(10, 3)
                         .HasColumnType("decimal(10,3)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("GrossAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<int>("LieferscheinId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("LineAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<decimal>("Menge")
                         .ValueGeneratedOnAdd()
@@ -298,6 +383,11 @@ namespace DNR26V2.Data.Migrations
 
                     b.Property<int>("RechnungId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("VatAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.HasKey("Id");
 
@@ -774,6 +864,11 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
+                    b.Property<int>("PreisFormel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Printfarbe")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1017,6 +1112,21 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("Gesamtbrutto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Gesamtmwst")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Gesamtnetto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<int>("KundeId")
                         .HasColumnType("int");
 
@@ -1052,11 +1162,26 @@ namespace DNR26V2.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("AmountInclVat")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<int>("ArtikelId")
                         .HasColumnType("int");
 
                     b.Property<int>("AuftragId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("DiscountProzent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<DateTime>("ErstelltAm")
                         .ValueGeneratedOnAdd()
@@ -1081,11 +1206,26 @@ namespace DNR26V2.Data.Migrations
                         .HasColumnType("decimal(10,3)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("GrossAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("LineAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<decimal>("Menge")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(10, 3)
                         .HasColumnType("decimal(10,3)")
                         .HasDefaultValue(0m);
+
+                    b.Property<decimal>("MwstProzent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(7.00m);
 
                     b.Property<string>("Notiz")
                         .HasMaxLength(500)
@@ -1095,6 +1235,11 @@ namespace DNR26V2.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("VatAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
 
                     b.HasKey("Id");
@@ -1234,6 +1379,11 @@ namespace DNR26V2.Data.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)")
                         .HasDefaultValue("LS");
+
+                    b.Property<int>("PreisFormel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("RechnungPraefix")
                         .IsRequired()

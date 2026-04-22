@@ -70,6 +70,15 @@ public partial class FrmOrderEntry : BaseListForm
         colGewicht.Name = "Gewicht";
         colPreis.Name = "Preis";
         colNotiz.Name = "Notiz";
+
+        // Hidden column to track PreisFormel per row — needed for PricingUiHelper
+        if (!dgwPositionen.Columns.Contains("_PreisFormel"))
+            dgwPositionen.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name    = "_PreisFormel",
+                Visible = false,
+                ReadOnly = true
+            });
     }
 
     private static bool IsDesignMode() =>
@@ -106,7 +115,8 @@ public partial class FrmOrderEntry : BaseListForm
         dgwKunden.CellValueChanged += DgwKunden_CheckboxValueChanged;
 
         dgwPositionen.EditingControlShowing += DgwPositionen_EditingControlShowing;
-        dgwPositionen.KeyDown += DgwPositionen_KeyDown;
+        dgwPositionen.CellBeginEdit          += DgwPositionen_CellBeginEdit;
+        dgwPositionen.KeyDown                += DgwPositionen_KeyDown;
 
         btnBuchen.Click += BtnBuchen_Click;
         btnFreigeben.Click += BtnFreigeben_Click;
@@ -524,6 +534,8 @@ public partial class FrmOrderEntry : BaseListForm
             row.Cells["Gewicht"].Value = pos.Gewicht;
             row.Cells["Preis"].Value = pos.Preis;
             row.Cells["Notiz"].Value = pos.Notiz;
+            row.Cells["_PreisFormel"].Value = (int)pos.PreisFormel;
+            PricingUiHelper.ApplyGewichtRule(row, pos.PreisFormel);
         }
 
         // Set focus to first editable cell (Menge) in first row and begin edit
@@ -570,6 +582,18 @@ public partial class FrmOrderEntry : BaseListForm
     }
 
     // Handle Enter navigation inside editing control
+    private void DgwPositionen_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
+    {
+        if (e.RowIndex < 0) return;
+        if (dgwPositionen.Columns[e.ColumnIndex].Name != "Gewicht") return;
+
+        var raw    = dgwPositionen.Rows[e.RowIndex].Cells["_PreisFormel"].Value;
+        var formel = raw is int i ? (PreisFormel)i : PreisFormel.MengeXPreis;
+
+        if (!PricingUiHelper.CanEditGewicht(formel))
+            e.Cancel = true;
+    }
+
     private void DgwPositionen_EditingControlShowing(object? sender, DataGridViewEditingControlShowingEventArgs e)
     {
         if (e.Control is TextBox tb)
@@ -737,6 +761,8 @@ public partial class FrmOrderEntry : BaseListForm
         row.Cells["Gewicht"].Value = 0m;
         row.Cells["Preis"].Value = art.VKPreis;
         row.Cells["Notiz"].Value = string.Empty;
+        row.Cells["_PreisFormel"].Value = (int)art.PreisFormel;
+        PricingUiHelper.ApplyGewichtRule(row, art.PreisFormel);
 
         dgwPositionen.CurrentCell = row.Cells["Menge"];
         dgwPositionen.BeginEdit(true);

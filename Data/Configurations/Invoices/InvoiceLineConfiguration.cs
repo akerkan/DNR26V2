@@ -32,7 +32,7 @@ public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
             .HasPrecision(5, 2)
             .HasDefaultValue(7.00m);
 
-        b.Property(x => x.Gesamtpreis)
+        b.Property(x => x.LineAmount)
             .HasPrecision(10, 2)
             .HasDefaultValue(0m);
 
@@ -67,5 +67,31 @@ public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
             .HasForeignKey(x => x.ArtikelId)
             .OnDelete(DeleteBehavior.NoAction)
             .IsRequired();
+
+        // vorher ggf. vorhandene b.Property(x => x.Gesamtpreis) entfernen
+
+        b.Property(x => x.LineAmount)
+            .HasColumnType("decimal(18,2)")
+            .HasDefaultValue(0m);
+
+        b.Property(x => x.GrossAmount)
+            .HasColumnType("decimal(18,4)")
+            .HasDefaultValue(0m);
+
+        b.Property(x => x.DiscountProzent)
+            .HasColumnType("decimal(5,2)")
+            .HasDefaultValue(0m);
+
+        b.Property(x => x.DiscountAmount)
+            .HasColumnType("decimal(18,2)")
+            .HasDefaultValue(0m);
+
+        b.Property(x => x.VatAmount)
+            .HasColumnType("decimal(18,2)")
+            .HasDefaultValue(0m);
+
+        b.Property(x => x.AmountInclVat)
+            .HasColumnType("decimal(18,2)")
+            .HasDefaultValue(0m);
     }
 }

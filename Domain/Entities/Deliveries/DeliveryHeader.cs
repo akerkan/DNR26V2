@@ -1,4 +1,4 @@
-using DNR26V2.Domain.Enums;
+﻿using DNR26V2.Domain.Enums;
 
 namespace DNR26V2.Domain.Entities.Deliveries;
 
@@ -16,4 +16,9 @@ public class DeliveryHeader : AuditableEntity
     public MasterData.Customer            Kunde   { get; set; } = null!;
     public Orders.Order?                  Auftrag { get; set; }
     public ICollection<DeliveryLine>      Zeilen  { get; set; } = [];
+
+    // ── Header totals ─────────────────────────────────────────────────────────
+    public decimal Gesamtnetto   { get; set; }
+    public decimal Gesamtmwst    { get; set; }
+    public decimal Gesamtbrutto  { get; set; }
 }

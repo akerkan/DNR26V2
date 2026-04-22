@@ -26,6 +26,7 @@ partial class FrmAppSetup
     private Button      btnSpeichern     = null!;
     private Button      btnSchliessen    = null!;
     private CheckBox chkTurKontrolle = null!;
+    private ComboBox cmbPreisFormel = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -91,6 +92,17 @@ partial class FrmAppSetup
 
         chkTurKontrolle = new CheckBox { Dock = DockStyle.Left };
 
+        cmbPreisFormel = new ComboBox
+        {
+            Dock = DockStyle.Fill,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+        cmbPreisFormel.Items.AddRange(new object[]
+        {
+            "Menge × Preis",
+            "Menge × Gewicht × Preis"
+        });
+
         AddLabelAndControl(panelFirma, "Firmenname *",    txtFirmenname);
         AddLabelAndControl(panelFirma, "Adresse",         txtFirmenadresse);
         AddLabelAndControl(panelFirma, "PLZ",             txtFirmenPLZ);
@@ -104,6 +116,7 @@ partial class FrmAppSetup
         AddLabelAndControl(panelFirma, "Zeilen / Seite",  nudSeitengroesse);
         // New: Tour kontrol toggle
         AddLabelAndControl(panelFirma, "Tour-Kontrolle aktivieren", chkTurKontrolle);
+        AddLabelAndControl(panelFirma, "Preisformel", cmbPreisFormel);
 
         tabFirma.Controls.Add(panelFirma);
 

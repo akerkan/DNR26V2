@@ -1,295 +1,242 @@
-﻿# DNR26V2 – GitHub Copilot Instructions
+# DNR26V2 – Development Rules & Architecture Guide
 
 You are acting as a **senior software architect, ERP process analyst, database architect, and lead .NET WinForms engineer** for this project.
 
 ---
 
-## CRITICAL NAMING CONVENTION
+# 1. CORE PRINCIPLES
 
-- Database **TABLE** names → **ENGLISH**
-- Database **COLUMN** (field) names → **GERMAN**
-- C# class names, methods, services, namespaces → **ENGLISH**
-- UI (labels, forms, button texts, menu items) → **GERMAN**
-
----
-
-## WORKING RULES
-
-- Legacy project **DNR26** → READ-ONLY reference. NEVER touch it.
-- ALL new code → only in **DNR26V2**
-- Solo developer — keep it practical, no overengineering
-- Repository: `https://github.com/akerkan/DNR26V2`
+* Legacy project **DNR26** → READ-ONLY
+* All new code → **DNR26V2 only**
+* Solo developer → keep it simple (NO overengineering)
+* ALWAYS build after changes (Strg+Shift+B)
+* **NEVER rewrite entire files — only show changed blocks**
 
 ---
 
-## ⚠️ FORM DESIGN RULES — ABSOLUTE, NEVER VIOLATE
+# 2. NAMING CONVENTION (STRICT)
 
-These rules were violated multiple times. They are NON-NEGOTIABLE:
-
-1. **ALL controls MUST be placed in the Designer (.Designer.cs)** — NEVER create controls at runtime in code
-2. **Forms MUST always open correctly in Visual Studio Designer (Entwurf) mode** — if Designer breaks, the solution is WRONG
-3. **NO Dependency Injection in forms** — no `IServiceProvider`, no constructor injection
-4. **Use classic `new Form()` instantiation** — nothing else
-5. **NEVER change the form layout, tabs, panels, or menus unless explicitly asked** — only add what is requested
-6. **When adding new fields to a form:** only tell the developer "add a Label here, a ComboBox there, name it X" — do NOT rewrite the whole form
-7. **If Designer stops working after a change → immediately revert that change**
-8. **Do NOT remove or reorganize existing working controls** — only ADD what is asked
-9. **Detail panel (panelDetail) MUST always be visible on form load** — NEVER call `SetDetailVisible(false)` on load. If the grid is empty → automatically call `NewXxx()` to enter new-record mode. This was violated in FrmProductList and FrmCustomerList.
-10. **Do NOT rewrite entire files. Show only the changed/added blocks with minimal context.**
+* Database TABLE names → ENGLISH
+* Database COLUMN names → GERMAN
+* C# (classes, services, methods) → ENGLISH
+* UI (forms, labels, buttons) → GERMAN
 
 ---
 
-## ⚠️ DESIGNER CRASH — ROOT CAUSE & PREVENTION
+# 3. FORM DESIGN RULES — ABSOLUTE
 
-**The Visual Studio Designer CANNOT open a form if the project has ANY compile error — even if the error is unrelated to that form.**
-
-### Most common causes in this project:
-1. **An event hook in `WireUpEvents()` references a Button/Control that does NOT yet exist in `.Designer.cs`**
-2. **A new field is declared in `.cs` but not in `.Designer.cs`** (or vice versa).
-
-### RULE — NEVER VIOLATE:
-- **NEVER add an event hook in `WireUpEvents()` for a control that does not yet exist in `.Designer.cs`.**
-- **Always add the control to the Designer FIRST, then wire up the event in code.**
-- **After any code change: build the project (Strg+Shift+B) before opening the Designer.**
-
----
-
-## ⚠️ DESIGNER CODE RULES — ABSOLUTE, NEVER VIOLATE
-
-**The Designer can ONLY serialize linear, unconditional code. Any logic causes a Designer crash.**
-
-### FORBIDDEN in InitializeComponent():
-1. **NO `for`/`foreach` loops**
-2. **NO `if`/`else` conditions**
-3. **NO `switch` expressions**
-4. **NO `SetChildIndex()`**
-5. **NO `Controls.Contains()` checks**
-6. **NO `var` declarations for new controls** — declare all fields at class level
+1. Controls ONLY in `.Designer.cs`
+2. NEVER create controls at runtime
+3. Forms MUST open in Designer
+4. NO Dependency Injection in Forms
+5. Use `new Form()` only
+6. NEVER modify layout unless explicitly requested
+7. Add controls → ONLY describe placement
+8. If Designer breaks → revert immediately
+9. panelDetail MUST be visible on load
+10. If grid empty → auto New() mode
 
 ---
 
-## ⚠️ LIST FORM LOAD PATTERN — ALWAYS USE THIS
+# 4. DESIGNER STABILITY (CRITICAL)
+
+Designer fails if ANY compile error exists.
+
+### NEVER:
+
+* Wire events for controls that don’t exist
+* Declare fields only in `.cs` but not `.Designer.cs`
+
+### ALWAYS:
+
+* Add control → THEN wire event
+* Build before opening Designer
+
+---
+
+# 5. EF CORE & MIGRATIONS
+
+* Multiple FK → ALWAYS `OnDelete(NoAction)`
+* Check migration name BEFORE creating
+* Use `[Col] <> x AND [Col] <> y` (NOT IN forbidden)
+* Every entity MUST have a Configuration class
+
+---
+
+# 6. CODE RULES
+
+* Comments → English or German ONLY
+* Turkish comments → FORBIDDEN
+* NEVER use `float` or `double` → ALWAYS `decimal`
+
+---
+
+# 7. PRICE & ROUNDING RULES — ABSOLUTE (CRITICAL)
+
+## Calculation Order (MANDATORY)
 
 ```csharp
-private async void FrmXxxList_Load(object? sender, EventArgs e)
-{
-    if (IsDesignMode() || _xxxService is null) return;
-
-    WindowState = FormWindowState.Maximized;
-    await LoadListAsync();
-}
+var gross = CalcGrossAmount(...);
+var discount = CalcDiscountAmount(gross, ...);
+var line = CalcLineAmount(gross, discount);
+var vat = CalcVatAmount(line, mwstProzent);
+var incl = CalcAmountInclVat(line, vat);
 ```
 
 ---
 
-## ⚠️ EF CORE / MIGRATION RULES — NEVER VIOLATE
+## Rounding Rules
 
-1. **When multiple FK relations point to the same table**: ALWAYS use `OnDelete(DeleteBehavior.NoAction)` on ALL of them
-2. **Before writing a migration, check if that migration name already exists**
-3. **Filtered index syntax for SQL Server**: use `[Col] <> x AND [Col] <> y` — NEVER `NOT IN (x, y)`
-4. **Every table needs a `IEntityTypeConfiguration<T>` class** in `Data\Configurations\`
-
----
-
-## ⚠️ GRID COLUMN CHOOSER — REQUIRED FOR ALL GRIDS
-
-1. **`EnableColumnChooser(dgwXxx)`** in `WireUpEvents()`
-2. **`ApplyColumnChooserSettings(dgwXxx)`** at the end of `StyleGrid()`
-3. **`ApplyColumnHeaders(dgwXxx, _columnHeaders)`** at the start of `StyleGrid()`
-4. **`_columnHeaders` Dictionary** with ALL DTO fields
+* GrossAmount → NO rounding (decimal(18,4))
+* DiscountAmount → 2 decimals
+* LineAmount → 2 decimals
+* VatAmount → 2 decimals
+* AmountInclVat → 2 decimals
 
 ---
 
-## ⚠️ CODE COMMENT LANGUAGE RULE
+## VAT RULE — NEVER BREAK THIS
 
-- All code comments → **English or German only**
-- Turkish comments are **NOT allowed** anywhere in the codebase
-
----
-
-## ⚠️ STATUS COLOR HELPER — `Helpers\StatusColorHelper.cs`
-
-All grid row colors and status label colors MUST be routed through `StatusColorHelper`.
+❌ WRONG:
 
 ```csharp
-// Grid row color (CellFormatting):
-row.DefaultCellStyle.BackColor = StatusColorHelper.GetOrderStatusBackColor(dto.AuftragStatus);
+lines.Sum(x => x.VatAmount);
+```
 
-// Status label:
-lblAuftragStatus.ForeColor = StatusColorHelper.GetOrderStatusLabelColor(_currentStatus);
+✔ CORRECT:
 
-// Load once in LoadAppSetupAsync():
-StatusColorHelper.Configure(setup);
+* Group by MwstProzent
+* Calculate VAT per group
+* Round per group
+* Then sum
+
+---
+
+## Header Calculation (MANDATORY)
+
+```csharp
+InvoiceCalculator.CalcHeader(
+    lines.Select(x => (x.LineAmount, x.MwstProzent))
+);
 ```
 
 ---
 
-## ⚠️ LIST FORM — CHECKBOX BATCH-ACTION PATTERN
+## Business Rules
 
-All list forms with batch actions (`FrmOrderList`, `FrmDeliveryList`, etc.) MUST follow this pattern:
-
-### Designer
-- Add `DataGridViewCheckBoxColumn colXxxChecked` as the **first column** of the grid
-- `colXxxChecked.ReadOnly = false` — MUST be explicitly set; `ConfigureGrid()` sets grid `ReadOnly=true`
-- `btnAlleMarkieren` — initially `Enabled = false` in Designer; code enables it dynamically
-- `btnBuchen` / `btnFreigeben` — initially `Enabled = false`
-
-### StyleGrid() — checkbox column handling
-```csharp
-// After ConfigureGrid() which sets ReadOnly=true on grid level:
-dgwAuftraege.ReadOnly = false;  // restore — checkbox needs this
-dgwAuftraege.Columns["colXxxChecked"].ReadOnly = false;
-foreach (DataGridViewColumn col in dgwAuftraege.Columns)
-    if (col.Name != "colXxxChecked") col.ReadOnly = true;
-```
-
-### Button enable/disable — use ApplyBtnState()
-```csharp
-// ALWAYS use this helper — prevents "gray but clickable" rendering bug
-private static void ApplyBtnState(Button btn, bool enabled)
-{
-    btn.Enabled   = enabled;
-    btn.ForeColor = SystemColors.ControlText;
-}
-```
-
-### Alle markieren — toggle logic
-```csharp
-// Determine active filter status (Offen or Freigegeben)
-// Count matching rows; if not all checked → check all; if all checked → uncheck all
-// _suppressChecked = true; ApplyCheckmarks(); _suppressChecked = false;
-// dgwAuftraege.Refresh(); UpdateButtonStates();
-```
-
-### Batch-action buttons — fallback pattern
-```csharp
-// 1. Collect IDs from _checkedIds that match the required status
-// 2. If none checked → fall back to single selected row
-// 3. Confirm dialog with count
-// 4. Execute in lock, collect errors per ID
-// 5. _checkedIds.Remove(id) on success
-// 6. await LoadListAsync() at end
-```
-
-### Checkbox single-click commit
-```csharp
-private void DgwXxx_DirtyStateChanged(object? s, EventArgs e)
-{
-    if (dgwXxx.IsCurrentCellDirty &&
-        dgwXxx.CurrentCell?.OwningColumn?.Name == "colXxxChecked")
-        dgwXxx.CommitEdit(DataGridViewDataErrorContexts.Commit);
-}
-```
+* Discount ALWAYS BEFORE VAT
+* MwstProzent ONLY on line level
+* Header MUST NOT contain MwstProzent
+* Multiple VAT rates MUST be supported
 
 ---
 
-## ⚠️ FRMORDERENTRY — COMPLETED PATTERNS
+## Source of Truth
 
-`FrmOrderEntry` is the daily order entry form. Key patterns:
+* ALL calculations → `InvoiceCalculator`
+* Manual calculations → FORBIDDEN
 
-### Button visibility rules
-| Status | Speichern | Hinzufügen | Freigeben | Buchen | Löschen | Öffnen | Nachlieferung |
-|---|---|---|---|---|---|---|---|
-| null/Offen | ✅ | ✅ | ✅ (if saved) | ✅ | ✅ (if saved) | ❌ | ❌ |
-| Freigegeben | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ | ❌ |
-| Gebucht | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Storniert | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+---
 
-### NavigateToAuftrag — MUST use this pattern
-```csharp
-public async void NavigateToAuftrag(int kundeId, DateTime lieferdatum)
-{
-    BringToFront();
-    _isLoading = true; dtpLieferdatum.Value = lieferdatum.Date; _isLoading = false;
-    // Switch to btnAlle (no day filter) so customer appears regardless of LiefertXx flags
-    btnAlle.BackColor = Color.SteelBlue; btnAlle.ForeColor = Color.White;
-    _activeDayBtn = btnAlle; _selectedDay = null;
-    await ReloadAsync();
-    SelectKundeById(kundeId);
-    await LoadPositionenAsync(kundeId);  // direct call — avoids race condition
-}
+# 8. DOCUMENT STATUS & TERMINOLOGY
+
+## Auftrag lifecycle
+
+```
+Offen → Freigegeben → Gebucht → Lieferschein
+Offen → Gelöscht
+Freigegeben → Offen (Öffnen)
 ```
 
+* NO "Stornieren" on Auftrag level
+
 ---
 
-## ⚠️ DOCUMENT STATUS & TERMINOLOGY
+## Lieferschein lifecycle
 
-### Auftrag lifecycle (CRITICAL — NO EXCEPTIONS)
 ```
-Offen
-  → [Freigeben]  → Freigegeben
-  → [Löschen]    → Gelöscht        (soft-delete, no document number)
-
-Freigegeben
-  → [Buchen]     → Gebucht         → Lieferschein (Aktiv) created
-  → [Öffnen]     → Offen           (NOT Stornieren — Stornieren only for Lieferschein/Rechnung)
-
-Gebucht
-  → [Stornieren via Lieferungen]   (never directly on Auftrag level)
+Aktiv → Fakturiert
+Aktiv → Storniert → Auftrag = Offen
 ```
 
-> **"Stornieren" on Auftrag level does NOT exist.**
-> **"Öffnen" = Freigegeben → Offen (reverse of Freigeben).**
-> **"Löschen" only when Status = Offen (before any document number is assigned).**
-
-### Lieferschein Status Flow
-​```
-Aktiv
-  → [Stornieren]  → Storniert
-                    linked Auftrag → Status = Offen
-                    (full cancellation — user must Freigeben again to re-book)
-  → [Fakturieren] → Fakturiert
-​```
-
-> Partial line cancellation (Zeilen-Storno) is NOT implemented.
-> Planned for a future release after Module 6 is complete.
-> Current rule: Storno is always full (all lines), always rolls Auftrag back to Offen.
+* ALWAYS full cancellation
+* NO partial cancellation
 
 ---
 
-## MODULE STATUS
+# 9. MODULE 5 – LIEFERUNGEN (SUMMARY)
 
-### ✅ MODULE 1 – Stammdaten (Kunden, Produkte, Einheiten)
-### ✅ MODULE 2 – App-Setup & Konfiguration
-### ✅ MODULE 3 – Aufträge (FrmOrderEntry, FrmOrderList)
-### ✅ MODULE 4 – Auftragsübersicht & Status-Verwaltung
-- Forms: `FrmOrderList` (Batch-Freigeben, Batch-Buchen, Öffnen, Löschen)
-- "Öffnen" = Freigegeben → Offen (NOT Stornieren)
-- "Stornieren" does NOT exist at Auftrag level
-### ✅ MODULE 5 – Lieferungen
-- Entities: `DeliveryHeader` (table: `Deliveries`), `DeliveryLine` (table: `DeliveryLines`)
-- Services: `IDeliveryService`, `DeliveryService`
-  - `CreateFromOrderAsync` — creates Lieferschein from Auftrag, sets Auftrag → Gebucht
-  - `StornierenAsync` — full header storno, sets Auftrag → Offen
-  - `GetLieferscheinListeAsync` — filtered list query via Dapper
-  - `GetPositionenByLieferscheinIdAsync` — line detail query
-- Forms: `FrmDeliveryList`
-  - Filter: Datum Von/Bis, Kunde, Status (Alle / Aktiv / TeilStorniert* / Storniert / Fakturiert)
-  - Checkbox batch: nur Aktiv (Offen) markierbar
-  - "Alle markieren" toggle
-  - Header-Storno button
-  - Detail panel: Lieferschein header info + Positions-Grid (read-only)
-  - Context menu on positions: Zeilen-Storno → **DEACTIVATED** (infrastructure exists, enabled in future release)
-  - Navigation: `NavigateToLieferschein(nr)` — called from FrmOrderList double-click on Gebucht
-  - F5 = Refresh
-  - StatusColorHelper for row/label colors
-- Migrations: `Module5_Deliveries`
-- Key rules:
-  - `DeliveryStatus.Offen` displayed as "Aktiv" in UI
-  - `DeliveryStatus.TeilStorniert` exists in enum and combo filter but no UI action creates it
-  - No "Abschliessen" step — flow is: Aktiv → Fakturiert or Storniert only
-  - Storno always full (all lines), always rolls linked Auftrag back to Offen
+* Delivery is created from Order
+* Storno → full only → Auftrag back to Offen
+* StatusColorHelper MUST be used
+* No Abschluss step
 
 ---
 
-### 🔲 MODULE 6 – Rechnungen (planned)
+# 10. MODULE 6 – RECHNUNGEN (CRITICAL)
+
+## Core Rules
+
+* InvoiceCalculator is mandatory
+* PreisFormel comes from AppSetup
 
 ---
 
-## ENTITY TABLE
+## Line fields (MANDATORY)
 
-| Entity | Table | Migration | Status |
-|---|---|---|---|
-| `DeliveryHeader` | `Deliveries` | Module5_Deliveries | ✅ |
-| `DeliveryLine` | `DeliveryLines` | Module5_Deliveries | ✅ |
-| `DeliveryLineChange` | `DeliveryLineChanges` | — (not implemented, future) | 🔲 |
+* GrossAmount
+* DiscountProzent
+* DiscountAmount
+* LineAmount
+* VatAmount
+* AmountInclVat
+* MwstProzent
+
+---
+
+## Header fields
+
+* Gesamtnetto
+* Gesamtmwst
+* Gesamtbrutto
+
+---
+
+## Service Rules
+
+* Order → calculates prices
+* Delivery → COPIES prices (NO recalculation)
+* Invoice → recalculates using InvoiceCalculator
+
+---
+
+## Calculation Rules
+
+* Header totals → ALWAYS via CalcHeader()
+* NEVER sum line VAT
+* VAT MUST be grouped by MwstProzent
+
+---
+
+# 11. GRID & UI PATTERNS (SHORT)
+
+* ColumnChooser REQUIRED
+* Checkbox batch pattern REQUIRED
+* Buttons MUST use ApplyBtnState()
+
+---
+
+# 12. MODULE 7 – FINANCE (PLANNED)
+
+* Offene Posten created on Delivery
+* Tracks receivables
+* Full accounting layer later
+
+---
+
+# FINAL RULE
+
+If something is unclear:
+
+👉 Follow InvoiceCalculator + these rules
+👉 NEVER invent your own calculation logic

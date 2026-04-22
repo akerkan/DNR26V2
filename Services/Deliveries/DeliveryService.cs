@@ -6,6 +6,7 @@ using DNR26V2.Domain.Entities.Deliveries;
 using DNR26V2.Domain.Entities.Orders;
 using DNR26V2.Domain.Enums;
 using DNR26V2.Domain.Exceptions;
+using DNR26V2.Domain.Helpers;
 using DNR26V2.Services.Deliveries;
 using DNR26V2.Services.System;
 using Microsoft.EntityFrameworkCore;
@@ -54,17 +55,36 @@ public class DeliveryService : IDeliveryService
         {
             _db.DeliveryLine.Add(new DeliveryLine
             {
-                LieferscheinId = lieferschein.Id,
-                ArtikelId      = zeile.ArtikelId,
-                Menge          = zeile.Menge,
-                MengeGeliefert = 0,
-                Gewicht        = zeile.Gewicht,
-                Preis          = zeile.Preis,
-                Notiz          = zeile.Notiz
+                LieferscheinId  = lieferschein.Id,
+                ArtikelId       = zeile.ArtikelId,
+                Menge           = zeile.Menge,
+                MengeGeliefert  = 0,
+                Gewicht         = zeile.Gewicht,
+                Preis           = zeile.Preis,
+                Notiz           = zeile.Notiz,
+                GrossAmount     = zeile.GrossAmount,
+                DiscountProzent = zeile.DiscountProzent,
+                DiscountAmount  = zeile.DiscountAmount,
+                LineAmount      = zeile.LineAmount,
+                MwstProzent     = zeile.MwstProzent,
+                VatAmount       = zeile.VatAmount,
+                AmountInclVat   = zeile.AmountInclVat
             });
         }
 
         await _db.SaveChangesAsync();
+
+        // Load saved lines — MwstProzent copied from OrderLine, no recalculation
+        await _db.Entry(lieferschein).Collection(l => l.Zeilen).LoadAsync();
+
+        var (netto, mwstTotal, brutto) = InvoiceCalculator.CalcHeader(
+            lieferschein.Zeilen.Select(z => (z.LineAmount, z.MwstProzent)));
+        lieferschein.Gesamtnetto  = netto;
+        lieferschein.Gesamtmwst   = mwstTotal;
+        lieferschein.Gesamtbrutto = brutto;
+
+        await _db.SaveChangesAsync();
+
         return lieferschein;
     }
 
@@ -90,8 +110,8 @@ public class DeliveryService : IDeliveryService
             LEFT   JOIN Orders o ON o.Id = d.AuftragId
             LEFT   JOIN (
                 SELECT LieferscheinId,
-                       COUNT(*)            AS AnzahlPositionen,
-                       SUM(Menge * Preis)  AS Gesamtbetrag
+                       COUNT(*)        AS AnzahlPositionen,
+                       SUM(LineAmount) AS Gesamtbetrag
                 FROM   DeliveryLines
                 GROUP  BY LieferscheinId
             ) pos ON pos.LieferscheinId = d.Id

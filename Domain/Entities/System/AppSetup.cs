@@ -1,4 +1,6 @@
-﻿namespace DNR26V2.Domain.Entities.System;
+﻿using DNR26V2.Domain.Enums;
+
+namespace DNR26V2.Domain.Entities.System;
 
 /// <summary>
 /// Zentrale Anwendungseinstellungen – immer genau 1 Zeile (Id = 1).
@@ -65,4 +67,7 @@ public class AppSetup : AuditableEntity
     public int     ZahlungszielTage   { get; set; } = 14;
     public decimal SkontoProzent      { get; set; } = 0.00m;
     public int     SkontoTage         { get; set; } = 7;
+
+    // ── Preisformel ───────────────────────────────────────────────────────────
+    public PreisFormel PreisFormel { get; set; } = PreisFormel.MengeXPreis;
 }

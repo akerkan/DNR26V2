@@ -8,5 +8,5 @@ public class LieferscheinZeileVorschauDto
     public decimal Gewicht          { get; set; }
     public decimal FakturierteMenge { get; set; }
     public decimal Preis            { get; set; }
-    public decimal Gesamtpreis      { get; set; }
+    public decimal LineAmount       { get; set; }   // renamed from Gesamtpreis
 }

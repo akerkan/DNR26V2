@@ -1,4 +1,4 @@
-namespace DNR26V2.Domain.Entities.Deliveries;
+﻿namespace DNR26V2.Domain.Entities.Deliveries;
 
 public class DeliveryLine : AuditableEntity
 {
@@ -15,6 +15,15 @@ public class DeliveryLine : AuditableEntity
     public DeliveryHeader         Lieferschein { get; set; } = null!;
     public MasterData.Product     Artikel      { get; set; } = null!;
 
-    // Bestehende Properties beibehalten � NUR HINZUF�GEN:
-    public decimal MengeFakturiert { get; set; } = 0m;   // akkumuliert �ber mehrere Rechnungen
+    // Bestehende Properties beibehalten — NUR HINZUFÜGEN:
+    public decimal MengeFakturiert { get; set; } = 0m;   // akkumuliert über mehrere Rechnungen
+
+    // ── Calculated amount fields ──────────────────────────────────────────────
+    public decimal GrossAmount     { get; set; }
+    public decimal DiscountProzent { get; set; }
+    public decimal DiscountAmount  { get; set; }
+    public decimal LineAmount      { get; set; }
+    public decimal MwstProzent     { get; set; } = 7.00m;   // ← NEU: pro Zeile, nie vom Header
+    public decimal VatAmount       { get; set; }
+    public decimal AmountInclVat   { get; set; }
 }

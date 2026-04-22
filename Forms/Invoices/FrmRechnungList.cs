@@ -211,7 +211,7 @@ public partial class FrmRechnungList : BaseListForm
         ShowZCol("FakturierteMenge",   "Fakt. Menge",         80, format: "N3", right: true);
         ShowZCol("Preis",              "Preis €",             80, format: "N2", right: true);
         ShowZCol("MwstProzent",        "MwSt %",              60, format: "N2", right: true);
-        ShowZCol("Gesamtpreis",        "Gesamt €",            90, format: "N2", right: true);
+        ShowZCol("LineAmount",         "Gesamt €",            90, format: "N2", right: true);
     }
 
     private void ShowZCol(string name, string header, int width,

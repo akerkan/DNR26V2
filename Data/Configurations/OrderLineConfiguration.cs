@@ -30,5 +30,13 @@ internal sealed class OrderLineConfiguration : IEntityTypeConfiguration<OrderLin
         entity.Property(e => e.ErstelltAm).HasDefaultValueSql("GETDATE()");
         entity.Property(e => e.ErstelltVon).HasMaxLength(100).IsRequired();
         entity.Property(e => e.GeaendertVon).HasMaxLength(100);
+
+        entity.Property(e => e.GrossAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+        entity.Property(e => e.DiscountProzent).HasColumnType("decimal(5,2)").HasDefaultValue(0m);
+        entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        entity.Property(e => e.MwstProzent).HasColumnType("decimal(5,2)").HasDefaultValue(7.00m);
+        entity.Property(e => e.LineAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        entity.Property(e => e.VatAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        entity.Property(e => e.AmountInclVat).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
     }
 }

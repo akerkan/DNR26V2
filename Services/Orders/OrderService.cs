@@ -5,6 +5,7 @@ using DNR26V2.Domain.DTOs;
 using DNR26V2.Domain.Entities.Orders;
 using DNR26V2.Domain.Enums;
 using DNR26V2.Domain.Exceptions;
+using DNR26V2.Domain.Helpers;
 using DNR26V2.Services.Deliveries;
 using DNR26V2.Services.System;
 using Microsoft.EntityFrameworkCore;
@@ -111,7 +112,8 @@ public class OrderService : IOrderService
             SELECT p.Id           AS ArtikelId,
                    p.Artikelnummer,
                    p.Bezeichnung  AS Produktname,
-                   p.VKPreis
+                   p.VKPreis,
+                   p.PreisFormel
             FROM   Product p
             WHERE  p.Aktiv = 1
             AND    (@Suche IS NULL
@@ -140,7 +142,8 @@ public class OrderService : IOrderService
                        ol.Menge,
                        ol.Gewicht,
                        ol.Preis,
-                       ol.Notiz
+                       ol.Notiz,
+                       p.PreisFormel
                 FROM   OrderLines ol
                 INNER  JOIN Product p ON p.Id = ol.ArtikelId
                 WHERE  ol.AuftragId = @AuftragId
@@ -159,7 +162,8 @@ public class OrderService : IOrderService
                    cp.Menge,
                    cp.Gewicht,
                    cp.Preis,
-                   NULL          AS Notiz
+                   NULL          AS Notiz,
+                   p.PreisFormel
             FROM   CustomerProduct cp
             INNER  JOIN Product p ON p.Id = cp.ArtikelId
             WHERE  cp.KundeId = @KundeId
@@ -216,20 +220,56 @@ public class OrderService : IOrderService
         var existingLines = await _db.OrderLine.Where(l => l.AuftragId == trackedOrder.Id).ToListAsync();
         _db.OrderLine.RemoveRange(existingLines);
 
+        var user = Environment.UserName;
+
+        // Load MwstProzent and PreisFormel from Product once — per-product, never global
+        var artikelIds = positionenList.Select(p => p.ArtikelId).ToList();
+        var productMap = await _db.Product
+            .Where(p => artikelIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.MwstProzent, p.PreisFormel })
+            .ToDictionaryAsync(p => p.Id, p => (p.MwstProzent, p.PreisFormel));
+
         foreach (var pos in positionenList)
         {
-            _db.OrderLine.Add(new OrderLine
+            if (!productMap.TryGetValue(pos.ArtikelId, out var product))
+                throw new InvalidOperationException(
+                    $"Product data missing for ArtikelId {pos.ArtikelId}");
+
+            var formel = product.PreisFormel;
+
+            var line = new OrderLine
             {
-                AuftragId = trackedOrder.Id,
-                ArtikelId = pos.ArtikelId,
-                Menge     = pos.Menge,
-                Gewicht   = pos.Gewicht,
-                Preis     = pos.Preis,
-                Notiz     = pos.Notiz
-            });
+                AuftragId       = trackedOrder.Id,
+                ArtikelId       = pos.ArtikelId,
+                ErstelltVon     = user,
+                Menge           = pos.Menge,
+                Gewicht         = pos.Gewicht,
+                Preis           = pos.Preis,
+                Notiz           = pos.Notiz,
+                MwstProzent     = product.MwstProzent,
+                DiscountProzent = 0   // future: pass from caller
+            };
+
+            line.GrossAmount   = InvoiceCalculator.CalcGrossAmount(line.Menge, line.Gewicht, line.Preis, formel);
+            line.DiscountAmount = InvoiceCalculator.CalcDiscountAmount(line.GrossAmount, line.DiscountProzent);
+            line.LineAmount    = InvoiceCalculator.CalcLineAmount(line.GrossAmount, line.DiscountAmount);
+            line.VatAmount     = InvoiceCalculator.CalcVatAmount(line.LineAmount, line.MwstProzent);
+            line.AmountInclVat = InvoiceCalculator.CalcAmountInclVat(line.LineAmount, line.VatAmount);
+
+            _db.OrderLine.Add(line);
         }
 
-        await SaveChangesAsync();
+        await _db.SaveChangesAsync();
+
+        // Reload lines — CalcHeader uses per-line MwstProzent (UStG §14 compliant)
+        await _db.Entry(trackedOrder).Collection(o => o.Zeilen).LoadAsync();
+        var (netto, mwstTotal, brutto) = InvoiceCalculator.CalcHeader(
+            trackedOrder.Zeilen.Select(z => (z.LineAmount, z.MwstProzent)));
+        trackedOrder.Gesamtnetto  = netto;
+        trackedOrder.Gesamtmwst   = mwstTotal;
+        trackedOrder.Gesamtbrutto = brutto;
+        await _db.SaveChangesAsync();
+
         return trackedOrder;
     }
 
@@ -354,8 +394,8 @@ public class OrderService : IOrderService
             LEFT   JOIN ProductAttributeValue tv ON tv.Id = c.TurWertId
             LEFT   JOIN (
                 SELECT AuftragId,
-                       COUNT(*)            AS AnzahlPositionen,
-                       SUM(Menge * Preis)  AS Gesamtbetrag
+                       COUNT(*)        AS AnzahlPositionen,
+                       SUM(LineAmount) AS Gesamtbetrag
                 FROM   OrderLines
                 GROUP  BY AuftragId
             ) pos ON pos.AuftragId = o.Id

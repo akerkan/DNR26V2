@@ -328,7 +328,7 @@ public partial class FrmRechnungErfassung : BaseListForm
         ShowZeileCol("Gewicht",          "Gewicht kg",       80, format: "N3", right: true);
         ShowZeileCol("FakturierteMenge", "Fakt. Menge",      80, format: "N3", right: true);
         ShowZeileCol("Preis",            "Preis €",          80, format: "N2", right: true);
-        ShowZeileCol("Gesamtpreis",      "Gesamt €",         90, format: "N2", right: true);
+        ShowZeileCol("LineAmount",       "Gesamt €",         90, format: "N2", right: true);
     }
 
     private void ShowZeileCol(string name, string header, int width,
@@ -357,7 +357,7 @@ public partial class FrmRechnungErfassung : BaseListForm
             if (row.DataBoundItem is not LieferscheinFuerRechnungDto dto) continue;
             if (!_checkedLsIds.Contains(dto.LieferscheinId)) continue;
             netto  += dto.Gesamtbetrag;
-            brutto += Math.Round(dto.Gesamtbetrag * 1.07m, 2);   // MwSt 7% default
+            brutto += dto.Gesamtbrutto;   // pre-calculated via InvoiceCalculator.CalcHeader
         }
 
         lblNettoWert.Text  = $"{netto:N2} €";

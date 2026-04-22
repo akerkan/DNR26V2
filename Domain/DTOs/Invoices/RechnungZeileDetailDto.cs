@@ -11,7 +11,7 @@ public class RechnungZeileDetailDto
     public decimal  FakturierteMenge   { get; set; }
     public decimal  Preis              { get; set; }
     public decimal  MwstProzent        { get; set; }
-    public decimal  Gesamtpreis        { get; set; }
+    public decimal  LineAmount        { get; set; }
     public string?  Notiz              { get; set; }
     public decimal  Gewicht            { get; set; }
 }

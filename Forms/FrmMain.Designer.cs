@@ -52,22 +52,19 @@ partial class FrmMain
         var menuFinanzen = new ToolStripMenuItem("&Finanzen");
 
         // Haupt-Menupunkt "Rechnungen" mit Unterpunkten
-        var menuRechnungen = new ToolStripMenuItem("&Rechnungen");
+        //var menuRechnungen = new ToolStripMenuItem("&Rechnungen");
         var menuRechnungErfassung = new ToolStripMenuItem("Rechnungserfassung", null, MenuRechnungErfassung_Click);
         var menuSammelrechnung = new ToolStripMenuItem("&Sammelrechnung", null, MenuSammelrechnung_Click);
         var menuRechnungListe = new ToolStripMenuItem("Rechnungsliste", null, MenuRechnungListe_Click);
 
         menuFinanzen.DropDownItems.AddRange(new ToolStripItem[]
         {
-            menuRechnungen
-        });
-        menuRechnungen.DropDownItems.AddRange(new ToolStripItem[]
-        {
             menuRechnungErfassung,
             menuSammelrechnung,
             new ToolStripSeparator(),
             menuRechnungListe
         });
+        
 
         // --- Berichte ---
         var menuBerichte = new ToolStripMenuItem("&Berichte");

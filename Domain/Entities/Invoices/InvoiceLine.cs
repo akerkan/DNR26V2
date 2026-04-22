@@ -11,12 +11,20 @@ public class InvoiceLine : AuditableEntity
     public int     DeliveryLineId   { get; set; }   // Teilfakturierung vorbereitet
     public int     ArtikelId        { get; set; }
     public decimal Menge            { get; set; }   // gelieferte Menge aus DeliveryLine
-    public decimal FakturierteMenge { get; set; }   // initial = Menge; später Teilfakturierung
+    public decimal FakturierteMenge { get; set; }
     public decimal Preis            { get; set; }
     public decimal MwstProzent      { get; set; } = 7.00m;
-    public decimal Gesamtpreis      { get; set; }   // FakturierteMenge * Preis
-    public string? Notiz            { get; set; }
     public decimal Gewicht          { get; set; }
+
+    // ── Calculated amount fields ──────────────────────────────────────────────
+    public decimal GrossAmount     { get; set; }
+    public decimal DiscountProzent { get; set; }
+    public decimal DiscountAmount  { get; set; }
+    public decimal LineAmount      { get; set; }   // renamed from Gesamtpreis
+    public decimal VatAmount       { get; set; }
+    public decimal AmountInclVat   { get; set; }
+
+    public string? Notiz            { get; set; }
 
     public InvoiceHeader  Rechnung     { get; set; } = null!;
     public DeliveryHeader Lieferschein { get; set; } = null!;

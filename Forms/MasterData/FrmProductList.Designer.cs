@@ -52,6 +52,8 @@ partial class FrmProductList
         lblFeld4 = new Label();
         pnlPrintfarbe = new Panel();
         btnPrintfarbe = new Button();
+        lblPreisFormel = new Label();
+        cmbPreisFormel = new ComboBox();
         pnlTop.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgwArtikel).BeginInit();
         panelDetail.SuspendLayout();
@@ -121,6 +123,8 @@ partial class FrmProductList
         // 
         panelDetail.Controls.Add(btnPrintfarbe);
         panelDetail.Controls.Add(pnlPrintfarbe);
+        panelDetail.Controls.Add(lblPreisFormel);
+        panelDetail.Controls.Add(cmbPreisFormel);
         panelDetail.Controls.Add(lblFeld4);
         panelDetail.Controls.Add(lblFeld3);
         panelDetail.Controls.Add(lblFeld2);
@@ -284,6 +288,24 @@ partial class FrmProductList
         nudMwstProzent.Name = "nudMwstProzent";
         nudMwstProzent.Size = new Size(80, 25);
         nudMwstProzent.TabIndex = 13;
+        // 
+        // lblPreisFormel
+        // 
+        lblPreisFormel.AutoSize = true;
+        lblPreisFormel.Location = new Point(360, 216);
+        lblPreisFormel.Name = "lblPreisFormel";
+        lblPreisFormel.Size = new Size(66, 15);
+        lblPreisFormel.TabIndex = 32;
+        lblPreisFormel.Text = "Preisformel";
+        // 
+        // cmbPreisFormel
+        // 
+        cmbPreisFormel.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbPreisFormel.Font = new Font("Segoe UI", 10F);
+        cmbPreisFormel.Location = new Point(360, 234);
+        cmbPreisFormel.Name = "cmbPreisFormel";
+        cmbPreisFormel.Size = new Size(200, 25);
+        cmbPreisFormel.TabIndex = 33;
         // 
         // lblBarcode
         // 
@@ -496,6 +518,8 @@ partial class FrmProductList
     private Button         btnDeaktivieren;
     private Button btnPrintfarbe;
     private Panel pnlPrintfarbe;
+    private Label lblPreisFormel;
+    private ComboBox cmbPreisFormel;
     private Label lblFeld4;
     private Label lblFeld3;
     private Label lblFeld2;

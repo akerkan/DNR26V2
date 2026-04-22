@@ -158,14 +158,11 @@ public partial class FrmMain : Form
     private FrmRechnungList?      FrmRechnungListInstance;
 
     private void MenuRechnungErfassung_Click(object? sender, EventArgs e)
-        => BaseListForm.GetOrCreateInstance<FrmRechnungErfassung>(
-            ref FrmRechnungErfassungInstance, this, () => GetService<FrmRechnungErfassung>());
+        => BaseListForm.GetOrCreateInstance<FrmRechnungErfassung>(ref FrmRechnungErfassungInstance, this, () => GetService<FrmRechnungErfassung>());
 
     private void MenuSammelrechnung_Click(object? sender, EventArgs e)
-        => BaseListForm.GetOrCreateInstance<FrmSammelRechnung>(
-            ref FrmSammelrechnungInstance, this, () => GetService<FrmSammelRechnung>());
+        => BaseListForm.GetOrCreateInstance<FrmSammelRechnung>(ref FrmSammelrechnungInstance, this, () => GetService<FrmSammelRechnung>());
 
     private void MenuRechnungListe_Click(object? sender, EventArgs e)
-        => BaseListForm.GetOrCreateInstance<FrmRechnungList>(
-            ref FrmRechnungListInstance, this, () => GetService<FrmRechnungList>());
+        => BaseListForm.GetOrCreateInstance<FrmRechnungList>(ref FrmRechnungListInstance, this, () => GetService<FrmRechnungList>());
 }

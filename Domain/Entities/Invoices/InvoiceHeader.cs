@@ -1,4 +1,4 @@
-using DNR26V2.Domain.Entities.MasterData;
+﻿using DNR26V2.Domain.Entities.MasterData;
 using DNR26V2.Domain.Enums;
 
 namespace DNR26V2.Domain.Entities.Invoices;
@@ -18,4 +18,9 @@ public class InvoiceHeader : AuditableEntity
     // Navigation
     public Customer                  Kunde  { get; set; } = null!;
     public ICollection<InvoiceLine>  Zeilen { get; set; } = [];
+
+    // ── Header totals ─────────────────────────────────────────────────────────
+    public decimal Gesamtnetto   { get; set; }
+    public decimal Gesamtmwst    { get; set; }
+    public decimal Gesamtbrutto  { get; set; }
 }

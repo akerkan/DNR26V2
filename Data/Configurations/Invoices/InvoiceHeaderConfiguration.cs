@@ -48,6 +48,10 @@ public class InvoiceHeaderConfiguration : IEntityTypeConfiguration<InvoiceHeader
         b.Property(x => x.GeaendertVon)
             .HasMaxLength(100);
 
+        b.Property(x => x.Gesamtnetto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        b.Property(x => x.Gesamtmwst).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+        b.Property(x => x.Gesamtbrutto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
         b.HasOne(x => x.Kunde)
             .WithMany()
             .HasForeignKey(x => x.KundeId)

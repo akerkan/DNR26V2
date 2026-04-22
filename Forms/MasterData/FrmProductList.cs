@@ -2,6 +2,7 @@
 using System.Threading;
 using DNR26V2.Domain.DTOs;
 using DNR26V2.Domain.Entities.MasterData;
+using DNR26V2.Domain.Enums;
 using DNR26V2.Domain.Exceptions;
 using DNR26V2.Forms.Base;
 using DNR26V2.Helpers;
@@ -74,6 +75,7 @@ public partial class FrmProductList : BaseListForm
         nudEKPreis.ValueChanged     += (_, _) => _isDirty = true;
         nudMwstProzent.ValueChanged += (_, _) => _isDirty = true;
         chkAktiv.CheckedChanged     += (_, _) => _isDirty = true;
+        cmbPreisFormel.SelectedIndexChanged += (_, _) => _isDirty = true;
         
         EnableColumnChooser(dgwArtikel);
     }
@@ -212,6 +214,8 @@ public partial class FrmProductList : BaseListForm
         nudVKPreis.Value          = p.VKPreis;
         nudEKPreis.Value          = p.EKPreis;
         nudMwstProzent.Value      = p.MwstProzent;
+        cmbPreisFormel.DataSource = Enum.GetValues(typeof(PreisFormel));
+        cmbPreisFormel.SelectedItem = p.PreisFormel;
         txtFeld1.Text             = p.Feld1 ?? "";
         txtFeld2.Text             = p.Feld2 ?? "";
         txtFeld3.Text             = p.Feld3 ?? "";
@@ -234,6 +238,7 @@ public partial class FrmProductList : BaseListForm
         p.VKPreis       = nudVKPreis.Value;
         p.EKPreis       = nudEKPreis.Value;
         p.MwstProzent   = nudMwstProzent.Value;
+        p.PreisFormel   = (PreisFormel)cmbPreisFormel.SelectedItem;
         p.Feld1         = txtFeld1.Text.NullIfEmpty();
         p.Feld2         = txtFeld2.Text.NullIfEmpty();
         p.Feld3         = txtFeld3.Text.NullIfEmpty();

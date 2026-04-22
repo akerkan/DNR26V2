@@ -13,4 +13,5 @@ public class RechnungZeileDetailDto
     public decimal  MwstProzent        { get; set; }
     public decimal  Gesamtpreis        { get; set; }
     public string?  Notiz              { get; set; }
+    public decimal  Gewicht            { get; set; }
 }

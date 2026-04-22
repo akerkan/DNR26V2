@@ -41,15 +41,15 @@ public class AppDbContext : DbContext
     // ── Module 5: Deliveries (entity needed for Buchen) ───────────────────────
     public DbSet<DeliveryHeader> DeliveryHeader { get; set; } = null!;
     public DbSet<DeliveryLine>   DeliveryLine   { get; set; } = null!;
-    public DbSet<InvoiceHeader> Invoices     { get; set; }
-    public DbSet<InvoiceLine>   InvoiceLines { get; set; }
+    public DbSet<InvoiceHeader> Invoices     { get; set; } = null!;
+    public DbSet<InvoiceLine>   InvoiceLines { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-        new InvoiceHeaderConfiguration().Configure(modelBuilder.Entity<InvoiceHeader>());
-        new InvoiceLineConfiguration().Configure(modelBuilder.Entity<InvoiceLine>());
+        modelBuilder.ApplyConfiguration(new InvoiceHeaderConfiguration());
+        modelBuilder.ApplyConfiguration(new InvoiceLineConfiguration());
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

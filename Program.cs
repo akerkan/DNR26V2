@@ -16,7 +16,9 @@ using DNR26V2.Services.System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using DNR26V2.Forms.Deliveries; // <-- Diesen using-Import ergänzen
+using DNR26V2.Forms.Deliveries;
+using DNR26V2.Services.Invoices;
+using DNR26V2.Forms.Invoices; // <-- Diesen using-Import ergänzen
 
 namespace DNR26V2;
 
@@ -96,23 +98,17 @@ static class Program
         services.AddTransient<FrmMain>();
         services.AddTransient<FrmAppSetup>();
         services.AddTransient<FrmLocationSetup>();
-        services.AddTransient<FrmCustomerList>(sp =>
-            new FrmCustomerList(
-                sp.GetRequiredService<ICustomerService>(),
-                sp.GetRequiredService<IProductAttributeService>()));
+        services.AddTransient<FrmCustomerList>(sp =>new FrmCustomerList(sp.GetRequiredService<ICustomerService>(),sp.GetRequiredService<IProductAttributeService>()));
         services.AddTransient<FrmProductList>();
         services.AddTransient<FrmProductAttributeList>();
-        services.AddTransient<FrmCustomerProductTemplate>(sp =>           // ← Factory ergänzt
-            new FrmCustomerProductTemplate(
-                sp.GetRequiredService<ICustomerService>(),
-                sp.GetRequiredService<IProductService>(),
-                sp.GetRequiredService<ICustomerProductService>()));
-        services.AddTransient<FrmOrderEntry>(sp =>
-            new FrmOrderEntry(
-                sp.GetRequiredService<IOrderService>(),
-                sp.GetRequiredService<AppDbContext>()));
+        services.AddTransient<FrmCustomerProductTemplate>(sp => new FrmCustomerProductTemplate(sp.GetRequiredService<ICustomerService>(),sp.GetRequiredService<IProductService>(),sp.GetRequiredService<ICustomerProductService>()));
+        services.AddTransient<FrmOrderEntry>(sp => new FrmOrderEntry(sp.GetRequiredService<IOrderService>(),sp.GetRequiredService<AppDbContext>()));
         services.AddTransient<FrmOrderList>();
         services.AddTransient<FrmDeliveryList>();
+        services.AddScoped<IInvoiceService>(sp => new InvoiceService(sp.GetRequiredService<AppDbContext>(),connectionString));
+        services.AddTransient<FrmRechnungErfassung>();
+        services.AddTransient<FrmSammelRechnung>();
+        services.AddTransient<FrmRechnungList>();
 
         return services;
     }

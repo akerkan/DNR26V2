@@ -20,6 +20,10 @@ public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
             .HasPrecision(10, 3)
             .HasDefaultValue(0m);
 
+        b.Property(x => x.Gewicht)
+            .HasPrecision(10, 3)
+            .HasDefaultValue(0m);
+
         b.Property(x => x.Preis)
             .HasPrecision(10, 2)
             .HasDefaultValue(0m);

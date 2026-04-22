@@ -36,4 +36,9 @@ public interface IInvoiceService
 
     /// <summary>Rechnung stornieren → LS-Status zurück auf Offen (nur Gebucht möglich).</summary>
     Task StornierenAsync(int rechnungId);
+
+    // Bestehende Methoden beibehalten — nur ergänzen:
+
+    /// <summary>Lieferschein-Zeilen Vorschau für das Preview-Grid.</summary>
+    Task<IReadOnlyList<LieferscheinZeileVorschauDto>> GetZeilenVorschauAsync(int lieferscheinId);
 }

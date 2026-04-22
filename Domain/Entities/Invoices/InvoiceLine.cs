@@ -16,6 +16,7 @@ public class InvoiceLine : AuditableEntity
     public decimal MwstProzent      { get; set; } = 7.00m;
     public decimal Gesamtpreis      { get; set; }   // FakturierteMenge * Preis
     public string? Notiz            { get; set; }
+    public decimal Gewicht          { get; set; }
 
     public InvoiceHeader  Rechnung     { get; set; } = null!;
     public DeliveryHeader Lieferschein { get; set; } = null!;

@@ -38,6 +38,21 @@ public class DeliveryService : IDeliveryService
         if (!order.Zeilen.Any())
             await _db.Entry(order).Collection(o => o.Zeilen).LoadAsync();
 
+        // Only deliver lines where open quantity exists: Menge - MengeGeliefert > 0
+        var offeneZeilen = order.Zeilen
+            .Where(z => z.Menge - z.MengeGeliefert > 0)
+            .ToList();
+
+        if (offeneZeilen.Count == 0)
+            throw new ValidationException("Keine offenen Positionen vorhanden — alle Zeilen bereits vollst\u00e4ndig geliefert.");
+
+        // Load PreisFormel per product — needed for amount recalculation on partial quantities
+        var artikelIds = offeneZeilen.Select(z => z.ArtikelId).Distinct().ToList();
+        var formelMap  = await _db.Product
+            .Where(p => artikelIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.PreisFormel })
+            .ToDictionaryAsync(p => p.Id, p => p.PreisFormel);
+
         var nummer = await _noSeries.GetNextNumberAsync("LS", order.LieferDatum);
 
         var lieferschein = new DeliveryHeader
@@ -51,35 +66,49 @@ public class DeliveryService : IDeliveryService
         _db.DeliveryHeader.Add(lieferschein);
         await _db.SaveChangesAsync();
 
-        foreach (var zeile in order.Zeilen.Where(z => z.Menge > 0))
+        foreach (var zeile in offeneZeilen)
         {
+            // Open quantity: what has not yet been delivered
+            var offeneMenge  = zeile.Menge - zeile.MengeGeliefert;
+            var offenGewicht = zeile.Menge > 0
+                ? Math.Round(zeile.Gewicht * offeneMenge / zeile.Menge, 3)
+                : zeile.Gewicht;
+
+            // Recalculate amounts for the partial quantity (CONTRIBUTING.md §7 order)
+            var formel   = formelMap.GetValueOrDefault(zeile.ArtikelId, PreisFormel.MengeXPreis);
+            var gross    = InvoiceCalculator.CalcGrossAmount(offeneMenge, offenGewicht, zeile.Preis, formel);
+            var discount = InvoiceCalculator.CalcDiscountAmount(gross, zeile.DiscountProzent);
+            var line     = InvoiceCalculator.CalcLineAmount(gross, discount);
+            var vat      = InvoiceCalculator.CalcVatAmount(line, zeile.MwstProzent);
+            var incl     = InvoiceCalculator.CalcAmountInclVat(line, vat);
+
             var dl = new DeliveryLine
             {
                 LieferscheinId  = lieferschein.Id,
                 ArtikelId       = zeile.ArtikelId,
-                AuftragZeileId  = zeile.Id,          // traceability: source OrderLine
-                Menge           = zeile.Menge,
+                AuftragZeileId  = zeile.Id,           // traceability: source OrderLine
+                Menge           = offeneMenge,
                 MengeGeliefert  = 0,
-                Gewicht         = zeile.Gewicht,
+                Gewicht         = offenGewicht,
                 Preis           = zeile.Preis,
                 Notiz           = zeile.Notiz,
-                GrossAmount     = zeile.GrossAmount,
                 DiscountProzent = zeile.DiscountProzent,
-                DiscountAmount  = zeile.DiscountAmount,
-                LineAmount      = zeile.LineAmount,
+                GrossAmount     = gross,
+                DiscountAmount  = discount,
+                LineAmount      = line,
                 MwstProzent     = zeile.MwstProzent,
-                VatAmount       = zeile.VatAmount,
-                AmountInclVat   = zeile.AmountInclVat
+                VatAmount       = vat,
+                AmountInclVat   = incl
             };
             _db.DeliveryLine.Add(dl);
 
-            // cumulative: delivered quantity comes from DeliveryLine, not OrderLine
+            // cumulative: add delivered quantity from DeliveryLine
             zeile.MengeGeliefert += dl.Menge;
         }
 
         await _db.SaveChangesAsync(); // persists DeliveryLines + OrderLine.MengeGeliefert
 
-        // Load saved lines — MwstProzent copied from OrderLine, no recalculation
+        // Load saved lines — amounts already calculated above, no recalculation needed
         await _db.Entry(lieferschein).Collection(l => l.Zeilen).LoadAsync();
 
         var (netto, mwstTotal, brutto) = InvoiceCalculator.CalcHeader(
@@ -143,6 +172,7 @@ public class DeliveryService : IDeliveryService
     {
         var lieferschein = await _db.DeliveryHeader
             .Include(d => d.Auftrag)
+            .Include(d => d.Zeilen)
             .FirstOrDefaultAsync(d => d.Id == lieferscheinId)
             ?? throw new InvalidOperationException("Lieferschein nicht gefunden.");
 
@@ -154,6 +184,26 @@ public class DeliveryService : IDeliveryService
 
         var oldStatus = lieferschein.Status;
         lieferschein.Status = DeliveryStatus.Storniert;
+
+        // Part C: roll back OrderLine.MengeGeliefert for each DeliveryLine
+        var auftragZeileIds = lieferschein.Zeilen
+            .Where(z => z.AuftragZeileId.HasValue)
+            .Select(z => z.AuftragZeileId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (auftragZeileIds.Count > 0)
+        {
+            var orderLines = await _db.OrderLine
+                .Where(ol => auftragZeileIds.Contains(ol.Id))
+                .ToDictionaryAsync(ol => ol.Id);
+
+            foreach (var z in lieferschein.Zeilen.Where(z => z.AuftragZeileId.HasValue))
+            {
+                if (orderLines.TryGetValue(z.AuftragZeileId!.Value, out var ol))
+                    ol.MengeGeliefert = Math.Max(0, ol.MengeGeliefert - z.Menge);
+            }
+        }
 
         if (lieferschein.Auftrag is not null)
         {
@@ -202,6 +252,7 @@ public class DeliveryService : IDeliveryService
     public async Task StornierenZeileAsync(int lieferscheinId, int lineId)
     {
         var lieferschein = await _db.DeliveryHeader
+            .Include(d => d.Auftrag)
             .FirstOrDefaultAsync(d => d.Id == lieferscheinId)
             ?? throw new InvalidOperationException("Lieferschein nicht gefunden.");
 
@@ -218,6 +269,12 @@ public class DeliveryService : IDeliveryService
         if (zeile.Menge < 0)
             throw new ValidationException("Storno-Zeilen können nicht erneut storniert werden.");
 
+        // Block line storno if line has already been (partially) invoiced
+        if (zeile.MengeFakturiert > 0)
+            throw new ValidationException(
+                "Teil-Storno nicht erlaubt: Die Zeile wurde bereits fakturiert. " +
+                "Bitte zuerst die zugehörige Rechnung stornieren.");
+
         bool stornoExists = await _db.DeliveryLine
             .AnyAsync(l => l.LieferscheinId == lieferscheinId
                         && l.Notiz != null
@@ -226,11 +283,12 @@ public class DeliveryService : IDeliveryService
         if (stornoExists)
             throw new ValidationException("Für diese Zeile wurde bereits eine Storno-Zeile erstellt.");
 
-        // Create minus line
+        // Create minus line — propagate AuftragZeileId for traceability
         _db.DeliveryLine.Add(new DeliveryLine
         {
             LieferscheinId = lieferscheinId,
             ArtikelId      = zeile.ArtikelId,
+            AuftragZeileId = zeile.AuftragZeileId,   // traceability: same source OrderLine
             Menge          = -zeile.Menge,
             MengeGeliefert = 0,
             Gewicht        = -zeile.Gewicht,
@@ -238,9 +296,32 @@ public class DeliveryService : IDeliveryService
             Notiz          = $"Storno #{lineId}"
         });
 
-        // Update header status → TeilStorniert (unless already Storniert)
+        // Update header status → TeilStorniert
         if (lieferschein.Status != DeliveryStatus.Storniert)
             lieferschein.Status = DeliveryStatus.TeilStorniert;
+
+        // Roll back OrderLine.MengeGeliefert and conditionally reopen Auftrag
+        if (zeile.AuftragZeileId.HasValue)
+        {
+            var orderLine = await _db.OrderLine.FindAsync(zeile.AuftragZeileId.Value);
+            if (orderLine is not null)
+            {
+                orderLine.MengeGeliefert = Math.Max(0, orderLine.MengeGeliefert - zeile.Menge);
+
+                // Reopen Auftrag if any line now has open quantity (Menge - MengeGeliefert > 0)
+                if (lieferschein.Auftrag is not null &&
+                    lieferschein.Auftrag.Status == OrderStatus.Gebucht)
+                {
+                    // EF identity resolution returns tracked (updated) state for orderLine
+                    var alleZeilen = await _db.OrderLine
+                        .Where(ol => ol.AuftragId == lieferschein.Auftrag.Id)
+                        .ToListAsync();
+
+                    if (alleZeilen.Any(ol => ol.Menge - ol.MengeGeliefert > 0))
+                        lieferschein.Auftrag.Status = OrderStatus.Offen;
+                }
+            }
+        }
 
         await _db.SaveChangesAsync();
     }

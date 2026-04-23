@@ -46,6 +46,9 @@ partial class FrmOrderEntry
         colGewicht = new DataGridViewTextBoxColumn();
         colPreis = new DataGridViewTextBoxColumn();
         colNotiz = new DataGridViewTextBoxColumn();
+        colMengeGeliefert = new DataGridViewTextBoxColumn();
+        colMengeFakturiert = new DataGridViewTextBoxColumn();
+        colOffen = new DataGridViewTextBoxColumn();
         cmsPositionen = new ContextMenuStrip(components);
         cmsMenuZeileLoeschen = new ToolStripMenuItem();
         cmsMenuTrenner = new ToolStripSeparator();
@@ -357,7 +360,7 @@ partial class FrmOrderEntry
         dataGridViewCellStyle3.WrapMode = DataGridViewTriState.True;
         dgwPositionen.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
         dgwPositionen.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        dgwPositionen.Columns.AddRange(new DataGridViewColumn[] { colZeileId, colArtikelId, colArtikelnummer, colProduktname, colMenge, colGewicht, colPreis, colNotiz });
+        dgwPositionen.Columns.AddRange(new DataGridViewColumn[] { colZeileId, colArtikelId, colArtikelnummer, colProduktname, colMenge, colGewicht, colPreis, colNotiz, colMengeGeliefert, colMengeFakturiert, colOffen });
         dgwPositionen.ContextMenuStrip = cmsPositionen;
         dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
         dataGridViewCellStyle4.BackColor = SystemColors.Window;
@@ -441,6 +444,33 @@ partial class FrmOrderEntry
         colNotiz.MinimumWidth = 6;
         colNotiz.Name = "colNotiz";
         colNotiz.Width = 160;
+        // 
+        // colMengeGeliefert
+        // 
+        colMengeGeliefert.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+        colMengeGeliefert.HeaderText = "Geliefert";
+        colMengeGeliefert.MinimumWidth = 6;
+        colMengeGeliefert.Name = "colMengeGeliefert";
+        colMengeGeliefert.ReadOnly = true;
+        colMengeGeliefert.Width = 75;
+        // 
+        // colMengeFakturiert
+        // 
+        colMengeFakturiert.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+        colMengeFakturiert.HeaderText = "Fakturiert";
+        colMengeFakturiert.MinimumWidth = 6;
+        colMengeFakturiert.Name = "colMengeFakturiert";
+        colMengeFakturiert.ReadOnly = true;
+        colMengeFakturiert.Width = 75;
+        // 
+        // colOffen
+        // 
+        colOffen.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+        colOffen.HeaderText = "Offen";
+        colOffen.MinimumWidth = 6;
+        colOffen.Name = "colOffen";
+        colOffen.ReadOnly = true;
+        colOffen.Width = 75;
         // 
         // cmsPositionen
         // 
@@ -784,6 +814,9 @@ partial class FrmOrderEntry
     private DataGridViewTextBoxColumn colGewicht;
     private DataGridViewTextBoxColumn colPreis;
     private DataGridViewTextBoxColumn colNotiz;
+    private DataGridViewTextBoxColumn colMengeGeliefert;
+    private DataGridViewTextBoxColumn colMengeFakturiert;
+    private DataGridViewTextBoxColumn colOffen;
     // ── ContextMenu ───────────────────────────────────────────────────────────
     private ContextMenuStrip cmsPositionen;
     private ToolStripMenuItem cmsMenuZeileLoeschen;

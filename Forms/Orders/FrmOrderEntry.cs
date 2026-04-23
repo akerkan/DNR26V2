@@ -70,6 +70,9 @@ public partial class FrmOrderEntry : BaseListForm
         colGewicht.Name = "Gewicht";
         colPreis.Name = "Preis";
         colNotiz.Name = "Notiz";
+        colMengeGeliefert.Name  = "MengeGeliefert";
+        colMengeFakturiert.Name = "MengeFakturiert";
+        colOffen.Name           = "Offen";
 
         // Hidden column to track PreisFormel per row — needed for PricingUiHelper
         if (!dgwPositionen.Columns.Contains("_PreisFormel"))
@@ -535,6 +538,9 @@ public partial class FrmOrderEntry : BaseListForm
             row.Cells["Preis"].Value = pos.Preis;
             row.Cells["Notiz"].Value = pos.Notiz;
             row.Cells["_PreisFormel"].Value = (int)pos.PreisFormel;
+            row.Cells["MengeGeliefert"].Value  = pos.MengeGeliefert;
+            row.Cells["MengeFakturiert"].Value = pos.MengeFakturiert;
+            row.Cells["Offen"].Value           = pos.Offen;
             PricingUiHelper.ApplyGewichtRule(row, pos.PreisFormel);
         }
 
@@ -762,6 +768,9 @@ public partial class FrmOrderEntry : BaseListForm
         row.Cells["Preis"].Value = art.VKPreis;
         row.Cells["Notiz"].Value = string.Empty;
         row.Cells["_PreisFormel"].Value = (int)art.PreisFormel;
+        row.Cells["MengeGeliefert"].Value  = 0m;
+        row.Cells["MengeFakturiert"].Value = 0m;
+        row.Cells["Offen"].Value           = 0m;
         PricingUiHelper.ApplyGewichtRule(row, art.PreisFormel);
 
         dgwPositionen.CurrentCell = row.Cells["Menge"];

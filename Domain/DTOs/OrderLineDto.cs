@@ -9,6 +9,9 @@ public sealed class OrderLineDto
     public string     Artikelnummer { get; set; } = string.Empty;
     public string     Produktname   { get; set; } = string.Empty;
     public decimal    Menge         { get; set; }
+    public decimal    MengeGeliefert  { get; set; }   // cumulative delivered
+    public decimal    MengeFakturiert { get; set; }   // cumulative invoiced
+    public decimal    Offen           => Menge - MengeGeliefert;  // display only
     public decimal    Gewicht       { get; set; }
     public decimal    Preis         { get; set; }
     public string?    Notiz         { get; set; }

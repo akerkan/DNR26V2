@@ -140,6 +140,8 @@ public class OrderService : IOrderService
                        p.Artikelnummer,
                        p.Bezeichnung  AS Produktname,
                        ol.Menge,
+                       ol.MengeGeliefert,
+                       ol.MengeFakturiert,
                        ol.Gewicht,
                        ol.Preis,
                        ol.Notiz,
@@ -160,6 +162,8 @@ public class OrderService : IOrderService
                    p.Artikelnummer,
                    p.Bezeichnung AS Produktname,
                    cp.Menge,
+                   0             AS MengeGeliefert,
+                   0             AS MengeFakturiert,
                    cp.Gewicht,
                    cp.Preis,
                    NULL          AS Notiz,
@@ -218,6 +222,17 @@ public class OrderService : IOrderService
         var trackedOrder = await _db.Order.FindAsync(order.Id) ?? order;
 
         var existingLines = await _db.OrderLine.Where(l => l.AuftragId == trackedOrder.Id).ToListAsync();
+
+        // Preserve tracking values before replacing lines.
+        // MengeGeliefert / MengeFakturiert must survive save so re-booking and Offen display stay correct.
+        // Key: ArtikelId — if an article appears multiple times, sum the tracking values.
+        var trackingMap = existingLines
+            .GroupBy(l => l.ArtikelId)
+            .ToDictionary(
+                g => g.Key,
+                g => (MengeGeliefert:  g.Sum(l => l.MengeGeliefert),
+                      MengeFakturiert: g.Sum(l => l.MengeFakturiert)));
+
         _db.OrderLine.RemoveRange(existingLines);
 
         var user = Environment.UserName;
@@ -243,6 +258,9 @@ public class OrderService : IOrderService
 
             var formel = product.PreisFormel;
 
+            // Restore tracking values from before the line replacement
+            var tracked = trackingMap.GetValueOrDefault(pos.ArtikelId);
+
             var line = new OrderLine
             {
                 AuftragId       = trackedOrder.Id,
@@ -253,7 +271,9 @@ public class OrderService : IOrderService
                 Preis           = pos.Preis,
                 Notiz           = pos.Notiz,
                 MwstProzent     = product.MwstProzent,
-                DiscountProzent = 0   // future: pass from caller
+                DiscountProzent = 0,   // future: pass from caller
+                MengeGeliefert  = tracked.MengeGeliefert,
+                MengeFakturiert = tracked.MengeFakturiert
             };
 
             line.GrossAmount   = InvoiceCalculator.CalcGrossAmount(line.Menge, line.Gewicht, line.Preis, formel);
@@ -479,6 +499,8 @@ public class OrderService : IOrderService
                    p.Artikelnummer,
                    p.Bezeichnung  AS Produktname,
                    ol.Menge,
+                   ol.MengeGeliefert,
+                   ol.MengeFakturiert,
                    ol.Gewicht,
                    ol.Preis,
                    ol.Notiz

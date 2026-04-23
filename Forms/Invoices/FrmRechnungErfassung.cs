@@ -98,6 +98,47 @@ public partial class FrmRechnungErfassung : BaseListForm
         dgwKunden.DataSource = liste.ToList();
         StyleGridKunden();
 
+        // If only a single customer is returned, select it so the Lieferscheine list
+        // and booking controls become active without requiring an extra click.
+        if (dgwKunden.Rows.Count == 1)
+        {
+            dgwKunden.ClearSelection();
+            var row = dgwKunden.Rows[0];
+            row.Selected = true;
+
+            int firstVisibleCol = -1;
+            for (int i = 0; i < dgwKunden.Columns.Count; i++)
+            {
+                if (dgwKunden.Columns[i].Visible)
+                {
+                    firstVisibleCol = i;
+                    break;
+                }
+            }
+            if (firstVisibleCol >= 0)
+            {
+                try { dgwKunden.CurrentCell = row.Cells[firstVisibleCol]; }
+                catch { /* ignore if cannot set current cell */ }
+            }
+        }
+
+        // If we auto-selected the single customer above, load its Lieferscheine immediately
+        if (dgwKunden.Rows.Count == 1)
+        {
+            var dto = dgwKunden.CurrentRow?.DataBoundItem as KundeOffeneLsDto;
+            if (dto is not null)
+            {
+                _selectedKunde = dto;
+                _checkedLsIds.Clear();
+                // Load Lieferscheine for the selected customer so buttons/preview update
+                await LoadLieferscheineAsync(dto.KundeId);
+                UpdateTotals();
+                UpdateButtonStates();
+                return;
+            }
+        }
+
+        // Default: clear selection state
         _selectedKunde = null;
         _checkedLsIds.Clear();
         dgwLieferscheine.DataSource = null;

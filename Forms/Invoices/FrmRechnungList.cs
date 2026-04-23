@@ -100,8 +100,39 @@ public partial class FrmRechnungList : BaseListForm
         dgwRechnungen.DataSource = liste.ToList();
         StyleGridRechnungen();
 
-        dgwZeilen.DataSource = null;
-        ClearDetail();
+        // If only a single invoice row is returned, select it and load detail immediately
+        if (dgwRechnungen.Rows.Count == 1)
+        {
+            dgwRechnungen.ClearSelection();
+            var row = dgwRechnungen.Rows[0];
+            row.Selected = true;
+
+            int firstVisibleCol = -1;
+            for (int i = 0; i < dgwRechnungen.Columns.Count; i++)
+            {
+                if (dgwRechnungen.Columns[i].Visible)
+                {
+                    firstVisibleCol = i;
+                    break;
+                }
+            }
+            if (firstVisibleCol >= 0)
+            {
+                try { dgwRechnungen.CurrentCell = row.Cells[firstVisibleCol]; }
+                catch { /* ignore */ }
+            }
+
+            if (dgwRechnungen.CurrentRow?.DataBoundItem is RechnungListDto dto)
+            {
+                UpdateDetailPanel(dto);
+                await LoadZeilenAsync(dto.Id);
+            }
+        }
+        else
+        {
+            dgwZeilen.DataSource = null;
+            ClearDetail();
+        }
     }
 
     private void StyleGridRechnungen()

@@ -131,8 +131,37 @@ public partial class FrmDeliveryList : BaseListForm
         }
         finally { _suppressChecked = false; }
 
-        UpdateButtonStates();
-        ClearDetail();
+        // If only one delivery row, select it and load detail to ensure buttons update
+        if (dgwLieferscheine.Rows.Count == 1)
+        {
+            dgwLieferscheine.ClearSelection();
+            var row = dgwLieferscheine.Rows[0];
+            row.Selected = true;
+
+            int firstVisibleCol = -1;
+            for (int i = 0; i < dgwLieferscheine.Columns.Count; i++)
+            {
+                if (dgwLieferscheine.Columns[i].Visible)
+                {
+                    firstVisibleCol = i;
+                    break;
+                }
+            }
+            if (firstVisibleCol >= 0)
+            {
+                try { dgwLieferscheine.CurrentCell = row.Cells[firstVisibleCol]; }
+                catch { /* ignore */ }
+            }
+
+            var dto = SelectedDto();
+            UpdateButtonStates();
+            await LoadDetailAsync(dto);
+        }
+        else
+        {
+            UpdateButtonStates();
+            ClearDetail();
+        }
     }
 
     // ── Grid stylen ───────────────────────────────────────────────────────────

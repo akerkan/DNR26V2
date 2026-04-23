@@ -1,10 +1,12 @@
-﻿using Dapper;
+using Dapper;
 using DNR26V2.Data;
 using DNR26V2.Data.Context;
 using DNR26V2.Domain.DTOs;
+using DNR26V2.Domain.Entities.Deliveries;
 using DNR26V2.Domain.Entities.Invoices;
 using DNR26V2.Domain.Entities.Orders;
 using DNR26V2.Domain.Enums;
+using DNR26V2.Domain.Exceptions;
 using DNR26V2.Domain.Helpers;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +24,7 @@ public class InvoiceService : IInvoiceService
         _connectionString = connectionString;
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
+    // -- helpers --------------------------------------------------------------
 
     private SqlConnection CreateConnection() => new(_connectionString);
 
@@ -49,11 +51,15 @@ public class InvoiceService : IInvoiceService
         return $"{praefix}{year}{seq:D4}";
     }
 
-    // ── FrmRechnungErfassung ──────────────────────────────────────────────────
+    // -- FrmRechnungErfassung --------------------------------------------------
 
     public async Task<IReadOnlyList<KundeOffeneLsDto>> GetKundenMitOffenenLsAsync(
         DateTime von, DateTime bis)
     {
+        // Filter by open invoiceable quantity at line level (MengeFakturiert < Menge).
+        // DeliveryHeader.Status is NOT used as sole criterion � a Fakturiert delivery
+        // can become re-invoiceable after invoice storno without resetting its status.
+        // Storniert deliveries (Status = 3) are excluded as they represent canceled shipments.
         const string sql = """
             SELECT
                 c.Id                                          AS KundeId,
@@ -64,10 +70,12 @@ public class InvoiceService : IInvoiceService
             FROM Customer c
             INNER JOIN Deliveries dh
                 ON dh.KundeId = c.Id
-               AND dh.Status  = 0
+               AND dh.Status <> 3
                AND CAST(dh.LieferDatum AS date) BETWEEN @Von AND @Bis
             INNER JOIN DeliveryLines dl
                 ON dl.LieferscheinId = dh.Id
+               AND dl.Menge > 0
+               AND dl.MengeFakturiert < dl.Menge
             GROUP BY c.Id, c.Kundennummer, c.Kundenname
             ORDER BY c.Kundenname
             """;
@@ -81,6 +89,9 @@ public class InvoiceService : IInvoiceService
     public async Task<IReadOnlyList<LieferscheinFuerRechnungDto>> GetOffeneLieferscheineAsync(
         int kundeId, DateTime von, DateTime bis)
     {
+        // Filter by open invoiceable quantity at line level (MengeFakturiert < Menge).
+        // Storniert deliveries (Status = 3) are excluded. All other statuses are valid
+        // candidates as long as at least one line has open invoiceable quantity.
         const string sql = """
             SELECT
                 dh.Id                                AS LieferscheinId,
@@ -91,8 +102,10 @@ public class InvoiceService : IInvoiceService
                 ISNULL(SUM(dl.AmountInclVat), 0)  AS Gesamtbrutto
             FROM Deliveries dh
             INNER JOIN DeliveryLines dl ON dl.LieferscheinId = dh.Id
+                AND dl.Menge > 0
+                AND dl.MengeFakturiert < dl.Menge
             WHERE dh.KundeId   = @KundeId
-              AND dh.Status    = 0
+              AND dh.Status <> 3
               AND CAST(dh.LieferDatum AS date) BETWEEN @Von AND @Bis
             GROUP BY dh.Id, dh.Lieferscheinnummer, dh.LieferDatum
             ORDER BY dh.LieferDatum
@@ -111,21 +124,23 @@ public class InvoiceService : IInvoiceService
     {
         var lsIds = lieferscheinIds.ToList();
         if (lsIds.Count == 0)
-            throw new InvalidOperationException("Keine Lieferscheine ausgewählt.");
+            throw new InvalidOperationException("Keine Lieferscheine ausgew�hlt.");
 
-        // Load delivery lines with product prices
+        // Load delivery lines � accept all non-storniert deliveries.
+        // A Fakturiert delivery can be re-invoiced after invoice storno if MengeFakturiert < Menge.
+        // The per-line guard below (verbleibend check) prevents over-invoicing.
         var deliveries = await _db.DeliveryHeader
             .Include(d => d.Zeilen)
-            .Where(d => lsIds.Contains(d.Id) && d.KundeId == kundeId && d.Status == DeliveryStatus.Offen)
+            .Where(d => lsIds.Contains(d.Id) && d.KundeId == kundeId && d.Status != DeliveryStatus.Storniert)
             .ToListAsync();
 
         if (deliveries.Count == 0)
-            throw new InvalidOperationException("Keine aktiven Lieferscheine gefunden.");
+            throw new InvalidOperationException("Keine fakturierbaren Lieferscheine gefunden.");
 
         var setup       = await _db.AppSetup.AsNoTracking().FirstAsync();
         var rechnungsnr = await GenerateRechnungsnummerAsync();
 
-        // Load PreisFormel per product — each product has its own formula
+        // Load PreisFormel per product � each product has its own formula
         var artikelIds     = deliveries.SelectMany(d => d.Zeilen).Select(z => z.ArtikelId).Distinct().ToList();
         var produktFormelMap = await _db.Product
             .Where(p => artikelIds.Contains(p.Id))
@@ -146,27 +161,22 @@ public class InvoiceService : IInvoiceService
             ErstelltVon       = Environment.UserName,
         };
 
-        // Load OrderLines for cumulative MengeFakturiert tracking
-        var auftragZeileIds = deliveries
-            .SelectMany(d => d.Zeilen)
-            .Where(z => z.AuftragZeileId.HasValue)
-            .Select(z => z.AuftragZeileId!.Value)
-            .Distinct()
-            .ToList();
-
-        var orderLineMap = auftragZeileIds.Count > 0
-            ? await _db.OrderLine
-                .Where(ol => auftragZeileIds.Contains(ol.Id))
-                .ToDictionaryAsync(ol => ol.Id)
-            : new Dictionary<int, OrderLine>();
+        // Collect (deliveryLineId, invoicedMenge, auftragZeileId) per InvoiceLine for explicit
+        // tracking update below. Mirrors StornierenAsync: load entities directly via _db.DeliveryLine /
+        // _db.OrderLine instead of relying on Include-based navigation collection change tracking,
+        // which does not reliably generate UPDATE statements for MengeFakturiert.
+        var pendingUpdates = new List<(int DeliveryLineId, decimal Menge, int? AuftragZeileId)>();
 
         foreach (var ls in deliveries)
         {
-            foreach (var dl in ls.Zeilen)
+            // Only process positive original lines with open invoiceable quantity.
+            // Storno lines (Menge < 0) and already fully-invoiced lines are skipped.
+            foreach (var dl in ls.Zeilen.Where(z => z.Menge > 0 && z.MengeFakturiert < z.Menge))
             {
-                // Use delivered quantity; fall back to ordered quantity if not yet recorded
-                var fakturiert = dl.MengeGeliefert > 0 ? dl.MengeGeliefert : dl.Menge;
-                var gewicht    = fakturiert > 0 && dl.Menge > 0
+                // Open quantity: Menge - already invoiced.
+                // Do NOT use MengeGeliefert � it is always 0 on DeliveryLines and unused.
+                var fakturiert = dl.Menge - dl.MengeFakturiert;
+                var gewicht    = dl.Menge > 0
                                      ? Math.Round(dl.Gewicht * fakturiert / dl.Menge, 3)
                                      : dl.Gewicht;
 
@@ -198,18 +208,57 @@ public class InvoiceService : IInvoiceService
                 };
                 header.Zeilen.Add(il);
 
-                // cumulative invoiced quantity — always from InvoiceLine.Menge
-                dl.MengeFakturiert += il.Menge;
+                // Guard � never invoice beyond available open quantity
+                if (il.Menge > fakturiert)
+                    throw new ValidationException(
+                        $"�berfakturierung nicht erlaubt: DeliveryLine {dl.Id} � " +
+                        $"fakturierbar: {fakturiert:0.###}, angefordert: {il.Menge:0.###}.");
 
-                if (dl.AuftragZeileId.HasValue &&
-                    orderLineMap.TryGetValue(dl.AuftragZeileId.Value, out var orderLine))
-                    orderLine.MengeFakturiert += il.Menge;
+                // Queue for explicit tracking update after the loop
+                pendingUpdates.Add((dl.Id, il.Menge, dl.AuftragZeileId));
             }
 
             // Mark delivery as Fakturiert
-            ls.Status      = DeliveryStatus.Fakturiert;
-            ls.GeaendertAm = DateTime.Now;
+            ls.Status       = DeliveryStatus.Fakturiert;
+            ls.GeaendertAm  = DateTime.Now;
             ls.GeaendertVon = Environment.UserName;
+        }
+
+        // Explicitly update DeliveryLine.MengeFakturiert.
+        // Direct _db.DeliveryLine load ensures EF generates the correct UPDATE statement
+        // regardless of what is already in the identity map from the Include above.
+        var dlIds = pendingUpdates.Select(u => u.DeliveryLineId).Distinct().ToList();
+        if (dlIds.Count > 0)
+        {
+            var dlsToUpdate = await _db.DeliveryLine
+                .Where(d => dlIds.Contains(d.Id))
+                .ToDictionaryAsync(d => d.Id);
+
+            foreach (var (dlId, menge, _) in pendingUpdates)
+            {
+                if (dlsToUpdate.TryGetValue(dlId, out var trackedDl))
+                    trackedDl.MengeFakturiert += menge;
+            }
+        }
+
+        // Explicitly update OrderLine.MengeFakturiert
+        var auftragZeileIds = pendingUpdates
+            .Where(u => u.AuftragZeileId.HasValue)
+            .Select(u => u.AuftragZeileId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (auftragZeileIds.Count > 0)
+        {
+            var olsToUpdate = await _db.OrderLine
+                .Where(ol => auftragZeileIds.Contains(ol.Id))
+                .ToDictionaryAsync(ol => ol.Id);
+
+            foreach (var (_, menge, auftragZeileId) in pendingUpdates.Where(u => u.AuftragZeileId.HasValue))
+            {
+                if (olsToUpdate.TryGetValue(auftragZeileId!.Value, out var trackedOl))
+                    trackedOl.MengeFakturiert += menge;
+            }
         }
 
         _db.Invoices.Add(header);
@@ -226,7 +275,7 @@ public class InvoiceService : IInvoiceService
         return header;
     }
 
-    // ── FrmSammelRechnung ─────────────────────────────────────────────────────
+    // -- FrmSammelRechnung -----------------------------------------------------
 
     public async Task<SammelrechnungResultDto> SammelBuchenAsync(
         IEnumerable<int> kundeIds, DateTime von, DateTime bis)
@@ -258,7 +307,7 @@ public class InvoiceService : IInvoiceService
         return result;
     }
 
-    // ── FrmRechnungList ───────────────────────────────────────────────────────
+    // -- FrmRechnungList -------------------------------------------------------
 
     public async Task<IReadOnlyList<RechnungListDto>> GetRechnungListeAsync(
         DateTime? von, DateTime? bis, string? kunde, InvoiceStatus? status)
@@ -305,7 +354,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<IReadOnlyList<RechnungZeileDetailDto>> GetZeilenByRechnungIdAsync(int rechnungId)
     {
-        // GetZeilenByRechnungIdAsync — SQL: il.Gewicht ergänzen
+        // GetZeilenByRechnungIdAsync � SQL: il.Gewicht erg�nzen
         const string sql = """
             SELECT
                 il.Id,
@@ -342,7 +391,7 @@ public class InvoiceService : IInvoiceService
 
         if (header.Status != InvoiceStatus.Gebucht)
             throw new InvalidOperationException(
-                $"Nur gebuchte Rechnungen können storniert werden (aktuell: {header.Status}).");
+                $"Nur gebuchte Rechnungen k�nnen storniert werden (aktuell: {header.Status}).");
 
         // Collect unique LS IDs from lines
         var lsIds = header.Zeilen.Select(z => z.LieferscheinId).Distinct().ToList();
@@ -357,20 +406,35 @@ public class InvoiceService : IInvoiceService
         {
             var dl = deliveryLines.FirstOrDefault(d => d.Id == zeile.DeliveryLineId);
             if (dl is not null)
-                dl.MengeFakturiert = Math.Max(0, dl.MengeFakturiert - zeile.FakturierteMenge);
+                dl.MengeFakturiert = Math.Max(0, dl.MengeFakturiert - zeile.Menge);
         }
 
-        // Roll back delivery status → Aktiv
-        var deliveries = await _db.DeliveryHeader
-            .Where(d => lsIds.Contains(d.Id))
-            .ToListAsync();
+        // Part B: roll back OrderLine.MengeFakturiert
+        var auftragZeileIds = deliveryLines
+            .Where(dl => dl.AuftragZeileId.HasValue)
+            .Select(dl => dl.AuftragZeileId!.Value)
+            .Distinct()
+            .ToList();
 
-        foreach (var ls in deliveries)
+        if (auftragZeileIds.Count > 0)
         {
-            ls.Status       = DeliveryStatus.Offen;
-            ls.GeaendertAm  = DateTime.Now;
-            ls.GeaendertVon = Environment.UserName;
+            var orderLines = await _db.OrderLine
+                .Where(ol => auftragZeileIds.Contains(ol.Id))
+                .ToDictionaryAsync(ol => ol.Id);
+
+            foreach (var zeile in header.Zeilen)
+            {
+                var dl = deliveryLines.FirstOrDefault(d => d.Id == zeile.DeliveryLineId);
+                if (dl?.AuftragZeileId.HasValue == true &&
+                    orderLines.TryGetValue(dl.AuftragZeileId.Value, out var ol))
+                    ol.MengeFakturiert = Math.Max(0, ol.MengeFakturiert - zeile.Menge);
+            }
         }
+
+        // DeliveryHeader.Status is intentionally NOT changed here.
+        // Invoice storno reverses invoicing effects only (MengeFakturiert).
+        // Physical delivery remains intact � the goods were still shipped.
+        // Re-invoiceability is determined by MengeFakturiert < Menge at line level.
 
         header.Status       = InvoiceStatus.Storniert;
         header.GeaendertAm  = DateTime.Now;
@@ -379,12 +443,12 @@ public class InvoiceService : IInvoiceService
         await _db.SaveChangesAsync();
     }
 
-    // ── Vorschau ──────────────────────────────────────────────────────────────
+    // -- Vorschau --------------------------------------------------------------
 
     public async Task<IReadOnlyList<LieferscheinZeileVorschauDto>> GetZeilenVorschauAsync(
         int lieferscheinId)
     {
-        // GetZeilenVorschauAsync — SQL: dl.Gewicht ergänzen
+        // GetZeilenVorschauAsync � SQL: dl.Gewicht erg�nzen
         const string sql = """
             SELECT
                 p.Artikelnummer,

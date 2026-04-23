@@ -43,6 +43,8 @@ public class AppDbContext : DbContext
     public DbSet<DeliveryLine>   DeliveryLine   { get; set; } = null!;
     public DbSet<InvoiceHeader> Invoices     { get; set; } = null!;
     public DbSet<InvoiceLine>   InvoiceLines { get; set; } = null!;
+    public DbSet<DNR26V2.Domain.Entities.Payments.PaymentHeader> PaymentHeaders { get; set; } = null!;
+    public DbSet<DNR26V2.Domain.Entities.Payments.PaymentLine>   PaymentLines   { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

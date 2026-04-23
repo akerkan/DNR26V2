@@ -244,20 +244,6 @@ partial class FrmRechnungList
         lblStatusWert.TabIndex = 7;
         lblStatusWert.Text = "–";
         // 
-        // btnGutschrift
-        // 
-        btnGutschrift.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        btnGutschrift.BackColor = Color.FromArgb(30, 100, 160);
-        btnGutschrift.Enabled = false;
-        btnGutschrift.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        btnGutschrift.ForeColor = Color.White;
-        btnGutschrift.Location = new Point(919, 5);
-        btnGutschrift.Name = "btnGutschrift";
-        btnGutschrift.Size = new Size(130, 44);
-        btnGutschrift.TabIndex = 9;
-        btnGutschrift.Text = "Gutschrift";
-        btnGutschrift.UseVisualStyleBackColor = false;
-        // 
         // btnStornieren
         // 
         btnStornieren.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -265,12 +251,26 @@ partial class FrmRechnungList
         btnStornieren.Enabled = false;
         btnStornieren.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnStornieren.ForeColor = Color.White;
-        btnStornieren.Location = new Point(1059, 5);
+        btnStornieren.Location = new Point(928, 9);
         btnStornieren.Name = "btnStornieren";
         btnStornieren.Size = new Size(130, 44);
         btnStornieren.TabIndex = 8;
         btnStornieren.Text = "Stornieren";
         btnStornieren.UseVisualStyleBackColor = false;
+        // 
+        // btnGutschrift
+        // 
+        btnGutschrift.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnGutschrift.BackColor = Color.FromArgb(30, 100, 160);
+        btnGutschrift.Enabled = false;
+        btnGutschrift.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        btnGutschrift.ForeColor = Color.White;
+        btnGutschrift.Location = new Point(1064, 9);
+        btnGutschrift.Name = "btnGutschrift";
+        btnGutschrift.Size = new Size(130, 44);
+        btnGutschrift.TabIndex = 9;
+        btnGutschrift.Text = "Gutschrift";
+        btnGutschrift.UseVisualStyleBackColor = false;
         // 
         // splitMain
         // 

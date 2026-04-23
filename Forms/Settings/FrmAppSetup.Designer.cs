@@ -51,7 +51,8 @@ partial class FrmAppSetup
         tabDrucker  = new TabPage("Drucker & Druck");
         tabNoSeries = new TabPage("Nummernserien");
 
-        tabControl.TabPages.AddRange(new[] { tabFirma, tabDrucker, tabNoSeries });
+        var pages = new[] { tabFirma, tabDrucker, tabNoSeries };
+        tabControl.TabPages.AddRange(pages);
 
         // ── Tab 1: Firmendaten ────────────────────────────────────────────────
         var panelFirma = new TableLayoutPanel

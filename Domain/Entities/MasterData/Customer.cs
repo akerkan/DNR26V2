@@ -41,6 +41,8 @@ public class Customer : AuditableEntity
     // Finanzen
     public decimal Limit           { get; set; } = 0;
     public bool    PreisAusblenden { get; set; } = false;
+    // Receivable configuration: where receivables originate for this customer
+    public DNR26V2.Domain.Enums.ReceivableSource ReceivableSource { get; set; } = DNR26V2.Domain.Enums.ReceivableSource.Invoice;
 
     // Liefertage (MO–SO)
     public bool LiefertMo { get; set; }

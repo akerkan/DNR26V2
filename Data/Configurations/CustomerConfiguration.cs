@@ -47,6 +47,12 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         entity.Property(e => e.Notizen).HasColumnType("nvarchar(max)");
         entity.Property(e => e.Aktiv)  .HasDefaultValue(true);
         entity.Property(e => e.Offen)  .HasDefaultValue(true);
+        
+        // ReceivableSource: where receivables originate for this customer
+        entity.Property<int>("ReceivableSource")
+              .HasColumnName("ReceivableSource")
+              .HasDefaultValue((int)DNR26V2.Domain.Enums.ReceivableSource.Invoice)
+              .IsRequired();
 
         entity.HasIndex(e => e.Kundennummer).IsUnique();
 

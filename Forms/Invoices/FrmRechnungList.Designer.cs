@@ -32,6 +32,7 @@ partial class FrmRechnungList
         lblStatusLabel = new Label();
         lblStatusWert = new Label();
         btnStornieren = new Button();
+        btnGutschrift = new Button();
         splitMain = new SplitContainer();
         dgwRechnungen = new DataGridView();
         panelListHeader = new Panel();
@@ -158,6 +159,7 @@ partial class FrmRechnungList
         panelDetail.Controls.Add(lblStatusLabel);
         panelDetail.Controls.Add(lblStatusWert);
         panelDetail.Controls.Add(btnStornieren);
+        panelDetail.Controls.Add(btnGutschrift);
         panelDetail.Dock = DockStyle.Bottom;
         panelDetail.Location = new Point(0, 692);
         panelDetail.Name = "panelDetail";
@@ -241,6 +243,20 @@ partial class FrmRechnungList
         lblStatusWert.Size = new Size(13, 15);
         lblStatusWert.TabIndex = 7;
         lblStatusWert.Text = "–";
+        // 
+        // btnGutschrift
+        // 
+        btnGutschrift.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnGutschrift.BackColor = Color.FromArgb(30, 100, 160);
+        btnGutschrift.Enabled = false;
+        btnGutschrift.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        btnGutschrift.ForeColor = Color.White;
+        btnGutschrift.Location = new Point(919, 5);
+        btnGutschrift.Name = "btnGutschrift";
+        btnGutschrift.Size = new Size(130, 44);
+        btnGutschrift.TabIndex = 9;
+        btnGutschrift.Text = "Gutschrift";
+        btnGutschrift.UseVisualStyleBackColor = false;
         // 
         // btnStornieren
         // 
@@ -408,4 +424,5 @@ partial class FrmRechnungList
     private Label          lblStatusLabel;
     private Label          lblStatusWert;
     private Button         btnStornieren;
+    private Button         btnGutschrift;
 }

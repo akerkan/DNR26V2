@@ -11,9 +11,11 @@ public class InvoiceHeader : AuditableEntity
     public DateTime      Rechnungsdatum    { get; set; }
     public DateTime      Von               { get; set; }
     public DateTime      Bis               { get; set; }
-    public InvoiceStatus Status            { get; set; } = InvoiceStatus.Offen;
-    public string?       Notiz             { get; set; }
-    public bool          IstSammelrechnung { get; set; } = false;
+    public InvoiceStatus       Status            { get; set; } = InvoiceStatus.Offen;
+    public InvoiceDocumentType BelegArt          { get; set; } = InvoiceDocumentType.Rechnung;
+    public int?                OriginalRechnungId { get; set; }   // FK → original invoice (set on Gutschrift)
+    public string?             Notiz             { get; set; }
+    public bool                IstSammelrechnung { get; set; } = false;
 
     // Navigation
     public Customer                  Kunde  { get; set; } = null!;

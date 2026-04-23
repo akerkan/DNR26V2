@@ -12,7 +12,8 @@ public class RechnungListDto
     public string        Kundenname        { get; set; } = string.Empty;
     public decimal       Gesamtnetto       { get; set; }
     public decimal       Gesamtbrutto      { get; set; }
-    public InvoiceStatus Status            { get; set; }
-    public bool          IstSammelrechnung { get; set; }
+    public InvoiceStatus       Status            { get; set; }
+    public InvoiceDocumentType BelegArt          { get; set; }
+    public bool                IstSammelrechnung { get; set; }
     public int           AnzahlPositionen  { get; set; }
 }

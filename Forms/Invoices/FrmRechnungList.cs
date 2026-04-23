@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using DNR26V2.Domain.DTOs;
+using DNR26V2.Domain.Entities.Invoices;
 using DNR26V2.Domain.Enums;
 using DNR26V2.Forms.Base;
 using DNR26V2.Services.Invoices;
@@ -40,6 +41,7 @@ public partial class FrmRechnungList : BaseListForm
         cmbStatus.SelectedIndexChanged   += async (_, _) => { if (!_isLoading) await LoadRechnungenAsync(); };
         dgwRechnungen.SelectionChanged   += DgwRechnungen_SelectionChanged;
         btnStornieren.Click              += BtnStornieren_Click;
+        btnGutschrift.Click              += BtnGutschrift_Click;
     }
 
     // ── Load ─────────────────────────────────────────────────────────────────
@@ -63,9 +65,10 @@ public partial class FrmRechnungList : BaseListForm
     private void FillStatusCombo()
     {
         cmbStatus.Items.Clear();
-        cmbStatus.Items.Add(new StatusItem(null,                  "Alle"));
-        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gebucht,   "Gebucht"));
-        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Storniert, "Storniert"));
+        cmbStatus.Items.Add(new StatusItem(null,                       "Alle"));
+        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gebucht,        "Gebucht"));
+        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Storniert,      "Storniert"));
+        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gutgeschrieben, "Gutgeschrieben"));
         cmbStatus.DisplayMember   = "Text";
         cmbStatus.SelectedIndex   = 0;
     }
@@ -147,9 +150,13 @@ public partial class FrmRechnungList : BaseListForm
         ShowRCol("Bis",               "Zeitr. Bis",        90, format: "dd.MM.yyyy");
         ShowRCol("Kundenname",        "Kunde",               0, fill: true);
         ShowRCol("AnzahlPositionen",  "Pos.",               50, right: true);
-        ShowRCol("Gesamtnetto",       "Netto €",           100, format: "N2", right: true);
-        ShowRCol("Gesamtbrutto",      "Brutto €",          100, format: "N2", right: true);
+        ShowRCol("Gesamtnetto",       "Netto \u20ac",      100, format: "N2", right: true);
+        ShowRCol("Gesamtbrutto",      "Brutto \u20ac",     100, format: "N2", right: true);
         ShowRCol("IstSammelrechnung", "Sammel",             55);
+        // NOTE: Gesamtnetto / Gesamtbrutto are stored POSITIVE for all BelegArt values.
+        // For BelegArt = Gutschrift, the presentation layer (this grid, print, reports)
+        // must render amounts with a leading minus sign. Implement in CellFormatting
+        // when print / export is built.
     }
 
     private void ShowRCol(string name, string header, int width,
@@ -184,28 +191,44 @@ public partial class FrmRechnungList : BaseListForm
     private void UpdateDetailPanel(RechnungListDto dto)
     {
         lblRechnungsnrWert.Text  = dto.Rechnungsnummer;
-        lblNettoWert.Text        = $"{dto.Gesamtnetto:N2} €";
-        lblBruttoWert.Text       = $"{dto.Gesamtbrutto:N2} €";
-        lblStatusWert.Text       = dto.Status.ToString();
-        lblStatusWert.ForeColor  = dto.Status == InvoiceStatus.Storniert
-            ? Color.Firebrick : Color.DarkGreen;
+        lblNettoWert.Text        = $"{dto.Gesamtnetto:N2} \u20ac";
+        lblBruttoWert.Text       = $"{dto.Gesamtbrutto:N2} \u20ac";
+        lblStatusWert.Text       = dto.BelegArt == InvoiceDocumentType.Gutschrift
+            ? $"Gutschrift ({dto.Status})"
+            : dto.Status.ToString();
+        lblStatusWert.ForeColor  = dto.Status switch
+        {
+            InvoiceStatus.Storniert                                                  => Color.Firebrick,
+            InvoiceStatus.Gutgeschrieben                                             => Color.DarkOrange,
+            InvoiceStatus.Gebucht when dto.BelegArt == InvoiceDocumentType.Gutschrift => Color.SteelBlue,
+            _                                                                        => Color.DarkGreen,
+        };
 
-        bool canStorno           = dto.Status == InvoiceStatus.Gebucht;
-        btnStornieren.Enabled    = canStorno;
-        btnStornieren.BackColor  = canStorno
+        bool canAction          = dto.Status == InvoiceStatus.Gebucht
+                               && dto.BelegArt == InvoiceDocumentType.Rechnung;
+
+        btnStornieren.Enabled   = canAction;
+        btnStornieren.BackColor = canAction
             ? Color.FromArgb(180, 30, 30)
+            : Color.FromArgb(160, 160, 160);
+
+        btnGutschrift.Enabled   = canAction;
+        btnGutschrift.BackColor = canAction
+            ? Color.FromArgb(30, 100, 160)
             : Color.FromArgb(160, 160, 160);
     }
 
     private void ClearDetail()
     {
-        lblRechnungsnrWert.Text = "–";
-        lblNettoWert.Text       = "–";
-        lblBruttoWert.Text      = "–";
-        lblStatusWert.Text      = "–";
+        lblRechnungsnrWert.Text = "\u2013";
+        lblNettoWert.Text       = "\u2013";
+        lblBruttoWert.Text      = "\u2013";
+        lblStatusWert.Text      = "\u2013";
         lblStatusWert.ForeColor = SystemColors.ControlText;
         btnStornieren.Enabled   = false;
         btnStornieren.BackColor = Color.FromArgb(160, 160, 160);
+        btnGutschrift.Enabled   = false;
+        btnGutschrift.BackColor = Color.FromArgb(160, 160, 160);
     }
 
     private async Task LoadZeilenAsync(int rechnungId)
@@ -280,6 +303,34 @@ public partial class FrmRechnungList : BaseListForm
         finally { Cursor = Cursors.Default; _lock.Release(); }
 
         ShowSuccess($"Rechnung '{dto.Rechnungsnummer}' wurde storniert.");
+        await LoadRechnungenAsync();
+    }
+
+    // ── Gutschrift ────────────────────────────────────────────────────────────
+
+    private async void BtnGutschrift_Click(object? s, EventArgs e)
+    {
+        if (dgwRechnungen.CurrentRow?.DataBoundItem is not RechnungListDto dto) return;
+        if (dto.Status != InvoiceStatus.Gebucht || dto.BelegArt != InvoiceDocumentType.Rechnung) return;
+
+        if (!Confirm(
+            $"Gutschrift f\u00fcr Rechnung '{dto.Rechnungsnummer}' erstellen?\n\n" +
+            $"Kunde: {dto.Kundenname}\n\n" +
+            "Die fakturierten Mengen werden zur\u00fcckgerollt. " +
+            "Die Originalrechnung bleibt im System (Status: Gutgeschrieben)."))
+            return;
+
+        InvoiceHeader gutschrift;
+        await _lock.WaitAsync();
+        try
+        {
+            Cursor     = Cursors.WaitCursor;
+            gutschrift = await _invoiceService.CreateGutschriftAsync(dto.Id);
+        }
+        catch (Exception ex) { ShowError($"Gutschrift fehlgeschlagen:\n{ex.Message}"); return; }
+        finally { Cursor = Cursors.Default; _lock.Release(); }
+
+        ShowSuccess($"Gutschrift '{gutschrift.Rechnungsnummer}' wurde erstellt.");
         await LoadRechnungenAsync();
     }
 

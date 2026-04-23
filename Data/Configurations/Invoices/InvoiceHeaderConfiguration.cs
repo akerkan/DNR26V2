@@ -32,6 +32,17 @@ public class InvoiceHeaderConfiguration : IEntityTypeConfiguration<InvoiceHeader
         b.Property(x => x.Status)
             .HasDefaultValue(InvoiceStatus.Offen);
 
+        b.Property(x => x.BelegArt)
+            .HasDefaultValue(InvoiceDocumentType.Rechnung);
+
+        b.Property(x => x.OriginalRechnungId)
+            .IsRequired(false);
+
+        b.HasOne<InvoiceHeader>()
+            .WithMany()
+            .HasForeignKey(x => x.OriginalRechnungId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         b.Property(x => x.Notiz)
             .HasMaxLength(500);
 

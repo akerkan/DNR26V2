@@ -37,6 +37,13 @@ public interface IInvoiceService
     /// <summary>Rechnung stornieren → LS-Status zurück auf Offen (nur Gebucht möglich).</summary>
     Task StornierenAsync(int rechnungId);
 
+    /// <summary>
+    /// Gutschrift für eine gebuchte Rechnung erstellen.
+    /// Original bleibt in der DB (Status → Gutgeschrieben).
+    /// MengeFakturiert auf DeliveryLine und OrderLine wird zurückgerollt.
+    /// </summary>
+    Task<InvoiceHeader> CreateGutschriftAsync(int rechnungId);
+
     // Bestehende Methoden beibehalten — nur ergänzen:
 
     /// <summary>Lieferschein-Zeilen Vorschau für das Preview-Grid.</summary>

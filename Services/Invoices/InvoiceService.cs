@@ -51,6 +51,29 @@ public class InvoiceService : IInvoiceService
         return $"{praefix}{year}{seq:D4}";
     }
 
+    private async Task<string> GenerateGutschriftnummerAsync()
+    {
+        var setup   = await _db.AppSetup.AsNoTracking().FirstAsync();
+        var praefix = setup.GutschriftPraefix;
+        var year    = DateTime.Today.Year;
+
+        var last = await _db.Invoices
+            .Where(i => i.Rechnungsnummer.StartsWith($"{praefix}{year}"))
+            .OrderByDescending(i => i.Rechnungsnummer)
+            .Select(i => i.Rechnungsnummer)
+            .FirstOrDefaultAsync();
+
+        int seq = 1;
+        if (last is not null)
+        {
+            var suffix = last[$"{praefix}{year}".Length..];
+            if (int.TryParse(suffix, out int prev))
+                seq = prev + 1;
+        }
+
+        return $"{praefix}{year}{seq:D4}";
+    }
+
     // -- FrmRechnungErfassung --------------------------------------------------
 
     public async Task<IReadOnlyList<KundeOffeneLsDto>> GetKundenMitOffenenLsAsync(
@@ -321,6 +344,7 @@ public class InvoiceService : IInvoiceService
                 i.Bis,
                 c.Kundenname                          AS Kundenname,
                 i.Status,
+                i.BelegArt,
                 i.IstSammelrechnung,
                 i.Gesamtnetto,
                 i.Gesamtbrutto,
@@ -336,7 +360,7 @@ public class InvoiceService : IInvoiceService
             GROUP BY
                 i.Id, i.Rechnungsnummer, i.Rechnungsdatum,
                 i.Von, i.Bis, c.Kundenname,
-                i.Status, i.IstSammelrechnung,
+                i.Status, i.BelegArt, i.IstSammelrechnung,
                 i.Gesamtnetto, i.Gesamtbrutto
             ORDER BY i.Rechnungsdatum DESC, i.Rechnungsnummer DESC
             """;
@@ -380,6 +404,118 @@ public class InvoiceService : IInvoiceService
         var rows = await con.QueryAsync<RechnungZeileDetailDto>(sql,
             new { RechnungId = rechnungId });
         return rows.AsList();
+    }
+
+    public async Task<InvoiceHeader> CreateGutschriftAsync(int rechnungId)
+    {
+        var original = await _db.Invoices
+            .Include(i => i.Zeilen)
+            .FirstOrDefaultAsync(i => i.Id == rechnungId)
+            ?? throw new InvalidOperationException("Rechnung nicht gefunden.");
+
+        if (original.Status != InvoiceStatus.Gebucht)
+            throw new InvalidOperationException(
+                $"Gutschrift nur für gebuchte Rechnungen möglich (aktuell: {original.Status}).");
+
+        if (original.BelegArt != InvoiceDocumentType.Rechnung)
+            throw new InvalidOperationException(
+                "Gutschriften können nicht erneut gutgeschrieben werden.");
+
+        var gutschriftnr = await GenerateGutschriftnummerAsync();
+
+        var gutschrift = new InvoiceHeader
+        {
+            Rechnungsnummer    = gutschriftnr,
+            KundeId            = original.KundeId,
+            Rechnungsdatum     = DateTime.Today,
+            Von                = original.Von,
+            Bis                = original.Bis,
+            Status             = InvoiceStatus.Gebucht,
+            BelegArt           = InvoiceDocumentType.Gutschrift,
+            OriginalRechnungId = original.Id,
+            Notiz              = $"Gutschrift für {original.Rechnungsnummer}",
+            IstSammelrechnung  = false,
+            ErstelltAm         = DateTime.Now,
+            ErstelltVon        = Environment.UserName,
+        };
+
+        // Copy lines from original — all values stay POSITIVE.
+        // BelegArt = Gutschrift carries the financial reversal meaning.
+        // Presentation layer (UI / print) must render a minus sign for Gutschrift documents.
+        // Storing negative amounts in DB is intentionally avoided: it would break
+        // InvoiceCalculator grouping, VAT aggregation, and future ledger movement logic.
+        foreach (var origLine in original.Zeilen)
+        {
+            gutschrift.Zeilen.Add(new InvoiceLine
+            {
+                LieferscheinId   = origLine.LieferscheinId,
+                DeliveryLineId   = origLine.DeliveryLineId,
+                ArtikelId        = origLine.ArtikelId,
+                Menge            = origLine.Menge,
+                FakturierteMenge = origLine.FakturierteMenge,
+                Gewicht          = origLine.Gewicht,
+                Preis            = origLine.Preis,
+                MwstProzent      = origLine.MwstProzent,
+                DiscountProzent  = origLine.DiscountProzent,
+                GrossAmount      = origLine.GrossAmount,
+                DiscountAmount   = origLine.DiscountAmount,
+                LineAmount       = origLine.LineAmount,
+                VatAmount        = origLine.VatAmount,
+                AmountInclVat    = origLine.AmountInclVat,
+                ErstelltAm       = DateTime.Now,
+                ErstelltVon      = Environment.UserName,
+            });
+        }
+
+        // Header totals stay POSITIVE — BelegArt = Gutschrift signals the negative financial effect.
+        gutschrift.Gesamtnetto  = original.Gesamtnetto;
+        gutschrift.Gesamtmwst   = original.Gesamtmwst;
+        gutschrift.Gesamtbrutto = original.Gesamtbrutto;
+
+        // Roll back DeliveryLine.MengeFakturiert — same explicit-load pattern as StornierenAsync
+        var deliveryLineIds = original.Zeilen.Select(z => z.DeliveryLineId).ToList();
+        var deliveryLines = await _db.DeliveryLine
+            .Where(dl => deliveryLineIds.Contains(dl.Id))
+            .ToListAsync();
+
+        foreach (var origLine in original.Zeilen)
+        {
+            var dl = deliveryLines.FirstOrDefault(d => d.Id == origLine.DeliveryLineId);
+            if (dl is not null)
+                dl.MengeFakturiert = Math.Max(0, dl.MengeFakturiert - origLine.Menge);
+        }
+
+        // Roll back OrderLine.MengeFakturiert
+        var auftragZeileIds = deliveryLines
+            .Where(dl => dl.AuftragZeileId.HasValue)
+            .Select(dl => dl.AuftragZeileId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (auftragZeileIds.Count > 0)
+        {
+            var orderLines = await _db.OrderLine
+                .Where(ol => auftragZeileIds.Contains(ol.Id))
+                .ToDictionaryAsync(ol => ol.Id);
+
+            foreach (var origLine in original.Zeilen)
+            {
+                var dl = deliveryLines.FirstOrDefault(d => d.Id == origLine.DeliveryLineId);
+                if (dl?.AuftragZeileId.HasValue == true &&
+                    orderLines.TryGetValue(dl.AuftragZeileId.Value, out var ol))
+                    ol.MengeFakturiert = Math.Max(0, ol.MengeFakturiert - origLine.Menge);
+            }
+        }
+
+        // Mark original invoice as Gutgeschrieben — it stays in DB, audit trail intact
+        original.Status       = InvoiceStatus.Gutgeschrieben;
+        original.GeaendertAm  = DateTime.Now;
+        original.GeaendertVon = Environment.UserName;
+
+        _db.Invoices.Add(gutschrift);
+        await _db.SaveChangesAsync();
+
+        return gutschrift;
     }
 
     public async Task StornierenAsync(int rechnungId)

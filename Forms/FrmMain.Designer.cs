@@ -31,38 +31,40 @@ partial class FrmMain
         var menuStandort = new ToolStripMenuItem("S&tandort", null, OnMenuItemNotImplemented);
         menuStammdaten.DropDownItems.AddRange(new ToolStripItem[]
         {
-            menuKunden, menuProdukte, menuAttribute, menuKundenVorlage,new ToolStripSeparator(),
+            menuKunden, menuProdukte, menuAttribute, menuKundenVorlage,
             new ToolStripSeparator(),
             menuRouten, menuFahrer, menuStandort
         });
 
         // --- Verkauf ---
         var menuVerkauf = new ToolStripMenuItem("&Verkauf");
+
         var menuAuftraege = new ToolStripMenuItem("&Aufträge", null, MenuAuftraege_Click);
         var menuTagesbestellung = new ToolStripMenuItem("&Tagesbestellung", null, MenuAuftragserfassung_Click);
+
         var menuLieferungen = new ToolStripMenuItem("&Lieferungen", null, MenuLieferungen_Click);
+
+        var menuRechnungErfassung = new ToolStripMenuItem("Rechnungserfassung", null, MenuRechnungErfassung_Click);
+        var menuSammelrechnung = new ToolStripMenuItem("&Sammelrechnung", null, MenuSammelrechnung_Click);
+        var menuRechnungListe = new ToolStripMenuItem("Rechnungsliste", null, MenuRechnungListe_Click);
+
         var menuTouren = new ToolStripMenuItem("T&ouren", null, OnMenuItemNotImplemented);
         menuVerkauf.DropDownItems.AddRange(new ToolStripItem[]
         {
             menuTagesbestellung, menuAuftraege, new ToolStripSeparator(),
-            menuLieferungen, menuTouren
+            menuLieferungen,menuTouren, new ToolStripSeparator(), menuRechnungErfassung,
+            menuSammelrechnung,menuRechnungListe
         });
 
         // --- Finanzen ---
         var menuFinanzen = new ToolStripMenuItem("&Finanzen");
 
-        // Haupt-Menupunkt "Rechnungen" mit Unterpunkten
-        //var menuRechnungen = new ToolStripMenuItem("&Rechnungen");
-        var menuRechnungErfassung = new ToolStripMenuItem("Rechnungserfassung", null, MenuRechnungErfassung_Click);
-        var menuSammelrechnung = new ToolStripMenuItem("&Sammelrechnung", null, MenuSammelrechnung_Click);
-        var menuRechnungListe = new ToolStripMenuItem("Rechnungsliste", null, MenuRechnungListe_Click);
+        var menuBerichtZahlungen = new ToolStripMenuItem("&Zahlungen", null, OnMenuItemNotImplemented);
+
 
         menuFinanzen.DropDownItems.AddRange(new ToolStripItem[]
         {
-            menuRechnungErfassung,
-            menuSammelrechnung,
-            new ToolStripSeparator(),
-            menuRechnungListe
+           menuBerichtZahlungen
         });
         
 
@@ -70,7 +72,7 @@ partial class FrmMain
         var menuBerichte = new ToolStripMenuItem("&Berichte");
         var menuBerichtKundenverkauf = new ToolStripMenuItem("&Kundenverkauf", null, OnMenuItemNotImplemented);
         var menuBerichtProduktverkauf = new ToolStripMenuItem("&Produktverkauf", null, OnMenuItemNotImplemented);
-        var menuBerichtZahlungen = new ToolStripMenuItem("&Zahlungen", null, OnMenuItemNotImplemented);
+        
         menuBerichte.DropDownItems.AddRange(new ToolStripItem[]
         {
             menuBerichtKundenverkauf, menuBerichtProduktverkauf,

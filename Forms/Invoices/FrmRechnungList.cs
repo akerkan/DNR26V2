@@ -40,7 +40,6 @@ public partial class FrmRechnungList : BaseListForm
         txtKundeFilter.KeyDown           += async (_, e) => { if (e.KeyCode == Keys.Enter) await LoadRechnungenAsync(); };
         cmbStatus.SelectedIndexChanged   += async (_, _) => { if (!_isLoading) await LoadRechnungenAsync(); };
         dgwRechnungen.SelectionChanged   += DgwRechnungen_SelectionChanged;
-        btnStornieren.Click              += BtnStornieren_Click;
         btnGutschrift.Click              += BtnGutschrift_Click;
     }
 
@@ -58,7 +57,8 @@ public partial class FrmRechnungList : BaseListForm
         FillStatusCombo();
         _isLoading = false;
 
-        panelDetail.Visible = true;
+        btnStornieren.Visible = false;   // deprecated — use Gutschrift instead
+        panelDetail.Visible  = true;
         await LoadRechnungenAsync();
     }
 
@@ -67,7 +67,6 @@ public partial class FrmRechnungList : BaseListForm
         cmbStatus.Items.Clear();
         cmbStatus.Items.Add(new StatusItem(null,                       "Alle"));
         cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gebucht,        "Gebucht"));
-        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Storniert,      "Storniert"));
         cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gutgeschrieben, "Gutgeschrieben"));
         cmbStatus.DisplayMember   = "Text";
         cmbStatus.SelectedIndex   = 0;
@@ -204,13 +203,8 @@ public partial class FrmRechnungList : BaseListForm
             _                                                                        => Color.DarkGreen,
         };
 
-        bool canAction          = dto.Status == InvoiceStatus.Gebucht
-                               && dto.BelegArt == InvoiceDocumentType.Rechnung;
-
-        btnStornieren.Enabled   = canAction;
-        btnStornieren.BackColor = canAction
-            ? Color.FromArgb(180, 30, 30)
-            : Color.FromArgb(160, 160, 160);
+        bool canAction        = dto.Status == InvoiceStatus.Gebucht
+                             && dto.BelegArt == InvoiceDocumentType.Rechnung;
 
         btnGutschrift.Enabled   = canAction;
         btnGutschrift.BackColor = canAction
@@ -225,8 +219,6 @@ public partial class FrmRechnungList : BaseListForm
         lblBruttoWert.Text      = "\u2013";
         lblStatusWert.Text      = "\u2013";
         lblStatusWert.ForeColor = SystemColors.ControlText;
-        btnStornieren.Enabled   = false;
-        btnStornieren.BackColor = Color.FromArgb(160, 160, 160);
         btnGutschrift.Enabled   = false;
         btnGutschrift.BackColor = Color.FromArgb(160, 160, 160);
     }
@@ -278,32 +270,6 @@ public partial class FrmRechnungList : BaseListForm
         else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
         if (format is not null) col.DefaultCellStyle.Format = format;
         if (right) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-    }
-
-    // ── Stornieren ────────────────────────────────────────────────────────────
-
-    private async void BtnStornieren_Click(object? s, EventArgs e)
-    {
-        if (dgwRechnungen.CurrentRow?.DataBoundItem is not RechnungListDto dto) return;
-        if (dto.Status != InvoiceStatus.Gebucht) return;
-
-        if (!Confirm(
-            $"Rechnung '{dto.Rechnungsnummer}' stornieren?\n\n" +
-            $"Kunde: {dto.Kundenname}\n" +
-            "Die Lieferscheine werden wieder auf 'Aktiv' zurückgesetzt."))
-            return;
-
-        await _lock.WaitAsync();
-        try
-        {
-            Cursor = Cursors.WaitCursor;
-            await _invoiceService.StornierenAsync(dto.Id);
-        }
-        catch (Exception ex) { ShowError($"Stornierung fehlgeschlagen:\n{ex.Message}"); return; }
-        finally { Cursor = Cursors.Default; _lock.Release(); }
-
-        ShowSuccess($"Rechnung '{dto.Rechnungsnummer}' wurde storniert.");
-        await LoadRechnungenAsync();
     }
 
     // ── Gutschrift ────────────────────────────────────────────────────────────

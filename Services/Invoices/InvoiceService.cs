@@ -518,6 +518,7 @@ public class InvoiceService : IInvoiceService
         return gutschrift;
     }
 
+    [Obsolete("Use CreateGutschriftAsync instead. StornierenAsync will be removed in a future version.")]
     public async Task StornierenAsync(int rechnungId)
     {
         var header = await _db.Invoices

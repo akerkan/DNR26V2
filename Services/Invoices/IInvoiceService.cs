@@ -34,7 +34,11 @@ public interface IInvoiceService
 
     Task<IReadOnlyList<RechnungZeileDetailDto>> GetZeilenByRechnungIdAsync(int rechnungId);
 
-    /// <summary>Rechnung stornieren → LS-Status zurück auf Offen (nur Gebucht möglich).</summary>
+    /// <summary>
+    /// Rechnung direkt stornieren (kein Gegendokument).
+    /// Veraltet — für Rechnungskorrekturen bitte <see cref="CreateGutschriftAsync"/> verwenden.
+    /// </summary>
+    [Obsolete("Use CreateGutschriftAsync instead. StornierenAsync will be removed in a future version.")]
     Task StornierenAsync(int rechnungId);
 
     /// <summary>

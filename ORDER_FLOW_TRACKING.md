@@ -1,7 +1,11 @@
 # ORDER_FLOW_TRACKING.md
-# DNR26V2 — Order ? Delivery ? Invoice ? Credit Memo Flow
+# DNR26V2 — Order ? Delivery ? Invoice ? Credit Memo ? Payment Flow
 
 Technical and business reference for the complete ERP document chain.
+
+> **Quick navigation:** Read only what you need.
+> - Entities: §1 | Core Logic: §2 | Formulas: §3 | Rules: §4 | BelegArt: §5
+> - Workflows: §6 | Edge Cases: §7 | Payment Module: §8 | Status: §9
 
 ---
 
@@ -14,7 +18,7 @@ Represents a customer's purchase order for a specific delivery date.
 |---|---|---|
 | `Status` | `OrderStatus` | `Offen` ? `Freigegeben` ? `Gebucht` ? `Storniert` / `Geloescht` |
 | `LieferDatum` | `DateTime` | Requested delivery date |
-| `Auftragsnummer` | `string` | System-generated document number |
+| `Auftragsnummer` | `string` | System-generated — prefix `AUF` |
 
 ---
 
@@ -27,13 +31,8 @@ One product position within an Order.
 | `MengeGeliefert` | `decimal(10,3)` | Cumulative delivered quantity |
 | `MengeFakturiert` | `decimal(10,3)` | Cumulative invoiced quantity (reduced by credit memo) |
 | `Preis` | `decimal` | Unit price |
-| `ArtikelId` | `int` | FK ? Product |
-| `AuftragId` | `int` | FK ? Order |
 
-**Computed display value (not stored):**
-```
-Offen = Menge - MengeGeliefert
-```
+**Computed (not stored):** `Offen = Menge - MengeGeliefert`
 
 ---
 
@@ -44,8 +43,8 @@ Represents a physical shipment (Lieferschein) for an Order.
 |---|---|---|
 | `Status` | `DeliveryStatus` | `Offen` ? `TeilStorniert` ? `Fakturiert` ? `Storniert` |
 | `AuftragId` | `int?` | FK ? Order (nullable for manual deliveries) |
-| `LieferDatum` | `DateTime` | Actual delivery date |
-| `Lieferscheinnummer` | `string` | System-generated document number |
+| `Lieferscheinnummer` | `string` | System-generated — prefix `LS` |
+| `Gesamtbrutto` | `decimal` | Header total — used as ledger Betrag |
 
 ---
 
@@ -55,13 +54,11 @@ One product position within a DeliveryHeader.
 | Field | Type | Purpose |
 |---|---|---|
 | `Menge` | `decimal(10,3)` | Delivered quantity. **Negative for storno lines.** |
-| `MengeGeliefert` | `decimal(10,3)` | Always `0` — unused on DeliveryLine, exists for schema symmetry |
-| `MengeFakturiert` | `decimal(18,2)` | Cumulative invoiced quantity. Reduced by credit memo creation. |
-| `AuftragZeileId` | `int?` | FK ? OrderLine — traceability link set during delivery creation |
-| `LieferscheinId` | `int` | FK ? DeliveryHeader |
-| `ArtikelId` | `int` | FK ? Product |
+| `MengeFakturiert` | `decimal(18,2)` | Cumulative invoiced quantity |
+| `AuftragZeileId` | `int?` | FK ? OrderLine — traceability link |
+| `AmountInclVat` | `decimal` | Line amount incl. VAT |
 
-**Important:** `MengeGeliefert` on `DeliveryLine` is always `0`. Do NOT use it for invoicing logic. Use `Menge` instead.
+**Important:** `MengeGeliefert` on DeliveryLine is always `0`. Use `Menge` for invoicing logic.
 
 ---
 
@@ -70,29 +67,11 @@ Represents a posted invoice or credit memo. Both document types share this table
 
 | Field | Type | Purpose |
 |---|---|---|
-| `Status` | `InvoiceStatus` | `Gebucht` ? `Gutgeschrieben` (see below) |
-| `BelegArt` | `InvoiceDocumentType` | `Rechnung` (0) or `Gutschrift` (1) |
-| `OriginalRechnungId` | `int?` | FK ? original invoice (set on Gutschrift rows only) |
-| `KundeId` | `int` | FK ? Customer |
-| `Von` / `Bis` | `DateTime` | Billing period |
-| `Rechnungsnummer` | `string` | System-generated document number (prefix RE or GS) |
-| `IstSammelrechnung` | `bool` | True when multiple deliveries batched into one invoice |
-| `Gesamtnetto` | `decimal` | Net total — **always positive** for both Rechnung and Gutschrift |
-| `Gesamtmwst` | `decimal` | VAT total — **always positive** |
-| `Gesamtbrutto` | `decimal` | Gross total — **always positive** |
-
-**InvoiceStatus values:**
-
-| Value | Meaning |
-|---|---|
-| `Gebucht = 1` | Active document — invoice or credit memo in effect |
-| `Gutgeschrieben = 3` | Original invoice for which a credit memo has been created — read-only, stays in DB |
-| `Storniert = 2` | Legacy direct cancellation — no longer used via UI |
-
-**Amount sign rule:**
-All amounts stored in DB are **positive** for both `Rechnung` and `Gutschrift`.
-`BelegArt = Gutschrift` is the single source of truth for financial sign.
-Presentation layer (UI, print, reports) must render Gutschrift amounts with a leading minus sign.
+| `Status` | `InvoiceStatus` | `Gebucht=1` / `Storniert=2` / `Gutgeschrieben=3` |
+| `BelegArt` | `InvoiceDocumentType` | `Rechnung=0` / `Gutschrift=1` |
+| `OriginalRechnungId` | `int?` | FK ? original invoice (Gutschrift rows only) |
+| `Rechnungsnummer` | `string` | System-generated — prefix `RE` or `GS` |
+| `Gesamtbrutto` | `decimal` | Always positive — used as ledger Betrag |
 
 ---
 
@@ -101,14 +80,46 @@ One product position within an InvoiceHeader. Shared by both Rechnung and Gutsch
 
 | Field | Type | Purpose |
 |---|---|---|
-| `Menge` | `decimal(10,3)` | Invoiced quantity — **always positive**, source of truth for rollback |
-| `FakturierteMenge` | `decimal(10,3)` | Mirror of `Menge` — kept for display/legacy |
+| `Menge` | `decimal(10,3)` | Always positive — source of truth for rollback |
 | `DeliveryLineId` | `int` | FK ? DeliveryLine — the physical line being invoiced |
-| `LieferscheinId` | `int` | FK ? DeliveryHeader |
-| `ArtikelId` | `int` | FK ? Product |
-| `LineAmount` | `decimal` | **Always positive** — sign derived from `InvoiceHeader.BelegArt` |
+| `LineAmount` | `decimal` | Always positive — sign from `BelegArt` |
 
-**Always use `InvoiceLine.Menge` — not `FakturierteMenge` — as the source of truth in booking and rollback logic.**
+**Always use `InvoiceLine.Menge` — not `FakturierteMenge` — in booking/rollback logic.**
+
+---
+
+### Customer (`Customer` table) — relevant payment fields
+| Field | Type | Purpose |
+|---|---|---|
+| `ReceivableSource` | `ReceivableSource` | `Invoice=1` (default) or `Delivery=0` — determines ledger source |
+
+---
+
+### PaymentHeader (`PaymentHeaders` table)
+Represents a posted payment. Single header per payment action.
+
+| Field | Type | Purpose |
+|---|---|---|
+| `Id` | `int` | PK |
+| `Zahlungsnummer` | `string` | System-generated — NoSeries `ZA` (e.g. ZA-26-0424-001) |
+| `KundeId` | `int` | FK ? Customer |
+| `Buchungsdatum` | `DateTime` | Booking date — entered per row in `FrmZahlungseingaenge` |
+| `Notiz` | `string?` | Optional header note |
+| `ErstelltVon` | `string` | `Environment.UserName` at time of posting |
+
+### PaymentLine (`PaymentLines` table)
+Represents a single payment row, linked to either an invoice or a delivery.
+
+| Field | Type | Purpose |
+|---|---|---|
+| `PaymentHeaderId` | `int` | FK ? PaymentHeader |
+| `ReferenceType` | `int` | `0` = InvoiceHeader.Id · `1` = DeliveryHeader.Id · `-1` = Storno back-ref |
+| `ReferenceId` | `int` | FK value into the referenced header (or original PaymentLine.Id for storno) |
+| `PaymentMethod` | `PaymentMethod` | `Bar=0` / `Bank=1` |
+| `Amount` | `decimal` | **Positive** for normal payments · **Negative** for storno reversals |
+| `Notiz` | `string?` | Optional line note |
+
+**Sign rule:** `Amount < 0` indicates a storno line. `SUM(Amount)` per `ReferenceId` gives net paid amount.
 
 ---
 
@@ -124,8 +135,9 @@ One product position within an InvoiceHeader. Shared by both Rechnung and Gutsch
 3. Lines where `Offen = 0` are **skipped completely** — no DeliveryLine created
 
 ```
-DeliveryLine.Menge       = OrderLine.Menge - OrderLine.MengeGeliefert
+DeliveryLine.Menge        = OrderLine.Menge - OrderLine.MengeGeliefert
 OrderLine.MengeGeliefert += DeliveryLine.Menge
+Lines where Offen = 0 are SKIPPED
 ```
 
 ---
@@ -146,8 +158,7 @@ InvoiceLine.Menge            = DeliveryLine.Menge - DeliveryLine.MengeFakturiert
 DeliveryLine.MengeFakturiert += InvoiceLine.Menge
 OrderLine.MengeFakturiert    += InvoiceLine.Menge
 ```
-
-**Implementation note:** Tracking updates use explicit `_db.DeliveryLine.Where(...)` / `_db.OrderLine.Where(...)` loads — NOT the Include-loaded navigation collections. This ensures EF generates correct UPDATE statements.
+Guard: `InvoiceLine.Menge > (DeliveryLine.Menge - MengeFakturiert)` ? `ValidationException`
 
 ---
 
@@ -170,11 +181,11 @@ This is the **only** invoice correction path. Direct "Stornieren" is no longer a
 7. Single `SaveChangesAsync`
 
 ```
-Gutschrift.Gesamtnetto       = original.Gesamtnetto          (positive)
-Gutschrift.InvoiceLine.Menge = original.InvoiceLine.Menge    (positive)
-DeliveryLine.MengeFakturiert = Max(0, MengeFakturiert - il.Menge)
-OrderLine.MengeFakturiert    = Max(0, MengeFakturiert - il.Menge)
-original.Status              = Gutgeschrieben
+Gutschrift.Gesamtbrutto       = original.Gesamtbrutto          (positive)
+Gutschrift.InvoiceLine.Menge  = original.InvoiceLine.Menge    (positive)
+DeliveryLine.MengeFakturiert  = Max(0, MengeFakturiert - il.Menge)
+OrderLine.MengeFakturiert     = Max(0, MengeFakturiert - il.Menge)
+original.Status               = Gutgeschrieben
 ```
 
 **Delivery not touched:** `DeliveryHeader.Status` is NOT changed. The physical delivery remains intact.
@@ -199,16 +210,46 @@ OrderLine.MengeGeliefert = Max(0, MengeGeliefert - originalDeliveryLine.Menge)
 
 ---
 
+### 2.5 Zahlung buchen (`PaymentPostingService.BuchenAsync`)
+
+1. Generate `Zahlungsnummer` using `NoSeries.GetNextNumberAsync("ZA", Buchungsdatum)`
+2. Create `PaymentHeader`
+3. For each active row in `FrmZahlungseingaenge`:
+   - If `Bar` > 0 ? add `PaymentLine(Method=Bar,  Amount=Bar,  ReferenceType, ReferenceId)`
+   - If `Bank` > 0 ? add `PaymentLine(Method=Bank, Amount=Bank, ReferenceType, ReferenceId)`
+
+**ReferenceId semantics:**
+- `ReferenceType=0` ? `InvoiceHeader.Id` (customers with `ReceivableSource=Invoice`)
+- `ReferenceType=1` ? `DeliveryHeader.Id` (customers with `ReceivableSource=Delivery`)
+
+**OffenerBetrag calculation (in `CustomerLedgerService.GetLedgerAsync`):**
+```
+PaidAmount    = SUM(PaymentLine.Amount WHERE ReferenceType+ReferenceId match AND Header.KundeId=kundeId)
+OffenerBetrag = Max(0, Header.Gesamtbrutto - PaidAmount)
+```
+
+---
+
+### 2.6 Zahlung stornieren (`PaymentPostingService.StornierenAsync`)
+
+1. Generate `stornoNummer` using `NoSeries.GetNextNumberAsync("ZA", Today)`
+2. Create new `PaymentHeader` with:
+   - `Zahlungsnummer = stornoNummer`
+   - `Notiz = "STORNO: {orig.Zahlungsnummer} — {note}"`
+3. Add new `PaymentLine(ReferenceType=-1, ReferenceId=originalLine.Id, Amount=-originalLine.Amount)`
+
+Guards: already-negative lines cannot be storniert; double-storno blocked via `ReferenceType=-1` check.
+
+---
+
 ## 3. IMPORTANT FORMULAS
 
 ```
 Offen (OrderLine)           = Menge - MengeGeliefert
 Fakturierbar (DeliveryLine) = Menge - MengeFakturiert
+OffenerBetrag (Ledger)      = Max(0, Header.Gesamtbrutto - SUM(PaymentLine.Amount))
+Saldo (Customer)            = SUM(OffenerBetrag of Rechnung/Lieferschein rows) - SUM(Gutschrift.Betrag)
 ```
-
-- `Offen` is a **display-only computed value** — never stored in DB
-- `Fakturierbar` determines whether a delivery line appears in the invoice capture list
-- Both formulas work identically after a credit memo (rollback resets `MengeFakturiert`)
 
 ---
 
@@ -216,51 +257,63 @@ Fakturierbar (DeliveryLine) = Menge - MengeFakturiert
 
 | Rule | Detail |
 |---|---|
-| Never invoice negative lines | `DeliveryLine.Menge < 0` ? storno line ? skipped in `BuchenAsync` |
-| Never exceed `Menge` | Guard: `InvoiceLine.Menge > (DeliveryLine.Menge - MengeFakturiert)` ? throws |
-| Delivery is physical truth | `DeliveryHeader.Status` is NOT changed by invoice or credit memo operations |
-| Invoice is financial layer | Only `MengeFakturiert` is affected — physical delivery records are untouched |
-| Re-invoiceability by quantity | A delivery is invoiceable again when `DeliveryLine.MengeFakturiert < DeliveryLine.Menge` |
-| Teil-Storno blocked if invoiced | `DeliveryLine.MengeFakturiert > 0` ? `ValidationException` on Teil-Storno attempt |
-| Tracking values survive save | `SaveAuftragAsync` preserves `MengeGeliefert` and `MengeFakturiert` per `ArtikelId` |
-| DB amounts always positive | All `InvoiceLine` and `InvoiceHeader` amount fields are stored positive — sign comes from `BelegArt` |
-| No double credit | `CreateGutschriftAsync` checks `Status == Gebucht && BelegArt == Rechnung` before proceeding |
-| Original invoice preserved | After credit memo: original `Status = Gutgeschrieben`, stays in DB for audit trail |
+| Never invoice negative lines | `DeliveryLine.Menge < 0` ? storno line ? skipped |
+| Never exceed Menge | Guard in `BuchenAsync` |
+| Delivery is physical truth | `DeliveryHeader.Status` NOT changed by invoice/payment ops |
+| DB amounts always positive | Invoice/Payment amounts stored positive — sign from `BelegArt` or `Amount < 0` |
+| No double credit | `CreateGutschriftAsync` checks `Status == Gebucht && BelegArt == Rechnung` |
+| Original invoice preserved | After Gutschrift: original `Status = Gutgeschrieben`, stays in DB |
+| Teil-Storno blocked if invoiced | `MengeFakturiert > 0` ? ValidationException |
+| Payment cross-customer guard | `PaymentLines` always joined through `Header.KundeId` |
+| Ledger = header-level | One row per `InvoiceHeader` / `DeliveryHeader` — NOT per line |
+| Storno = negative PaymentLine | `Amount < 0` is the storno signal; `ReferenceType=-1` marks storno back-ref |
+| Gutschrift not payable | `OffenerBetrag = 0` on Gutschrift rows — `BuchenAsync` blocks if `OffenerBetrag <= 0` |
 
 ---
 
 ## 5. DOCUMENT TYPE SEMANTICS (`BelegArt`)
 
-| BelegArt | DB amounts | Financial effect | Number prefix |
+| BelegArt / Type | DB amounts | Financial effect | Number prefix |
 |---|---|---|---|
-| `Rechnung (0)` | Positive | Positive (customer owes) | RE |
-| `Gutschrift (1)` | Positive | Negative (credit to customer) | GS |
-
-**Presentation rule:** Anywhere Gutschrift amounts are displayed (grid, print, PDF), the UI/print layer must prepend a minus sign. The DB itself never stores negative invoice amounts.
+| `Rechnung (0)` | Positive | Customer owes | RE |
+| `Gutschrift (1)` | Positive | Credit to customer | GS |
+| `Zahlung (normal)` | Positive | Reduces open amount | ZA |
+| `Zahlung (Storno)` | Negative | Restores open amount | ZA |
 
 ---
 
-## 6. USER WORKFLOW
+## 6. USER WORKFLOWS
 
-### Normal invoice flow
+### Normal flow
 ```
 Auftrag ? buchen ? Lieferschein (Offen)
 Lieferschein ? FrmRechnungErfassung ? BuchenAsync ? Rechnung (Gebucht)
+Rechnung ? FrmZahlungseingaenge ? BuchenAsync ? PaymentHeader (ZA-...)
 ```
 
-### Invoice correction flow (only path)
+### Invoice correction
 ```
 Rechnung (Gebucht) ? Gutschrift erstellen ? CreateGutschriftAsync
   ? original: Status = Gutgeschrieben
   ? new Gutschrift: BelegArt = Gutschrift, Status = Gebucht
-  ? MengeFakturiert rolled back
-  ? Delivery reappears in FrmRechnungErfassung (re-invoiceable)
+  ? MengeFakturiert rolled back ? delivery reappears in FrmRechnungErfassung
+  ? OffenerBetrag restored in FrmZahlungseingaenge
 ```
 
-### Re-invoice after credit memo
+### Payment storno
 ```
-Delivery reappears (MengeFakturiert = 0)
-FrmRechnungErfassung ? BuchenAsync ? new Rechnung (Gebucht)
+FrmZahlungseingaenge ? Gebuchte Zahlungen grid ? right-click ? Zeile stornieren
+  ? input dialog for Stornogrund
+  ? StornierenAsync ? new PaymentHeader (ZA) + negative PaymentLine
+  ? Saldo and OffenerBetrag updated on reload
+```
+
+### Delivery-based customer
+```
+ReceivableSource = Delivery
+Ledger source = DeliveryHeader rows (not InvoiceHeader)
+Rechnung rows excluded from ledger (avoid double-counting)
+ReferenceType = 1 in PaymentLines
 ```
 
 ---
@@ -268,59 +321,95 @@ FrmRechnungErfassung ? BuchenAsync ? new Rechnung (Gebucht)
 ## 7. KNOWN EDGE CASES
 
 ### 7.1 Teil-Storno (partial delivery cancellation)
-- User cancels a single `DeliveryLine` via context menu in `FrmDeliveryList`
-- A storno line (`Menge < 0`) is appended — the original line is not deleted
-- `OrderLine.MengeGeliefert` is reduced ? `Offen` increases ? Order becomes re-bookable
-- **Blocked if `MengeFakturiert > 0`** — credit memo must be created first
+- Storno line (`Menge < 0`) appended — original not deleted
+- `OrderLine.MengeGeliefert` reduced ? Order becomes re-bookable
+- **Blocked if `MengeFakturiert > 0`** — Gutschrift must be created first
 
-### 7.2 Re-invoicing after credit memo
-- After `CreateGutschriftAsync`: `DeliveryLine.MengeFakturiert = 0`, `DeliveryHeader.Status` stays `Fakturiert`
-- `GetOffeneLieferscheineAsync` and `GetKundenMitOffenenLsAsync` filter by `MengeFakturiert < Menge` (line level), NOT by `DeliveryHeader.Status`
-- The delivery reappears in `FrmRechnungErfassung` and can be invoiced again
+### 7.2 Re-invoicing after Gutschrift
+- `DeliveryLine.MengeFakturiert = 0` after rollback
+- Delivery reappears in `FrmRechnungErfassung` (filter: `MengeFakturiert < Menge`, NOT header status)
 
-### 7.3 Reopened order after Teil-Storno (re-booking)
-- After Teil-Storno, `Order.Status` = `Offen`
-- `CreateFromOrderAsync` only creates `DeliveryLine` for lines where `Menge - MengeGeliefert > 0`
-- Lines with `Offen = 0` are skipped — no duplicate delivery lines created
-- `SaveAuftragAsync` preserves `MengeGeliefert` / `MengeFakturiert` so re-booking uses correct open quantities
+### 7.3 Re-booking after Teil-Storno
+- `CreateFromOrderAsync` skips lines where `Menge - MengeGeliefert = 0`
 
-### 7.4 Partial credit memo (future)
-- Phase 1 credit memo always covers the full original invoice
-- Partial credit memos (per line) are not yet implemented
+### 7.4 Payment storno re-opens balance
+- After storno: `SUM(PaymentLine.Amount)` decreases ? `OffenerBetrag` increases automatically
+- No separate "reopen" action needed — formula-driven
+
+### 7.5 Delivery-source customers — double-booking prevention
+- For `ReceivableSource=Delivery`: show Lieferschein rows; exclude all Rechnung rows
+- Gutschrift rows shown as informational (`OffenerBetrag = 0`)
+- Payment keyed on `InvoiceHeader.Id` vs `DeliveryHeader.Id` — different ID spaces
 
 ---
 
-## 8. CURRENT STATUS
+## 8. MODULE 7 — PAYMENT MODULE REFERENCE
+
+### Services
+| Service | Interface | Purpose |
+|---|---|---|
+| `PaymentPostingService` | `IPaymentPostingService` | Post and reverse payments |
+| `CustomerLedgerService` | `ICustomerLedgerService` | Open items, saldo, payment history |
+
+### IPaymentPostingService methods
+| Method | Returns | Description |
+|---|---|---|
+| `BuchenAsync(request)` | `int` (PaymentHeader.Id) | Validate + post rows ? creates PaymentHeader + Lines |
+| `StornierenAsync(lineId, note)` | `int` (new PaymentHeader.Id) | Reverse a single PaymentLine |
+
+### ICustomerLedgerService methods
+| Method | Returns | Description |
+|---|---|---|
+| `GetLedgerAsync(kundeId, von, bis)` | `IReadOnlyList<CustomerLedgerEntryDto>` | Open items per Beleg |
+| `GetSaldoAsync(kundeId, von, bis)` | `decimal` | Net open balance |
+| `GetPaymentHistoryAsync(kundeId, von, bis)` | `IReadOnlyList<PaymentHistoryDto>` | Posted payment lines |
+
+### DTOs
+| DTO | Key fields |
+|---|---|
+| `CustomerLedgerEntryDto` | `ReferenzId` (Header.Id), `BelegArt`, `Betrag`, `OffenerBetrag`, `Richtung` |
+| `PaymentPostingRequest` | `KundeId`, `Buchungsdatum`, `Rows[]` |
+| `PaymentPostingRowItem` | `ReferenceId` (Header.Id), `ReferenceType`, `BelegArt`, `OffenerBetrag`, `Bar`, `Bank` |
+| `PaymentHistoryDto` | `PaymentLineId`, `Zahlungsnummer`, `IsStorno`, `Amount`, `BelegNr` |
+
+### Form: `FrmZahlungseingaenge`
+| Area | Description |
+|---|---|
+| Left panel | Customer list + text filter |
+| Right top | Von/Bis date filter + Laden + Buchen + Saldo label |
+| `dgwLedger` | Open items per Beleg — editable `Buchungsdatum` (CalendarColumn), `Bar`, `Bank`, `Notiz` |
+| `dgwHistory` | Posted payments — right-click ? **Zeile stornieren** |
+
+---
+
+## 9. CURRENT STATUS
 
 ### Working
-- `DeliveryService.CreateFromOrderAsync` — correctly skips fully delivered lines, uses `Menge - MengeGeliefert`
-- `InvoiceService.BuchenAsync` — explicit load pattern for `MengeFakturiert` updates
-- `InvoiceService.CreateGutschriftAsync` — full credit memo with positive amounts, `MengeFakturiert` rollback, double-credit protection
-- `GetOffeneLieferscheineAsync` / `GetKundenMitOffenenLsAsync` — filter by line-level open quantity, not header status
-- `SaveAuftragAsync` — preserves tracking values (`MengeGeliefert`, `MengeFakturiert`) when replacing order lines
-- `StornierenZeileAsync` — blocks Teil-Storno on invoiced lines (`MengeFakturiert > 0`)
-- `FrmRechnungList` — Gutschrift button is the only correction action; Stornieren hidden
+| Feature | Service / Form |
+|---|---|
+| Order ? Delivery | `OrderService.BuchenAsync` + `DeliveryService.CreateFromOrderAsync` |
+| Delivery ? Invoice | `InvoiceService.BuchenAsync` |
+| Invoice ? Gutschrift | `InvoiceService.CreateGutschriftAsync` |
+| Teil-Storno | `DeliveryService.StornierenZeileAsync` |
+| Open items ledger | `CustomerLedgerService.GetLedgerAsync` |
+| Payment posting | `PaymentPostingService.BuchenAsync` + `FrmZahlungseingaenge` |
+| Payment storno | `PaymentPostingService.StornierenAsync` (right-click in history grid) |
+| Saldo display | `CustomerLedgerService.GetSaldoAsync` |
+| Payment history | `CustomerLedgerService.GetPaymentHistoryAsync` |
+| Zahlungsnummer | NoSeries `ZA` — generated in `BuchenAsync` + `StornierenAsync` |
+| ReceivableSource | `Customer.ReceivableSource` — editable in `FrmCustomerList ? Einstellungen` |
+
+### Still Open / Not Yet Implemented
+- Presentation-layer minus sign rendering for Gutschrift amounts (grid, print)
+- Partial credit memo (per-line selection)
+- Audit log for invoice/payment booking events
+- Print / PDF output for Rechnung, Gutschrift, Zahlungsbeleg
+- Payment reconciliation / full settlement engine (Phase 2)
+- `ZahlungszielTage` (payment terms) enforcement
+- Berichte ? Kundenverkauf / Produktverkauf
+- Berichte ? Zahlungen (currently `OnMenuItemNotImplemented`)
 
 ### Deprecated
 | Method | Reason | Replacement |
 |---|---|---|
-| `InvoiceService.StornierenAsync` | No Gegendokument, direct cancellation | `CreateGutschriftAsync` |
-
-### Recently Added (Credit Memo — Phase 1)
-| Change | Description |
-|---|---|
-| `InvoiceDocumentType` enum | `Rechnung = 0`, `Gutschrift = 1` |
-| `InvoiceStatus.Gutgeschrieben = 3` | Original invoice status after credit memo created |
-| `InvoiceHeader.BelegArt` | Document type field, default `Rechnung` |
-| `InvoiceHeader.OriginalRechnungId` | Nullable FK ? original invoice, set on Gutschrift rows |
-| `InvoiceService.CreateGutschriftAsync` | Full credit memo creation with rollback |
-| `GenerateGutschriftnummerAsync` | Number series using `GutschriftPraefix` (GS) |
-| Migration `Module6_InvoiceDocumentType` | Adds `BelegArt` + `OriginalRechnungId` to `Invoices` table |
-| `FrmRechnungList` | `btnStornieren` hidden; `btnGutschrift` is the only correction action |
-
-### Still Open / Not Yet Implemented
-- Presentation-layer minus sign rendering for Gutschrift amounts (grid CellFormatting, print)
-- Partial credit memo (per-line selection)
-- Audit log for invoice booking and credit memo events
-- Print / PDF output for Rechnung and Gutschrift
-- Payment tracking (`ZahlungPraefix` prefix and `ZahlungszielTage` setup fields exist but no payment module yet)
+| `InvoiceService.StornierenAsync` | No Gegendokument | `CreateGutschriftAsync` |

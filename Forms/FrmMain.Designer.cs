@@ -59,12 +59,15 @@ partial class FrmMain
         // --- Finanzen ---
         var menuFinanzen = new ToolStripMenuItem("&Finanzen");
 
-        var menuBerichtZahlungen = new ToolStripMenuItem("&Zahlungen", null, OnMenuItemNotImplemented);
+        var menuZahlungseingaenge = new ToolStripMenuItem("&Zahlungseingänge", null, MenuZahlungseingaenge_Click);
+        var menuBerichtZahlungen  = new ToolStripMenuItem("&Zahlungen", null, OnMenuItemNotImplemented);
 
 
         menuFinanzen.DropDownItems.AddRange(new ToolStripItem[]
         {
-           menuBerichtZahlungen
+            menuZahlungseingaenge,
+            new ToolStripSeparator(),
+            menuBerichtZahlungen
         });
         
 

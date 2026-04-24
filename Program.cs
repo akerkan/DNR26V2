@@ -19,6 +19,8 @@ using Microsoft.Extensions.DependencyInjection;
 using DNR26V2.Forms.Deliveries;
 using DNR26V2.Services.Invoices;
 using DNR26V2.Forms.Invoices; // <-- Diesen using-Import ergänzen
+using DNR26V2.Forms.Payments;
+using DNR26V2.Services.Payments;
 
 namespace DNR26V2;
 
@@ -109,6 +111,14 @@ static class Program
         services.AddTransient<FrmRechnungErfassung>();
         services.AddTransient<FrmSammelRechnung>();
         services.AddTransient<FrmRechnungList>();
+
+        // --- Modul 7: Zahlungsmanagement ---
+        services.AddScoped<ICustomerLedgerService, CustomerLedgerService>();
+        services.AddScoped<IPaymentPostingService>(sp => new PaymentPostingService(
+            sp.GetRequiredService<AppDbContext>(),
+            sp.GetRequiredService<ICustomerLedgerService>(),
+            sp.GetRequiredService<INoSeriesService>()));
+        services.AddTransient<FrmZahlungseingaenge>();
 
         return services;
     }

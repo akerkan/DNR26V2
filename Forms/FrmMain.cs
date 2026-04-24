@@ -6,6 +6,7 @@ using DNR26V2.Forms.Invoices;
 using DNR26V2.Forms.MasterData;
 using DNR26V2.Forms.Orders;
 using DNR26V2.Forms.Settings;
+using DNR26V2.Forms.Payments;
 using DNR26V2.Helpers;
 using DNR26V2.Services.System;
 using Microsoft.Extensions.DependencyInjection;
@@ -165,4 +166,11 @@ public partial class FrmMain : Form
 
     private void MenuRechnungListe_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmRechnungList>(ref FrmRechnungListInstance, this, () => GetService<FrmRechnungList>());
+
+    // ── Zahlungsmanagement ────────────────────────────────────────────────────
+
+    private FrmZahlungseingaenge? FrmZahlungseingaengeInstance;
+
+    private void MenuZahlungseingaenge_Click(object? sender, EventArgs e)
+        => BaseListForm.GetOrCreateInstance<FrmZahlungseingaenge>(ref FrmZahlungseingaengeInstance, this, () => GetService<FrmZahlungseingaenge>());
 }

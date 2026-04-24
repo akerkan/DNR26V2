@@ -124,6 +124,8 @@ public partial class FrmCustomerList : BaseListForm
         foreach (var chk in new[] { chkMo, chkDi, chkMi, chkDo, chkFr, chkSa, chkSo })
             chk.CheckedChanged += Detail_Changed;
 
+        cmbReceivableSource.SelectedIndexChanged += Detail_Changed;
+
         EnableColumnChooser(dgwKunden);
     }
 
@@ -184,6 +186,16 @@ public partial class FrmCustomerList : BaseListForm
             cmbKundenfilter.Items.Add(new ComboItem(0, "(keine)"));
             foreach (var g in gruppen)
                 cmbKundenfilter.Items.Add(new ComboItem(g.Id, g.Bezeichnung));
+
+            // ── Detail: Forderungsquelle ──────────────────────────────────────
+            cmbReceivableSource.Items.Clear();
+            cmbReceivableSource.Items.Add(ReceivableSource.Invoice);
+            cmbReceivableSource.Items.Add(ReceivableSource.Delivery);
+            cmbReceivableSource.DisplayMember = "";
+            // Custom formatting via DrawItem not needed — override ToString via format
+            cmbReceivableSource.Format        += CmbReceivableSource_Format;
+            if (cmbReceivableSource.SelectedIndex < 0)
+                cmbReceivableSource.SelectedIndex = 0; // default Invoice
         }
         catch (Exception ex) { ShowError($"Fehler beim Laden der Listen:\n{ex.Message}"); }
         finally
@@ -358,6 +370,7 @@ public partial class FrmCustomerList : BaseListForm
 
         chkPreisAusblenden.Checked = c.PreisAusblenden;
         chkAktiv.Checked           = c.Aktiv;
+        cmbReceivableSource.SelectedItem = c.ReceivableSource;
         txtKundennummer.ReadOnly   = c.Id > 0;
         ToggleAltFields(c.AbweichendeLieferadresse);
         btnDeaktivieren.Text = c.Aktiv ? "Deaktivieren" : "Aktivieren";
@@ -411,6 +424,9 @@ public partial class FrmCustomerList : BaseListForm
 
         c.PreisAusblenden = chkPreisAusblenden.Checked;
         c.Aktiv           = chkAktiv.Checked;
+        c.ReceivableSource = cmbReceivableSource.SelectedItem is ReceivableSource rs
+            ? rs
+            : ReceivableSource.Invoice;
     }
 
     // ── Speichern / Neu / Deaktivieren ────────────────────────────────────────
@@ -553,6 +569,13 @@ public partial class FrmCustomerList : BaseListForm
             ShowError("Ausnahme-Tour darf nicht identisch mit der Standard-Tour sein.");
             cmbAusnahmeTur.SelectedIndex = 0;
         }
+    }
+
+    private void CmbReceivableSource_Format(object? sender, ListControlConvertEventArgs e)
+    {
+        e.Value = e.ListItem is ReceivableSource rs
+            ? rs switch { ReceivableSource.Invoice => "Rechnung", _ => "Lieferschein" }
+            : e.ListItem?.ToString() ?? "";
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

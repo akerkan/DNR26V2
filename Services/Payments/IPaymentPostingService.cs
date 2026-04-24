@@ -1,13 +1,17 @@
 using DNR26V2.Domain.DTOs.Payments;
-using DNR26V2.Domain.Entities.Payments;
 
 namespace DNR26V2.Services.Payments;
 
 public interface IPaymentPostingService
 {
     /// <summary>
-    /// Validate and post a batch of payment rows for one customer.
-    /// Returns the created PaymentHeader (with populated Id after save).
+    /// Validates and posts a payment. Returns the Id of the created PaymentHeader.
     /// </summary>
-    Task<PaymentHeader> PostAsync(PaymentPostingRequest request);
+    Task<int> BuchenAsync(PaymentPostingRequest request);
+
+    /// <summary>
+    /// Reverses a single PaymentLine by creating a new PaymentHeader with a negative
+    /// counter-line and a storno note. Returns the new PaymentHeader Id.
+    /// </summary>
+    Task<int> StornierenAsync(int paymentLineId, string stornoNotiz);
 }

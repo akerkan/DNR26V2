@@ -125,20 +125,23 @@ public class InvoiceReportDataService : IInvoiceReportDataService
                 .Include(d => d.Lieferschein)
                 .FirstOrDefaultAsync(d => d.Id == line.DeliveryLineId);
 
-            result.Add(new InvoicePrintLineDto
-            {
-                Artikelnummer = artikel?.Artikelnummer ?? string.Empty,
-                Bezeichnung = artikel?.Bezeichnung ?? string.Empty,
-                Menge = line.Menge,
-                Gewicht = line.Gewicht,
-                Preis = line.Preis,
-                MwstProzent = line.MwstProzent,
-                LineAmount = line.LineAmount,
-                VatAmount = line.VatAmount,
-                AmountInclVat = line.AmountInclVat,
-                Lieferscheinnummer = delivery?.Lieferschein?.Lieferscheinnummer,
-                Lieferdatum = delivery?.Lieferschein?.LieferDatum
+            result.Add(new InvoicePrintLineDto 
+            { 
+                Rechnungsnummer = invoice.Rechnungsnummer, 
+                Artikelnummer = artikel?.Artikelnummer ?? string.Empty, 
+                Bezeichnung = artikel?.Bezeichnung ?? string.Empty, 
+                Menge = line.Menge, 
+                Gewicht = line.Gewicht, 
+                Preis = line.Preis, 
+                MwstProzent = line.MwstProzent, 
+                LineAmount = line.LineAmount, 
+                VatAmount = line.VatAmount, 
+                AmountInclVat = line.AmountInclVat, 
+                Lieferscheinnummer = delivery?.Lieferschein?.Lieferscheinnummer, 
+                Lieferdatum = delivery?.Lieferschein?.LieferDatum 
             });
+
+
         }
 
         return result;

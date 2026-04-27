@@ -1,10 +1,7 @@
 namespace DNR26V2.Forms.Reports;
-
 partial class FrmReportViewer
 {
-    private System.ComponentModel.IContainer components = null!;
-    private TabControl tabReports = null!;
-
+    private System.ComponentModel.IContainer components = null!; private Panel panelViewerHost = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing && components != null) components.Dispose();
@@ -13,23 +10,23 @@ partial class FrmReportViewer
 
     private void InitializeComponent()
     {
-        tabReports = new TabControl();
+        panelViewerHost = new Panel();
         SuspendLayout();
         // 
-        // tabReports
+        // panelViewerHost
         // 
-        tabReports.Dock = DockStyle.Fill;
-        tabReports.Location = new Point(0, 0);
-        tabReports.Name = "tabReports";
-        tabReports.Size = new Size(1200, 800);
-        tabReports.TabIndex = 0;
+        panelViewerHost.Dock = DockStyle.Fill;
+        panelViewerHost.Location = new Point(0, 0);
+        panelViewerHost.Name = "panelViewerHost";
+        panelViewerHost.Size = new Size(1200, 800);
+        panelViewerHost.TabIndex = 0;
         // 
         // FrmReportViewer
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1200, 800);
-        Controls.Add(tabReports);
+        Controls.Add(panelViewerHost);
         Name = "FrmReportViewer";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Berichtsvorschau";

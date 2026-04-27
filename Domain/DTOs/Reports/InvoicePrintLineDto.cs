@@ -5,6 +5,7 @@
 /// </summary>
 public class InvoicePrintLineDto
 {
+    public string Rechnungsnummer { get; set; } = string.Empty;
     public string Artikelnummer { get; set; } = string.Empty;
     public string Bezeichnung { get; set; } = string.Empty;
     public decimal Menge { get; set; }

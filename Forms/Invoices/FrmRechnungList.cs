@@ -12,8 +12,9 @@ public partial class FrmRechnungList : BaseListForm
 {
     private readonly IInvoiceService _invoiceService;
     private readonly IReportRenderService _reportService;
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private bool _isLoading;
+    private readonly SemaphoreSlim   _lock = new(1, 1);
+    private readonly HashSet<int>    _selectedInvoiceIds = [];
+    private bool                     _isLoading;
 
     public FrmRechnungList()
     {
@@ -32,7 +33,7 @@ public partial class FrmRechnungList : BaseListForm
     }
 
     private static bool IsDesignMode() =>
-        LicenseManager.UsageMode == LicenseUsageMode.Designtime;
+        System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime;
 
     // ── Events ───────────────────────────────────────────────────────────────
 
@@ -44,8 +45,11 @@ public partial class FrmRechnungList : BaseListForm
         txtKundeFilter.KeyDown += async (_, e) => { if (e.KeyCode == Keys.Enter) await LoadRechnungenAsync(); };
         cmbStatus.SelectedIndexChanged += async (_, _) => { if (!_isLoading) await LoadRechnungenAsync(); };
         dgwRechnungen.SelectionChanged += DgwRechnungen_SelectionChanged;
+        dgwRechnungen.CellContentClick += DgwRechnungen_CellContentClick;
         btnGutschrift.Click += BtnGutschrift_Click;
         btnDrucken.Click += async (_, _) => await BtnDrucken_ClickAsync();
+        btnAlleAuswaehlen.Click += BtnAlleAuswaehlen_Click;
+        btnBulkDruck.Click += async (_, _) => await BtnBulkDruck_ClickAsync();
     }
 
     // ── Load ─────────────────────────────────────────────────────────────────
@@ -62,8 +66,10 @@ public partial class FrmRechnungList : BaseListForm
         FillStatusCombo();
         _isLoading = false;
 
-        btnStornieren.Visible = false;   // deprecated — use Gutschrift instead
-        panelDetail.Visible = true;
+        btnStornieren.Visible  = false;   // deprecated — use Gutschrift instead
+        panelDetail.Visible    = true;
+        EnsureSelectionColumn();
+        UpdateSelectionUi();
         await LoadRechnungenAsync();
     }
 
@@ -105,6 +111,8 @@ public partial class FrmRechnungList : BaseListForm
 
         dgwRechnungen.DataSource = null;
         dgwRechnungen.DataSource = liste.ToList();
+        EnsureSelectionColumn();
+        ReapplySelection();
         StyleGridRechnungen();
 
         // If only a single invoice row is returned, select it and load detail immediately
@@ -146,21 +154,56 @@ public partial class FrmRechnungList : BaseListForm
     {
         if (dgwRechnungen.Columns.Count == 0) return;
         ConfigureGrid(dgwRechnungen);
-        foreach (DataGridViewColumn col in dgwRechnungen.Columns) col.Visible = false;
 
-        ShowRCol("Rechnungsnummer", "Rechnungs-Nr.", 130);
-        ShowRCol("Rechnungsdatum", "Datum", 90, format: "dd.MM.yyyy");
-        ShowRCol("Von", "Zeitr. Von", 90, format: "dd.MM.yyyy");
-        ShowRCol("Bis", "Zeitr. Bis", 90, format: "dd.MM.yyyy");
-        ShowRCol("Kundenname", "Kunde", 0, fill: true);
-        ShowRCol("AnzahlPositionen", "Pos.", 50, right: true);
-        ShowRCol("Gesamtnetto", "Netto \u20ac", 100, format: "N2", right: true);
-        ShowRCol("Gesamtbrutto", "Brutto \u20ac", 100, format: "N2", right: true);
-        ShowRCol("IstSammelrechnung", "Sammel", 55);
-        // NOTE: Gesamtnetto / Gesamtbrutto are stored POSITIVE for all BelegArt values.
-        // For BelegArt = Gutschrift, the presentation layer (this grid, print, reports)
-        // must render amounts with a leading minus sign. Implement in CellFormatting
-        // when print / export is built.
+        foreach (DataGridViewColumn col in dgwRechnungen.Columns) col.Visible = false;
+        if (dgwRechnungen.Columns.Contains("colSelected"))
+        {
+            var selCol = dgwRechnungen.Columns["colSelected"];
+            selCol.Visible = true;
+            selCol.DisplayIndex = 0;
+            selCol.HeaderText = "✓";
+            selCol.Width = 36;
+            selCol.ReadOnly = false;
+        }
+
+        ShowRCol("Rechnungsnummer",   "Rechnungs-Nr.",    130);
+        ShowRCol("Rechnungsdatum",    "Datum",             90, format: "dd.MM.yyyy");
+        ShowRCol("Von",               "Zeitr. Von",        90, format: "dd.MM.yyyy");
+        ShowRCol("Bis",               "Zeitr. Bis",        90, format: "dd.MM.yyyy");
+        ShowRCol("Kundenname",        "Kunde",               0, fill: true);
+        ShowRCol("AnzahlPositionen",  "Pos.",               50, right: true);
+        ShowRCol("Gesamtnetto",       "Netto €",           100, format: "N2", right: true);
+        ShowRCol("Gesamtbrutto",      "Brutto €",          100, format: "N2", right: true);
+        ShowRCol("IstSammelrechnung", "Sammel",             55);
+
+        dgwRechnungen.ReadOnly = false;
+        foreach (DataGridViewColumn col in dgwRechnungen.Columns)
+            if (col.Name != "colSelected") col.ReadOnly = true;
+    }
+
+    private void EnsureSelectionColumn()
+    {
+        if (dgwRechnungen.Columns.Contains("colSelected")) return;
+
+        var col = new DataGridViewCheckBoxColumn
+        {
+            Name = "colSelected",
+            HeaderText = "✓",
+            Width = 36,
+            ReadOnly = false,
+            Frozen = true
+        };
+        dgwRechnungen.Columns.Insert(0, col);
+    }
+
+    private void ReapplySelection()
+    {
+        foreach (DataGridViewRow row in dgwRechnungen.Rows)
+        {
+            if (row.DataBoundItem is not RechnungListDto dto) continue;
+            row.Cells["colSelected"].Value = _selectedInvoiceIds.Contains(dto.Id);
+        }
+        UpdateSelectionUi();
     }
 
     private void ShowRCol(string name, string header, int width,
@@ -211,14 +254,11 @@ public partial class FrmRechnungList : BaseListForm
         bool canAction = dto.Status == InvoiceStatus.Gebucht
                              && dto.BelegArt == InvoiceDocumentType.Rechnung;
 
-        btnGutschrift.Enabled = canAction;
+        btnGutschrift.Enabled   = canAction;
         btnGutschrift.BackColor = canAction
             ? Color.FromArgb(30, 100, 160)
             : Color.FromArgb(160, 160, 160);
-        btnDrucken.Enabled = dto is not null;  // printable for any status
-        btnDrucken.BackColor = (dto is not null)
-            ? Color.FromArgb(0, 140, 80)
-            : Color.FromArgb(160, 160, 160);
+        btnDrucken.Enabled = dto.Id > 0;
     }
 
     private void ClearDetail()
@@ -228,10 +268,9 @@ public partial class FrmRechnungList : BaseListForm
         lblBruttoWert.Text = "\u2013";
         lblStatusWert.Text = "\u2013";
         lblStatusWert.ForeColor = SystemColors.ControlText;
-        btnGutschrift.Enabled = false;
+        btnGutschrift.Enabled   = false;
         btnGutschrift.BackColor = Color.FromArgb(160, 160, 160);
         btnDrucken.Enabled = false;
-        btnDrucken.BackColor = Color.FromArgb(160, 160, 160);
     }
 
     private async Task LoadZeilenAsync(int rechnungId)
@@ -319,30 +358,83 @@ public partial class FrmRechnungList : BaseListForm
         return base.ProcessCmdKey(ref msg, keyData);
     }
 
-    // ── Drucken / PDF ─────────────────────────────────────────────────────────
-
     private async Task BtnDrucken_ClickAsync()
     {
         if (dgwRechnungen.CurrentRow?.DataBoundItem is not RechnungListDto dto) return;
 
-        byte[] pdf;
-        string fileName;
         try
         {
             Cursor = Cursors.WaitCursor;
-            (pdf, fileName) = await _reportService.RenderInvoicePdfAsync(dto.Id);
+            await _reportService.PreviewInvoiceAsync(dto.Id);
         }
-        catch (Exception ex) { ShowError($"Druckfehler:\n{ex.Message}"); return; }
+        catch (Exception ex) { ShowError($"Vorschaufehler:\n{ex.Message}"); }
         finally { Cursor = Cursors.Default; }
+    }
 
-        // Save to temp folder and open with default PDF viewer
-        var tempPath = Path.Combine(Path.GetTempPath(), fileName);
-        await File.WriteAllBytesAsync(tempPath, pdf);
+    private void DgwRechnungen_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+        if (dgwRechnungen.Columns[e.ColumnIndex].Name != "colSelected") return;
+        if (dgwRechnungen.Rows[e.RowIndex].DataBoundItem is not RechnungListDto dto) return;
 
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        var current = rowBool(dgwRechnungen.Rows[e.RowIndex].Cells["colSelected"].Value);
+        var next = !current;
+        dgwRechnungen.Rows[e.RowIndex].Cells["colSelected"].Value = next;
+
+        if (next) _selectedInvoiceIds.Add(dto.Id);
+        else _selectedInvoiceIds.Remove(dto.Id);
+
+        UpdateSelectionUi();
+
+        static bool rowBool(object? value) => value is bool b && b;
+    }
+
+    private void BtnAlleAuswaehlen_Click(object? sender, EventArgs e)
+    {
+        // Wenn mindestens eine sichtbare Zeile nicht ausgewählt ist → alles auswählen,
+        // andernfalls alle Auswahl entfernen (Toggle-Verhalten).
+        bool anyUnselected = false;
+        foreach (DataGridViewRow row in dgwRechnungen.Rows)
         {
-            FileName = tempPath,
-            UseShellExecute = true   // opens with default PDF viewer
-        });
+            if (row.DataBoundItem is not RechnungListDto) continue;
+            if (!IsRowChecked(row)) { anyUnselected = true; break; }
+        }
+
+        bool select = anyUnselected;
+
+        foreach (DataGridViewRow row in dgwRechnungen.Rows)
+        {
+            if (row.DataBoundItem is not RechnungListDto dto) continue;
+
+            row.Cells["colSelected"].Value = select;
+
+            if (select) _selectedInvoiceIds.Add(dto.Id);
+            else _selectedInvoiceIds.Remove(dto.Id);
+        }
+
+        UpdateSelectionUi();
+
+        static bool IsRowChecked(DataGridViewRow r)
+            => r.Cells["colSelected"].Value is bool b && b;
+    }
+
+    private async Task BtnBulkDruck_ClickAsync()
+    {
+        var ids = _selectedInvoiceIds.ToList();
+        if (ids.Count == 0) return;
+
+        try
+        {
+            Cursor = Cursors.WaitCursor;
+            await _reportService.PreviewInvoicesAsync(ids);
+        }
+        catch (Exception ex) { ShowError($"Mehrfachvorschau fehlgeschlagen:\n{ex.Message}"); }
+        finally { Cursor = Cursors.Default; }
+    }
+
+    private void UpdateSelectionUi()
+    {
+        lblSelection.Text = $"{_selectedInvoiceIds.Count} Rechnung(en) ausgewählt";
+        btnBulkDruck.Enabled = _selectedInvoiceIds.Count > 0;
     }
 }

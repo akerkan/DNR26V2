@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="dsHeader">
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString />
+      </ConnectionProperties>
+      <rd:SecurityType>None</rd:SecurityType>
+    </DataSource>
+    <DataSource Name="dsLines">
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString />
+      </ConnectionProperties>
+      <rd:SecurityType>None</rd:SecurityType>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="dsHeader">
+      <Query>
+        <DataSourceName>dsHeader</DataSourceName>
+        <CommandText />
+      </Query>
+      <Fields>
+        <Field Name="Rechnungsnummer"><DataField>Rechnungsnummer</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="dsLines">
+      <Query>
+        <DataSourceName>dsLines</DataSourceName>
+        <CommandText />
+      </Query>
+      <Fields>
+        <Field Name="Bezeichnung"><DataField>Bezeichnung</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Menge"><DataField>Menge</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Preis"><DataField>Preis</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="LineAmount"><DataField>LineAmount</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="txtInfo">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs><Paragraph><TextRuns><TextRun><Value>RDLC OK</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs>
+            <Top>0.3cm</Top><Left>0.5cm</Left><Height>0.5cm</Height><Width>5cm</Width><Style />
+          </Textbox>
+          <Textbox Name="txtRechnung">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs><Paragraph><TextRuns><TextRun><Value>=First(Fields!Rechnungsnummer.Value, "dsHeader")</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs>
+            <Top>1cm</Top><Left>0.5cm</Left><Height>0.6cm</Height><Width>10cm</Width>
+            <Style><FontSize>12pt</FontSize><FontWeight>Bold</FontWeight></Style>
+          </Textbox>
+        </ReportItems>
+        <Height>4cm</Height>
+        <Style />
+      </Body>
+      <Width>19cm</Width>
+      <Page>
+        <PageHeight>29.7cm</PageHeight>
+        <PageWidth>21cm</PageWidth>
+        <LeftMargin>1cm</LeftMargin>
+        <RightMargin>1cm</RightMargin>
+        <TopMargin>1cm</TopMargin>
+        <BottomMargin>1cm</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <rd:ReportUnitType>Cm</rd:ReportUnitType>
+  <rd:ReportID>f1de4d7a-2e5d-4d3d-9f2a-a91d9a88e001</rd:ReportID>
+</Report>

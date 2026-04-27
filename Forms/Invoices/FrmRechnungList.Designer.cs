@@ -2,7 +2,7 @@
 
 partial class FrmRechnungList
 {
-    private System.ComponentModel.IContainer components = null;
+    private System.ComponentModel.IContainer components = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -33,6 +33,10 @@ partial class FrmRechnungList
         lblStatusWert = new Label();
         btnStornieren = new Button();
         btnGutschrift = new Button();
+        btnDrucken = new Button();
+        btnBulkDruck = new Button();
+        btnAlleAuswaehlen = new Button();
+        lblSelection = new Label();
         splitMain = new SplitContainer();
         dgwRechnungen = new DataGridView();
         panelListHeader = new Panel();
@@ -68,7 +72,7 @@ partial class FrmRechnungList
         panelFilter.Location = new Point(0, 0);
         panelFilter.Name = "panelFilter";
         panelFilter.Padding = new Padding(6, 8, 6, 0);
-        panelFilter.Size = new Size(1200, 46);
+        panelFilter.Size = new Size(1202, 46);
         panelFilter.TabIndex = 2;
         // 
         // lblVon
@@ -160,11 +164,13 @@ partial class FrmRechnungList
         panelDetail.Controls.Add(lblStatusWert);
         panelDetail.Controls.Add(btnStornieren);
         panelDetail.Controls.Add(btnGutschrift);
+        panelDetail.Controls.Add(btnDrucken);
+        panelDetail.Controls.Add(btnBulkDruck);
         panelDetail.Dock = DockStyle.Bottom;
-        panelDetail.Location = new Point(0, 692);
+        panelDetail.Location = new Point(0, 687);
         panelDetail.Name = "panelDetail";
         panelDetail.Padding = new Padding(8, 6, 8, 6);
-        panelDetail.Size = new Size(1200, 58);
+        panelDetail.Size = new Size(1202, 57);
         panelDetail.TabIndex = 1;
         // 
         // lblRechnungsnrLabel
@@ -189,7 +195,7 @@ partial class FrmRechnungList
         // lblNettoLabel
         // 
         lblNettoLabel.AutoSize = true;
-        lblNettoLabel.Location = new Point(230, 20);
+        lblNettoLabel.Location = new Point(178, 20);
         lblNettoLabel.Name = "lblNettoLabel";
         lblNettoLabel.Size = new Size(40, 15);
         lblNettoLabel.TabIndex = 2;
@@ -199,7 +205,7 @@ partial class FrmRechnungList
         // 
         lblNettoWert.AutoSize = true;
         lblNettoWert.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        lblNettoWert.Location = new Point(272, 20);
+        lblNettoWert.Location = new Point(220, 20);
         lblNettoWert.Name = "lblNettoWert";
         lblNettoWert.Size = new Size(13, 15);
         lblNettoWert.TabIndex = 3;
@@ -208,7 +214,7 @@ partial class FrmRechnungList
         // lblBruttoLabel
         // 
         lblBruttoLabel.AutoSize = true;
-        lblBruttoLabel.Location = new Point(400, 20);
+        lblBruttoLabel.Location = new Point(304, 20);
         lblBruttoLabel.Name = "lblBruttoLabel";
         lblBruttoLabel.Size = new Size(43, 15);
         lblBruttoLabel.TabIndex = 4;
@@ -219,7 +225,7 @@ partial class FrmRechnungList
         lblBruttoWert.AutoSize = true;
         lblBruttoWert.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         lblBruttoWert.ForeColor = Color.DarkGreen;
-        lblBruttoWert.Location = new Point(444, 20);
+        lblBruttoWert.Location = new Point(348, 20);
         lblBruttoWert.Name = "lblBruttoWert";
         lblBruttoWert.Size = new Size(13, 15);
         lblBruttoWert.TabIndex = 5;
@@ -228,7 +234,7 @@ partial class FrmRechnungList
         // lblStatusLabel
         // 
         lblStatusLabel.AutoSize = true;
-        lblStatusLabel.Location = new Point(600, 20);
+        lblStatusLabel.Location = new Point(438, 20);
         lblStatusLabel.Name = "lblStatusLabel";
         lblStatusLabel.Size = new Size(42, 15);
         lblStatusLabel.TabIndex = 6;
@@ -238,7 +244,7 @@ partial class FrmRechnungList
         // 
         lblStatusWert.AutoSize = true;
         lblStatusWert.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        lblStatusWert.Location = new Point(645, 20);
+        lblStatusWert.Location = new Point(486, 20);
         lblStatusWert.Name = "lblStatusWert";
         lblStatusWert.Size = new Size(13, 15);
         lblStatusWert.TabIndex = 7;
@@ -251,9 +257,9 @@ partial class FrmRechnungList
         btnStornieren.Enabled = false;
         btnStornieren.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnStornieren.ForeColor = Color.White;
-        btnStornieren.Location = new Point(728, 9);
+        btnStornieren.Location = new Point(656, 7);
         btnStornieren.Name = "btnStornieren";
-        btnStornieren.Size = new Size(130, 44);
+        btnStornieren.Size = new Size(10, 44);
         btnStornieren.TabIndex = 8;
         btnStornieren.Text = "Stornieren";
         btnStornieren.UseVisualStyleBackColor = false;
@@ -265,12 +271,59 @@ partial class FrmRechnungList
         btnGutschrift.Enabled = false;
         btnGutschrift.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnGutschrift.ForeColor = Color.White;
-        btnGutschrift.Location = new Point(1064, 9);
+        btnGutschrift.Location = new Point(1072, 9);
         btnGutschrift.Name = "btnGutschrift";
-        btnGutschrift.Size = new Size(130, 44);
+        btnGutschrift.Size = new Size(130, 40);
         btnGutschrift.TabIndex = 9;
         btnGutschrift.Text = "Gutschrift";
         btnGutschrift.UseVisualStyleBackColor = false;
+        // 
+        // btnDrucken
+        // 
+        btnDrucken.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnDrucken.BackColor = Color.FromArgb(0, 140, 80);
+        btnDrucken.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        btnDrucken.ForeColor = Color.White;
+        btnDrucken.Location = new Point(949, 9);
+        btnDrucken.Name = "btnDrucken";
+        btnDrucken.Size = new Size(117, 40);
+        btnDrucken.TabIndex = 10;
+        btnDrucken.Text = "Vorschau / Druck";
+        btnDrucken.UseVisualStyleBackColor = false;
+        // 
+        // btnBulkDruck
+        // 
+        btnBulkDruck.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnBulkDruck.BackColor = Color.FromArgb(0, 120, 215);
+        btnBulkDruck.Enabled = false;
+        btnBulkDruck.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        btnBulkDruck.ForeColor = Color.White;
+        btnBulkDruck.Location = new Point(785, 9);
+        btnBulkDruck.Name = "btnBulkDruck";
+        btnBulkDruck.Size = new Size(158, 40);
+        btnBulkDruck.TabIndex = 12;
+        btnBulkDruck.Text = "Ausgewählte Rechnungen drucken";
+        btnBulkDruck.UseVisualStyleBackColor = false;
+        // 
+        // btnAlleAuswaehlen
+        // 
+        btnAlleAuswaehlen.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnAlleAuswaehlen.Location = new Point(1093, 4);
+        btnAlleAuswaehlen.Name = "btnAlleAuswaehlen";
+        btnAlleAuswaehlen.Size = new Size(106, 23);
+        btnAlleAuswaehlen.TabIndex = 11;
+        btnAlleAuswaehlen.Text = "Alle auswählen";
+        btnAlleAuswaehlen.UseVisualStyleBackColor = true;
+        // 
+        // lblSelection
+        // 
+        lblSelection.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        lblSelection.AutoSize = true;
+        lblSelection.Location = new Point(933, 9);
+        lblSelection.Name = "lblSelection";
+        lblSelection.Size = new Size(154, 15);
+        lblSelection.TabIndex = 13;
+        lblSelection.Text = "0 Rechnung(en) ausgewählt";
         // 
         // splitMain
         // 
@@ -288,8 +341,8 @@ partial class FrmRechnungList
         // 
         splitMain.Panel2.Controls.Add(dgwZeilen);
         splitMain.Panel2.Controls.Add(panelZeilHeader);
-        splitMain.Size = new Size(1200, 646);
-        splitMain.SplitterDistance = 458;
+        splitMain.Size = new Size(1202, 641);
+        splitMain.SplitterDistance = 454;
         splitMain.TabIndex = 0;
         // 
         // dgwRechnungen
@@ -301,30 +354,32 @@ partial class FrmRechnungList
         dgwRechnungen.ColumnHeadersHeight = 28;
         dgwRechnungen.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
         dgwRechnungen.Dock = DockStyle.Fill;
-        dgwRechnungen.Location = new Point(0, 26);
+        dgwRechnungen.Location = new Point(0, 32);
         dgwRechnungen.MultiSelect = false;
         dgwRechnungen.Name = "dgwRechnungen";
         dgwRechnungen.ReadOnly = true;
         dgwRechnungen.RowHeadersVisible = false;
         dgwRechnungen.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        dgwRechnungen.Size = new Size(1200, 432);
+        dgwRechnungen.Size = new Size(1202, 422);
         dgwRechnungen.TabIndex = 0;
         // 
         // panelListHeader
         // 
         panelListHeader.BackColor = Color.FromArgb(230, 230, 230);
+        panelListHeader.Controls.Add(btnAlleAuswaehlen);
         panelListHeader.Controls.Add(lblListHeader);
+        panelListHeader.Controls.Add(lblSelection);
         panelListHeader.Dock = DockStyle.Top;
         panelListHeader.Location = new Point(0, 0);
         panelListHeader.Name = "panelListHeader";
-        panelListHeader.Size = new Size(1200, 26);
+        panelListHeader.Size = new Size(1202, 32);
         panelListHeader.TabIndex = 1;
         // 
         // lblListHeader
         // 
         lblListHeader.AutoSize = true;
         lblListHeader.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
-        lblListHeader.Location = new Point(6, 5);
+        lblListHeader.Location = new Point(6, 9);
         lblListHeader.Name = "lblListHeader";
         lblListHeader.Size = new Size(91, 15);
         lblListHeader.TabIndex = 0;
@@ -345,7 +400,7 @@ partial class FrmRechnungList
         dgwZeilen.ReadOnly = true;
         dgwZeilen.RowHeadersVisible = false;
         dgwZeilen.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        dgwZeilen.Size = new Size(1200, 158);
+        dgwZeilen.Size = new Size(1202, 157);
         dgwZeilen.TabIndex = 0;
         // 
         // panelZeilHeader
@@ -355,7 +410,7 @@ partial class FrmRechnungList
         panelZeilHeader.Dock = DockStyle.Top;
         panelZeilHeader.Location = new Point(0, 0);
         panelZeilHeader.Name = "panelZeilHeader";
-        panelZeilHeader.Size = new Size(1200, 26);
+        panelZeilHeader.Size = new Size(1202, 26);
         panelZeilHeader.TabIndex = 1;
         // 
         // lblZeilHeader
@@ -372,7 +427,7 @@ partial class FrmRechnungList
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1200, 750);
+        ClientSize = new Size(1202, 744);
         Controls.Add(splitMain);
         Controls.Add(panelDetail);
         Controls.Add(panelFilter);
@@ -425,4 +480,8 @@ partial class FrmRechnungList
     private Label          lblStatusWert;
     private Button         btnStornieren;
     private Button         btnGutschrift;
+    private Button         btnDrucken;
+    private Button         btnAlleAuswaehlen;
+    private Button         btnBulkDruck;
+    private Label          lblSelection;
 }

@@ -28,6 +28,9 @@ internal sealed class AppSetupConfiguration : IEntityTypeConfiguration<AppSetup>
         entity.Property(e => e.StandardStandortCode).HasMaxLength(20);
         entity.Property(e => e.DruckerWeissesPapier).HasMaxLength(200);
         entity.Property(e => e.DruckerMitLogo)      .HasMaxLength(200);
+        entity.Property(e => e.LogoVerwenden)       .HasDefaultValue(false);
+        entity.Property(e => e.LogoPfad)            .HasMaxLength(500);
+        entity.Property(e => e.BriefpapierVerwenden).HasDefaultValue(false);
         entity.Property(e => e.RechnungPraefix)     .HasMaxLength(10).HasDefaultValue("RE");
         entity.Property(e => e.LieferscheinPraefix) .HasMaxLength(10).HasDefaultValue("LS");
         entity.Property(e => e.GutschriftPraefix)   .HasMaxLength(10).HasDefaultValue("GS");

@@ -20,7 +20,9 @@ using DNR26V2.Forms.Deliveries;
 using DNR26V2.Services.Invoices;
 using DNR26V2.Forms.Invoices; // <-- Diesen using-Import ergänzen
 using DNR26V2.Forms.Payments;
+using DNR26V2.Forms.Reports;
 using DNR26V2.Services.Payments;
+using DNR26V2.Services.Reports;
 
 namespace DNR26V2;
 
@@ -111,6 +113,11 @@ static class Program
         services.AddTransient<FrmRechnungErfassung>();
         services.AddTransient<FrmSammelRechnung>();
         services.AddTransient<FrmRechnungList>();
+
+        // --- Reporting ---
+        services.AddScoped<IInvoiceReportDataService, InvoiceReportDataService>();
+        services.AddScoped<IReportRenderService, RdlcReportRenderService>();
+        services.AddTransient<FrmReportViewer>();
 
         // --- Modul 7: Zahlungsmanagement ---
         services.AddScoped<ICustomerLedgerService, CustomerLedgerService>();

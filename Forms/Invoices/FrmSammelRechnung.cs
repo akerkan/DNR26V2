@@ -2,12 +2,14 @@
 using DNR26V2.Domain.DTOs;
 using DNR26V2.Forms.Base;
 using DNR26V2.Services.Invoices;
+using DNR26V2.Services.Reports;
 
 namespace DNR26V2.Forms.Invoices;
 
 public partial class FrmSammelRechnung : BaseListForm
 {
     private readonly IInvoiceService _invoiceService;
+    private readonly IReportRenderService _reportService;
     private readonly SemaphoreSlim   _lock           = new(1, 1);
     private readonly HashSet<int>    _checkedKunden  = [];
     private bool                     _suppressChecked;
@@ -16,13 +18,15 @@ public partial class FrmSammelRechnung : BaseListForm
     public FrmSammelRechnung()
     {
         _invoiceService = null!;
+        _reportService = null!;
         InitializeComponent();
         WireUpEvents();
     }
 
-    public FrmSammelRechnung(IInvoiceService invoiceService)
+    public FrmSammelRechnung(IInvoiceService invoiceService, IReportRenderService reportService)
     {
         _invoiceService = invoiceService;
+        _reportService = reportService;
         InitializeComponent();
         WireUpEvents();
     }
@@ -277,6 +281,18 @@ public partial class FrmSammelRechnung : BaseListForm
         else                          ShowSuccess(msg);
 
         await LoadKundenAsync();
+
+        if (result.RechnungIds.Count > 0 && Confirm("Rechnungen wurden erstellt. Ausgewählte Rechnungen jetzt drucken?"))
+        {
+            try
+            {
+                await _reportService.PreviewInvoicesAsync(result.RechnungIds);
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Berichtsvorschau fehlgeschlagen:\n{ex.Message}");
+            }
+        }
     }
 
     // ── Keyboard ─────────────────────────────────────────────────────────────

@@ -1,15 +1,20 @@
 using System.ComponentModel;
+using System.Data;
 using DNR26V2.Domain.DTOs.Reports;
 using DNR26V2.Services.Reports;
 using Microsoft.Reporting.WinForms;
 
 namespace DNR26V2.Forms.Reports;
+
 public partial class FrmReportViewer : Form
 {
-    private readonly IReadOnlyList<InvoiceReportData> _reports; private readonly string _rdlcPath; private ReportViewer? _reportViewer;
+    private readonly string _rdlcPath;
+    private readonly DataTable? _headerTable;
+    private readonly DataTable? _linesTable;
+    private readonly string? _windowTitle;
+
     public FrmReportViewer()
     {
-        _reports = [];
         _rdlcPath = string.Empty;
         InitializeComponent();
     }
@@ -17,7 +22,21 @@ public partial class FrmReportViewer : Form
     public FrmReportViewer(string rdlcPath, IEnumerable<InvoiceReportData> reports)
     {
         _rdlcPath = rdlcPath;
-        _reports = reports.ToList();
+        var reportList = reports.ToList();
+        _headerTable = ReportDataTableFactory.ToDataTable(reportList.Select(x => x.Header));
+        _linesTable = ReportDataTableFactory.ToDataTable(reportList.SelectMany(x => x.Lines));
+        _windowTitle = reportList.Count == 1
+            ? $"Berichtsvorschau - {reportList[0].Header.Rechnungsnummer}"
+            : $"Berichtsvorschau - {reportList.Count} Rechnungen";
+        InitializeComponent();
+    }
+
+    public FrmReportViewer(string rdlcPath, DataTable headerTable, DataTable linesTable, string? windowTitle = null)
+    {
+        _rdlcPath = rdlcPath;
+        _headerTable = headerTable;
+        _linesTable = linesTable;
+        _windowTitle = windowTitle;
         InitializeComponent();
     }
 
@@ -25,34 +44,21 @@ public partial class FrmReportViewer : Form
     {
         base.OnLoad(e);
         if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
-        if (_reports.Count == 0) return;
+        if (_headerTable is null || _linesTable is null) return;
 
-        panelViewerHost.Controls.Clear();
-
-        _reportViewer = new ReportViewer
-        {
-            Dock = DockStyle.Fill,
-            ProcessingMode = ProcessingMode.Local
-        };
-
-        var headers = _reports.Select(x => x.Header).ToList();
-        var lines = _reports.SelectMany(x => x.Lines).ToList();
-
-        _reportViewer.LocalReport.ReportPath = _rdlcPath;
-        _reportViewer.LocalReport.DataSources.Clear();
-        _reportViewer.LocalReport.DataSources.Add(new ReportDataSource(
+        reportViewerMain.ProcessingMode = ProcessingMode.Local;
+        reportViewerMain.LocalReport.ReportPath = _rdlcPath;
+        reportViewerMain.LocalReport.DataSources.Clear();
+        reportViewerMain.LocalReport.DataSources.Add(new ReportDataSource(
             ReportDataTableFactory.DsHeader,
-            ReportDataTableFactory.ToDataTable(headers)));
-        _reportViewer.LocalReport.DataSources.Add(new ReportDataSource(
+            _headerTable));
+        reportViewerMain.LocalReport.DataSources.Add(new ReportDataSource(
             ReportDataTableFactory.DsLines,
-            ReportDataTableFactory.ToDataTable(lines)));
-        _reportViewer.RefreshReport();
+            _linesTable));
+        reportViewerMain.RefreshReport();
 
-        panelViewerHost.Controls.Add(_reportViewer);
-
-        Text = _reports.Count == 1
-            ? $"Berichtsvorschau - {_reports[0].Header.Rechnungsnummer}"
-            : $"Berichtsvorschau - {_reports.Count} Rechnungen";
+        if (!string.IsNullOrWhiteSpace(_windowTitle))
+            Text = _windowTitle;
     }
 }
 

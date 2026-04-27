@@ -14,6 +14,7 @@ partial class FrmDeliveryList
     private void InitializeComponent()
     {
         pnlFilter = new Panel();
+        btnLieferscheineDrucken = new Button();
         btnAlleMarkieren = new Button();
         btnStornieren = new Button();
         lblVon = new Label();
@@ -57,6 +58,7 @@ partial class FrmDeliveryList
         // 
         // pnlFilter
         // 
+        pnlFilter.Controls.Add(btnLieferscheineDrucken);
         pnlFilter.Controls.Add(btnAlleMarkieren);
         pnlFilter.Controls.Add(btnStornieren);
         pnlFilter.Controls.Add(lblVon);
@@ -74,6 +76,16 @@ partial class FrmDeliveryList
         pnlFilter.Padding = new Padding(4, 0, 4, 0);
         pnlFilter.Size = new Size(1400, 83);
         pnlFilter.TabIndex = 0;
+        // 
+        // btnLieferscheineDrucken
+        // 
+        btnLieferscheineDrucken.Enabled = false;
+        btnLieferscheineDrucken.Location = new Point(380, 51);
+        btnLieferscheineDrucken.Name = "btnLieferscheineDrucken";
+        btnLieferscheineDrucken.Size = new Size(220, 26);
+        btnLieferscheineDrucken.TabIndex = 3;
+        btnLieferscheineDrucken.Text = "Ausgewählte Lieferscheine drucken";
+        btnLieferscheineDrucken.UseVisualStyleBackColor = true;
         // 
         // btnAlleMarkieren
         // 
@@ -407,6 +419,7 @@ partial class FrmDeliveryList
     private System.Windows.Forms.Button                     btnSuchen;
     private System.Windows.Forms.Button                     btnStornieren;
     private System.Windows.Forms.Button                     btnAlleMarkieren;
+    private System.Windows.Forms.Button                     btnLieferscheineDrucken;
     private System.Windows.Forms.SplitContainer             splitMain;
     private System.Windows.Forms.DataGridView               dgwLieferscheine;
     private System.Windows.Forms.DataGridViewCheckBoxColumn colLsChecked;

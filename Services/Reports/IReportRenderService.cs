@@ -10,4 +10,14 @@ public interface IReportRenderService
 
     Task<byte[]> RenderInvoicePdfAsync(int invoiceId);
     Task<byte[]> RenderInvoicesPdfAsync(IEnumerable<int> invoiceIds);
+
+    Task PreviewOrderAsync(int orderId);
+    Task PrintOrderAsync(int orderId, string? printerName = null);
+    Task<byte[]> RenderOrderPdfAsync(int orderId);
+
+    Task PreviewDeliveryAsync(int deliveryId);
+    Task PreviewDeliveriesAsync(IEnumerable<int> deliveryIds);
+    Task PrintDeliveryAsync(int deliveryId, string? printerName = null);
+    Task PrintDeliveriesAsync(IEnumerable<int> deliveryIds, string? printerName = null);
+    Task<byte[]> RenderDeliveryPdfAsync(int deliveryId);
 }

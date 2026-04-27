@@ -5,6 +5,7 @@ using DNR26V2.Domain.Exceptions;
 using DNR26V2.Forms.Base;
 using DNR26V2.Helpers;
 using DNR26V2.Services.Orders;
+using DNR26V2.Services.Reports;
 
 namespace DNR26V2.Forms.Orders;
 
@@ -25,6 +26,7 @@ public partial class FrmOrderList : BaseListForm
     };
 
     private readonly IOrderService _orderService;
+    private readonly IReportRenderService _reportService;
     private readonly SemaphoreSlim _lock           = new(1, 1);
     private readonly HashSet<int>  _checkedIds      = new();
     private bool                   _isLoading;
@@ -32,9 +34,10 @@ public partial class FrmOrderList : BaseListForm
 
     // ── Konstruktoren ─────────────────────────────────────────────────────────
 
-    public FrmOrderList(IOrderService orderService)
+    public FrmOrderList(IOrderService orderService, IReportRenderService reportService)
     {
         _orderService = orderService;
+        _reportService = reportService;
         InitializeComponent();
         WireUpEvents();
     }
@@ -42,6 +45,7 @@ public partial class FrmOrderList : BaseListForm
     public FrmOrderList()
     {
         _orderService = null!;
+        _reportService = null!;
         InitializeComponent();
         WireUpEvents();
     }
@@ -70,6 +74,7 @@ public partial class FrmOrderList : BaseListForm
         btnLoeschen.Click      += BtnLoeschen_Click;
         btnBuchen.Click        += BtnBuchen_Click;
         btnAlleMarkieren.Click += BtnAlleMarkieren_Click;
+        btnAuftragsdruck.Click += BtnAuftragsdruck_Click;
 
         EnableColumnChooser(dgwAuftraege);
     }
@@ -366,12 +371,33 @@ public partial class FrmOrderList : BaseListForm
         ApplyBtnState(btnLoeschen,    dto?.Status == OrderStatus.Offen);
         ApplyBtnState(btnBuchen,      _checkedIds.Count > 0);
         ApplyBtnState(btnAlleMarkieren, hasFreigegeben || hasOffen);
+        ApplyBtnState(btnAuftragsdruck, dto is not null);
     }
 
     private static void ApplyBtnState(Button btn, bool enabled)
     {
         btn.Enabled   = enabled;
         btn.ForeColor = SystemColors.ControlText;
+    }
+
+    private async void BtnAuftragsdruck_Click(object? sender, EventArgs e)
+    {
+        var dto = SelectedDto();
+        if (dto is null) return;
+
+        try
+        {
+            Cursor = Cursors.WaitCursor;
+            await _reportService.PreviewOrderAsync(dto.Id);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Druckvorschau fehlgeschlagen:\n{ex.Message}");
+        }
+        finally
+        {
+            Cursor = Cursors.Default;
+        }
     }
 
     // ── Doppelklick: Offen/Freigegeben → OrderEntry | Gebucht → DeliveryList ─
@@ -450,7 +476,7 @@ public partial class FrmOrderList : BaseListForm
 
         if (targets.Count == 0) return;
 
-        if (!Confirm($"{targets.Count} Auftrag/Aufträge freigeben?")) return;
+        if (!Confirm($"{targets.Count} Auftrag/Aufträge freigegeben?")) return;
 
         int success = 0;
         var errors  = new List<string>();

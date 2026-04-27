@@ -17,4 +17,5 @@ public class InvoicePrintLineDto
     public decimal AmountInclVat { get; set; }
     public string? Lieferscheinnummer { get; set; }
     public DateTime? Lieferdatum { get; set; }
+    public string? GruppierungsRechnungsnummer { get; set; } // New field for grouping invoice numbers
 }

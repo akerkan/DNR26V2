@@ -3,12 +3,14 @@ using DNR26V2.Domain.DTOs;
 using DNR26V2.Domain.Enums;
 using DNR26V2.Forms.Base;
 using DNR26V2.Services.Invoices;
+using DNR26V2.Services.Reports;
 
 namespace DNR26V2.Forms.Invoices;
 
 public partial class FrmRechnungErfassung : BaseListForm
 {
     private readonly IInvoiceService _invoiceService;
+    private readonly IReportRenderService _reportService;
     private readonly SemaphoreSlim   _lock            = new(1, 1);
     private readonly HashSet<int>    _checkedLsIds    = [];
     private bool                     _suppressChecked;
@@ -21,13 +23,15 @@ public partial class FrmRechnungErfassung : BaseListForm
     public FrmRechnungErfassung()
     {
         _invoiceService = null!;
+        _reportService = null!;
         InitializeComponent();
         WireUpEvents();
     }
 
-    public FrmRechnungErfassung(IInvoiceService invoiceService)
+    public FrmRechnungErfassung(IInvoiceService invoiceService, IReportRenderService reportService)
     {
         _invoiceService = invoiceService;
+        _reportService = reportService;
         InitializeComponent();
         WireUpEvents();
     }
@@ -420,6 +424,7 @@ public partial class FrmRechnungErfassung : BaseListForm
 
         var notiz = string.IsNullOrWhiteSpace(txtNotiz.Text) ? null : txtNotiz.Text.Trim();
         var kunde = _selectedKunde;
+        Domain.Entities.Invoices.InvoiceHeader? invoiceHeader = null;
 
         if (!Confirm(
             $"Rechnung für '{kunde.Kundenname}' über {_checkedLsIds.Count} Lieferschein(e) buchen?\n\n" +
@@ -429,13 +434,13 @@ public partial class FrmRechnungErfassung : BaseListForm
 
         try
         {
-            Cursor         = Cursors.WaitCursor;
+            Cursor            = Cursors.WaitCursor;
             btnBuchen.Enabled = false;
 
             await _lock.WaitAsync();
             try
             {
-                await _invoiceService.BuchenAsync(
+                invoiceHeader = await _invoiceService.BuchenAsync(
                     kunde.KundeId,
                     dtpVon.Value.Date,
                     dtpBis.Value.Date,
@@ -447,6 +452,18 @@ public partial class FrmRechnungErfassung : BaseListForm
             ShowSuccess($"Rechnung für '{kunde.Kundenname}' erfolgreich gebucht.");
             txtNotiz.Clear();
             await LoadKundenAsync();
+
+            if (invoiceHeader is not null && Confirm("Rechnung wurde gebucht. Vorschau/Druck öffnen?"))
+            {
+                try
+                {
+                    await _reportService.PreviewInvoiceAsync(invoiceHeader.Id);
+                }
+                catch (Exception ex)
+                {
+                    ShowError($"Berichtsvorschau fehlgeschlagen:\n{ex.Message}");
+                }
+            }
         }
         catch (Exception ex) { ShowError($"Fehler beim Buchen:\n{ex.Message}"); }
         finally

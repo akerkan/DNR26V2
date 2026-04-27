@@ -235,7 +235,7 @@ public class InvoiceService : IInvoiceService
                 if (il.Menge > fakturiert)
                     throw new ValidationException(
                         $"Überfakturierung nicht erlaubt: DeliveryLine {dl.Id} — " +
-                        $"fakturierbar: {fakturiert:0.###}, angefordert: {il.Menge:0.###}.");
+                        $"fakturierbar: {fakturiert:0.###}, angefragt: {il.Menge:0.###}.");
 
                 // Queue for explicit tracking update after the loop
                 pendingUpdates.Add((dl.Id, il.Menge, dl.AuftragZeileId));
@@ -320,6 +320,7 @@ public class InvoiceService : IInvoiceService
                 await _db.SaveChangesAsync();
 
                 result.Erstellt++;
+                result.RechnungIds.Add(header.Id);
             }
             catch (Exception ex)
             {

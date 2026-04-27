@@ -5,6 +5,7 @@ using DNR26V2.Domain.Exceptions;
 using DNR26V2.Forms.Base;
 using DNR26V2.Helpers;
 using DNR26V2.Services.Deliveries;
+using DNR26V2.Services.Reports;
 
 namespace DNR26V2.Forms.Deliveries;
 
@@ -25,6 +26,7 @@ public partial class FrmDeliveryList : BaseListForm
     };
 
     private readonly IDeliveryService _deliveryService;
+    private readonly IReportRenderService _reportService;
     private readonly SemaphoreSlim    _lock            = new(1, 1);
     private readonly HashSet<int>     _checkedIds      = new();
     private bool                      _isLoading;
@@ -32,9 +34,10 @@ public partial class FrmDeliveryList : BaseListForm
 
     // ── Konstruktoren ─────────────────────────────────────────────────────────
 
-    public FrmDeliveryList(IDeliveryService deliveryService)
+    public FrmDeliveryList(IDeliveryService deliveryService, IReportRenderService reportService)
     {
         _deliveryService = deliveryService;
+        _reportService = reportService;
         InitializeComponent();
         WireUpEvents();
     }
@@ -42,6 +45,7 @@ public partial class FrmDeliveryList : BaseListForm
     public FrmDeliveryList()
     {
         _deliveryService = null!;
+        _reportService = null!;
         InitializeComponent();
         WireUpEvents();
     }
@@ -66,6 +70,7 @@ public partial class FrmDeliveryList : BaseListForm
 
         btnStornieren.Click    += BtnStornieren_Click;
         btnAlleMarkieren.Click += BtnAlleMarkieren_Click;
+        btnLieferscheineDrucken.Click += BtnLieferscheineDrucken_Click;
 
         dgwLsPositionen.CellFormatting += DgwLsPositionen_CellFormatting;
 
@@ -248,16 +253,6 @@ public partial class FrmDeliveryList : BaseListForm
         if (dgwLieferscheine.Columns[e.ColumnIndex]?.Name != "colLsChecked") return;
         if (dgwLieferscheine.Rows[e.RowIndex].DataBoundItem is not LieferscheinListDto dto) return;
 
-        if (dto.Status != DeliveryStatus.Offen)
-        {
-            _suppressChecked = true;
-            dgwLieferscheine.Rows[e.RowIndex].Cells["colLsChecked"].Value = false;
-            _suppressChecked = false;
-            MessageBox.Show("Nur offene Lieferscheine können markiert werden.",
-                "Hinweis", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
-        }
-
         bool isChecked = dgwLieferscheine.Rows[e.RowIndex].Cells["colLsChecked"].Value is true;
         if (isChecked) _checkedIds.Add(dto.Id);
         else           _checkedIds.Remove(dto.Id);
@@ -275,13 +270,6 @@ public partial class FrmDeliveryList : BaseListForm
         e.Handled          = true;
         e.SuppressKeyPress = true;
 
-        if (dto.Status != DeliveryStatus.Offen)
-        {
-            MessageBox.Show("Nur offene Lieferscheine können markiert werden.",
-                "Hinweis", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
-        }
-
         bool current = _checkedIds.Contains(dto.Id);
         if (current) _checkedIds.Remove(dto.Id);
         else         _checkedIds.Add(dto.Id);
@@ -296,13 +284,10 @@ public partial class FrmDeliveryList : BaseListForm
 
     private void BtnAlleMarkieren_Click(object? s, EventArgs e)
     {
-        const DeliveryStatus filterStatus = DeliveryStatus.Offen;
-
         int total = 0, checked_ = 0;
         foreach (DataGridViewRow row in dgwLieferscheine.Rows)
         {
             if (row.DataBoundItem is not LieferscheinListDto dto) continue;
-            if (dto.Status != filterStatus) continue;
             total++;
             if (_checkedIds.Contains(dto.Id)) checked_++;
         }
@@ -312,7 +297,6 @@ public partial class FrmDeliveryList : BaseListForm
         foreach (DataGridViewRow row in dgwLieferscheine.Rows)
         {
             if (row.DataBoundItem is not LieferscheinListDto dto) continue;
-            if (dto.Status != filterStatus) continue;
 
             if (checked_ < total) _checkedIds.Add(dto.Id);
             else                  _checkedIds.Remove(dto.Id);
@@ -370,13 +354,33 @@ public partial class FrmDeliveryList : BaseListForm
             dto?.Status == DeliveryStatus.Offen ||
             dto?.Status == DeliveryStatus.TeilStorniert);
 
-        ApplyBtnState(btnAlleMarkieren, hasOffen);
+        ApplyBtnState(btnAlleMarkieren, dgwLieferscheine.Rows.Count > 0);
+        ApplyBtnState(btnLieferscheineDrucken, _checkedIds.Count > 0);
     }
 
     private static void ApplyBtnState(Button btn, bool enabled)
     {
         btn.Enabled   = enabled;
         btn.ForeColor = SystemColors.ControlText;
+    }
+
+    private async void BtnLieferscheineDrucken_Click(object? sender, EventArgs e)
+    {
+        if (_checkedIds.Count == 0) return;
+
+        try
+        {
+            Cursor = Cursors.WaitCursor;
+            await _reportService.PreviewDeliveriesAsync(_checkedIds);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Druckvorschau fehlgeschlagen:\n{ex.Message}");
+        }
+        finally
+        {
+            Cursor = Cursors.Default;
+        }
     }
 
     // ── Header Stornieren ─────────────────────────────────────────────────────

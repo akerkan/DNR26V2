@@ -42,6 +42,7 @@ partial class FrmOrderList
         lblDetailStatusWert = new Label();
         lblDetailGesamt = new Label();
         lblDetailGesamtWert = new Label();
+        btnAuftragsdruck = new Button();
         dgwAuftragPositionen = new DataGridView();
         pnlFilter.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)splitMain).BeginInit();
@@ -249,6 +250,7 @@ partial class FrmOrderList
         pnlDetailHeader.Controls.Add(lblDetailStatusWert);
         pnlDetailHeader.Controls.Add(lblDetailGesamt);
         pnlDetailHeader.Controls.Add(lblDetailGesamtWert);
+        pnlDetailHeader.Controls.Add(btnAuftragsdruck);
         pnlDetailHeader.Dock = DockStyle.Top;
         pnlDetailHeader.Location = new Point(0, 0);
         pnlDetailHeader.Name = "pnlDetailHeader";
@@ -352,6 +354,17 @@ partial class FrmOrderList
         lblDetailGesamtWert.TabIndex = 9;
         lblDetailGesamtWert.Text = "-";
         // 
+        // btnAuftragsdruck
+        // 
+        btnAuftragsdruck.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnAuftragsdruck.Enabled = false;
+        btnAuftragsdruck.Location = new Point(496, 34);
+        btnAuftragsdruck.Name = "btnAuftragsdruck";
+        btnAuftragsdruck.Size = new Size(180, 26);
+        btnAuftragsdruck.TabIndex = 10;
+        btnAuftragsdruck.Text = "Auftragsbestätigung drucken";
+        btnAuftragsdruck.UseVisualStyleBackColor = true;
+        // 
         // dgwAuftragPositionen
         // 
         dgwAuftragPositionen.AllowUserToAddRows = false;
@@ -416,5 +429,6 @@ partial class FrmOrderList
     private System.Windows.Forms.Label                      lblDetailStatusWert;
     private System.Windows.Forms.Label                      lblDetailGesamt;
     private System.Windows.Forms.Label                      lblDetailGesamtWert;
+    private System.Windows.Forms.Button                     btnAuftragsdruck;
     private System.Windows.Forms.DataGridView               dgwAuftragPositionen;
 }

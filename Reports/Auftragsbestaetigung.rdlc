@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="dsHeader">
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString />
+      </ConnectionProperties>
+      <rd:DataSourceID>db35eb43-f912-4ab7-950a-bf64ce8f5b3a</rd:DataSourceID>
+    </DataSource>
+    <DataSource Name="dsLines">
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString />
+      </ConnectionProperties>
+      <rd:DataSourceID>73124b45-f6a4-4d97-b78d-a25e14f0c1e1</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="dsHeader">
+      <Query><DataSourceName>dsHeader</DataSourceName><CommandText /></Query>
+      <Fields>
+        <Field Name="Auftragsnummer"><DataField>Auftragsnummer</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="dsLines">
+      <Query><DataSourceName>dsLines</DataSourceName><CommandText /></Query>
+      <Fields>
+        <Field Name="Auftragsnummer"><DataField>Auftragsnummer</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Bezeichnung"><DataField>Bezeichnung</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+        <Field Name="Menge"><DataField>Menge</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="Preis"><DataField>Preis</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="txtInfo">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs><Paragraph><TextRuns><TextRun><Value>Auftragsbestätigung OK</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs>
+            <Top>0.3cm</Top><Left>0.5cm</Left><Height>0.6cm</Height><Width>8cm</Width><Style />
+          </Textbox>
+          <Textbox Name="txtAuftrag">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs><Paragraph><TextRuns><TextRun><Value>=First(Fields!Auftragsnummer.Value, "dsHeader")</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs>
+            <Top>1.1cm</Top><Left>0.5cm</Left><Height>0.6cm</Height><Width>8cm</Width><Style><FontWeight>Bold</FontWeight></Style>
+          </Textbox>
+          <Tablix Name="TablixLines">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn><Width>7cm</Width></TablixColumn>
+                <TablixColumn><Width>2cm</Width></TablixColumn>
+                <TablixColumn><Width>2.5cm</Width></TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.6cm</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="txtHead1"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Bezeichnung</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><Style><Border><Style>Solid</Style></Border><BackgroundColor>Gainsboro</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="txtHead2"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Menge</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><Style><Border><Style>Solid</Style></Border><BackgroundColor>Gainsboro</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="txtHead3"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Preis</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><Style><Border><Style>Solid</Style></Border><BackgroundColor>Gainsboro</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.6cm</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="txtBez"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Bezeichnung.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><Style><Border><Style>Solid</Style></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="txtMenge"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Menge.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><Style><Border><Style>Solid</Style></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="txtPreis"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Preis.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><Style><Border><Style>Solid</Style></Border></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy>
+            <TablixRowHierarchy><TablixMembers><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><Group Name="DetailGroup" /></TablixMember></TablixMembers></TablixRowHierarchy>
+            <DataSetName>dsLines</DataSetName>
+            <Top>2cm</Top><Left>0.5cm</Left><Height>1.2cm</Height><Width>11.5cm</Width><Style />
+          </Tablix>
+        </ReportItems>
+        <Height>5cm</Height><Style />
+      </Body>
+      <Width>19cm</Width>
+      <Page><PageHeight>29.7cm</PageHeight><PageWidth>21cm</PageWidth><LeftMargin>1cm</LeftMargin><RightMargin>1cm</RightMargin><TopMargin>1cm</TopMargin><BottomMargin>1cm</BottomMargin><Style /></Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParametersLayout><GridLayoutDefinition><NumberOfColumns>4</NumberOfColumns><NumberOfRows>2</NumberOfRows></GridLayoutDefinition></ReportParametersLayout>
+  <rd:ReportUnitType>Cm</rd:ReportUnitType>
+  <rd:ReportID>8fd40f60-cdf0-4adc-8ea5-5ff6fe89f801</rd:ReportID>
+</Report>

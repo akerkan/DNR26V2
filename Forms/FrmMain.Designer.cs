@@ -57,15 +57,17 @@ partial class FrmMain
         });
 
         // --- Finanzen ---
-        var menuFinanzen = new ToolStripMenuItem("&Finanzen");
+        var menuFinanzen = new ToolStripMenuItem("&Zahlungsmanagement");
 
         var menuZahlungseingaenge = new ToolStripMenuItem("&Zahlungseingänge", null, MenuZahlungseingaenge_Click);
+        var menuKundenkonto = new ToolStripMenuItem("&Kundenkonto", null, MenuKundenkonto_Click);
         var menuBerichtZahlungen  = new ToolStripMenuItem("&Zahlungen", null, OnMenuItemNotImplemented);
 
 
         menuFinanzen.DropDownItems.AddRange(new ToolStripItem[]
         {
             menuZahlungseingaenge,
+            menuKundenkonto,
             new ToolStripSeparator(),
             menuBerichtZahlungen
         });

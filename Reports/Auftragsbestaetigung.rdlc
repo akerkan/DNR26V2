@@ -41,7 +41,7 @@
           <Textbox Name="txtInfo">
             <CanGrow>true</CanGrow>
             <KeepTogether>true</KeepTogether>
-            <Paragraphs><Paragraph><TextRuns><TextRun><Value>Auftragsbestätigung OK</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs>
+            <Paragraphs><Paragraph><TextRuns><TextRun><Value>Auftragsbestï¿½tigung OK</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs>
             <Top>0.3cm</Top><Left>0.5cm</Left><Height>0.6cm</Height><Width>8cm</Width><Style />
           </Textbox>
           <Textbox Name="txtAuftrag">

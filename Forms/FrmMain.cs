@@ -170,7 +170,11 @@ public partial class FrmMain : Form
     // ── Zahlungsmanagement ────────────────────────────────────────────────────
 
     private FrmZahlungseingaenge? FrmZahlungseingaengeInstance;
+    private FrmKundenkonto? FrmKundenkontoInstance;
 
     private void MenuZahlungseingaenge_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmZahlungseingaenge>(ref FrmZahlungseingaengeInstance, this, () => GetService<FrmZahlungseingaenge>());
+
+    private void MenuKundenkonto_Click(object? sender, EventArgs e)
+        => BaseListForm.GetOrCreateInstance<FrmKundenkonto>(ref FrmKundenkontoInstance, this, () => GetService<FrmKundenkonto>());
 }

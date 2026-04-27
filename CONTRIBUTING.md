@@ -10,6 +10,7 @@
 | Was du brauchst | Lies |
 |---|---|
 | Formular bauen / Designer-Regeln | [RULE_FORMS](#rule_forms) |
+| Berichte / RDLC / Preview / Print | [RULE_REPORTING](#rule_reporting) + passendes Modul |
 | Datenbankregeln / Migrations | [RULE_DB](#rule_db) |
 | Preis-/Rabatt-Berechnung | [RULE_PRICING](#rule_pricing) |
 | Allgemeine Code-Regeln | [RULE_CODE](#rule_code) |
@@ -42,6 +43,21 @@
 - Forms receive services via constructor
 - Designer-only ctor takes `null!` for all services
 - `IsDesignMode()` guard on all Load/async methods
+
+---
+
+# RULE_REPORTING
+
+1. RDLC files are infrastructure assets — never redesign visually unless explicitly requested
+2. Placeholder RDLC is allowed, but it MUST open in RDLC Designer
+3. Report binding uses `DataTable`, never `ObjectDataSource`
+4. Standard dataset names: `dsHeader` and `dsLines`
+5. `ReportDataTableFactory` column names MUST match DTO property names exactly
+6. `FrmReportViewer` is the shared preview host for order / delivery / invoice reports
+7. `FrmReportViewer` uses a single `ReportViewer`; bulk preview is grouped in RDLC, not via tabs
+8. Bulk preview pages are separated in RDLC via grouping / page break on document number
+9. Report controls must remain in `.Designer.cs` like other WinForms controls
+10. Printer selection rule: if `BriefpapierVerwenden = true` prefer `DruckerMitLogo`, else `DruckerWeissesPapier`, else default printer
 
 ---
 
@@ -141,6 +157,12 @@ Calculation order (MANDATORY):
 
 **Forms:** `FrmOrderEntry` (Tagesbestellung) · `FrmOrderList`
 
+**Reporting:**
+- RDLC: `Reports/Auftragsbestaetigung.rdlc`
+- DTO/service: `OrderPrintHeaderDto`, `OrderPrintLineDto`, `OrderReportData`, `IOrderReportDataService`
+- Preview/print entrypoint: `IReportRenderService.PreviewOrderAsync` / `PrintOrderAsync` / `RenderOrderPdfAsync`
+- `FrmOrderList` opens preview via button `Auftragsbestätigung drucken`
+
 ---
 
 # MODULE_05_DELIVERIES
@@ -161,6 +183,12 @@ Calculation order (MANDATORY):
 - Filter for open deliveries: `MengeFakturiert < Menge` (line-level), NOT header status
 
 **Forms:** `FrmDeliveryList`
+
+**Reporting:**
+- RDLC: `Reports/Lieferschein.rdlc`
+- DTO/service: `DeliveryPrintHeaderDto`, `DeliveryPrintLineDto`, `DeliveryReportData`, `IDeliveryReportDataService`
+- Preview/print entrypoint: `IReportRenderService.PreviewDeliveryAsync` / `PreviewDeliveriesAsync` / `PrintDeliveryAsync`
+- `FrmDeliveryList` uses existing checkbox selection for bulk preview via `Ausgewählte Lieferscheine drucken`
 
 ---
 
@@ -184,65 +212,9 @@ Calculation order (MANDATORY):
 
 **Forms:** `FrmRechnungErfassung` · `FrmSammelRechnung` · `FrmRechnungList`
 
----
-
-# MODULE_07_PAYMENTS
-
-**Zahlungseingänge (Payments)**
-
-| Entity | Table | Key fields |
-|---|---|---|
-| `PaymentHeader` | `PaymentHeaders` | `Zahlungsnummer` (ZA), `KundeId`, `Buchungsdatum` |
-| `PaymentLine` | `PaymentLines` | `ReferenceType` (0/1/-1), `ReferenceId`, `PaymentMethod` (Bar/Bank), `Amount` |
-
-**ReferenceType values:**
-- `0` = `InvoiceHeader.Id` (Invoice-source customers)
-- `1` = `DeliveryHeader.Id` (Delivery-source customers)
-- `-1` = storno back-reference → `ReferenceId` = original `PaymentLine.Id`
-
-**Services:**
-
-| Service | Interface | Key methods |
-|---|---|---|
-| `PaymentPostingService` | `IPaymentPostingService` | `BuchenAsync(request)` · `StornierenAsync(lineId, note)` |
-| `CustomerLedgerService` | `ICustomerLedgerService` | `GetLedgerAsync` · `GetSaldoAsync` · `GetPaymentHistoryAsync` |
-
-**Ledger logic:**
-- One row **per InvoiceHeader / DeliveryHeader** (not per line)
-- `OffenerBetrag = Max(0, Gesamtbrutto - SUM(PaymentLine.Amount))`
-- `Saldo = SUM(OffenerBetrag Rechnung/LS rows) - SUM(Gutschrift.Betrag)`
-- Storno: creates `Amount < 0` → automatically reduces `SUM(Amount)` → balance restored
-
-**NoSeries:** `ZA` — used for both posting and storno
-
-**Validation rules in `BuchenAsync`:**
-1. `Bar < 0` or `Bank < 0` → ValidationException
-2. `Bar = 0 AND Bank = 0` → row skipped
-3. `Bar + Bank > OffenerBetrag` → ValidationException
-4. `OffenerBetrag <= 0` → ValidationException (closed entries / Gutschrift)
-5. `ReferenceType` must be `0` or `1`
-
-**Form: `FrmZahlungseingaenge`**
-- Left: customer list + filter
-- Right top: Von/Bis + Laden + Buchen + Saldo (auto-colored: red if >0, green if ≤0)
-- `dgwLedger`: open items — `Buchungsdatum` (CalendarColumn per row), `Bar`, `Bank`, `Notiz` editable; grey = not payable
-- `dgwHistory`: posted payments + storno rows (italic/grey) — right-click → **Zeile stornieren** → InputBox for note
-
----
-
-# SYSTEM_SETUP
-
-**NoSeries (`NoSeries` table):**
-
-| Seriencode | Beschreibung | Prefix |
-|---|---|---|
-| `RE` | Rechnungsnummer | RE |
-| `LS` | Lieferscheinnummer | LS |
-| `GS` | Gutschriftnummer | GS |
-| `ZA` | Zahlungsnummer | ZA |
-| `AUF` | Auftragsnummer | AUF |
-
-**Forms:** `FrmAppSetup` · `FrmLocationSetup`
-
-**DI registration:** `Program.cs` → `ConfigureServices()`
-All forms registered as `AddTransient<>`, services as `AddScoped<>`.
+**Reporting:**
+- RDLC: `Reports/Rechnung.rdlc`
+- Shared preview host: `FrmReportViewer`
+- `FrmRechnungList` supports single preview and bulk preview from selected invoices
+- `FrmRechnungErfassung` asks after booking whether preview should be opened
+- `FrmSammelRechnung` collects generated invoice ids and can open bulk preview after booking

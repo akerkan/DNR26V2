@@ -123,11 +123,13 @@ static class Program
 
         // --- Modul 7: Zahlungsmanagement ---
         services.AddScoped<ICustomerLedgerService, CustomerLedgerService>();
+        services.AddScoped<ICustomerAccountService, CustomerAccountService>();
         services.AddScoped<IPaymentPostingService>(sp => new PaymentPostingService(
             sp.GetRequiredService<AppDbContext>(),
             sp.GetRequiredService<ICustomerLedgerService>(),
             sp.GetRequiredService<INoSeriesService>()));
         services.AddTransient<FrmZahlungseingaenge>();
+        services.AddTransient<FrmKundenkonto>();
 
         return services;
     }

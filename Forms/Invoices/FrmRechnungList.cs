@@ -4,25 +4,29 @@ using DNR26V2.Domain.Entities.Invoices;
 using DNR26V2.Domain.Enums;
 using DNR26V2.Forms.Base;
 using DNR26V2.Services.Invoices;
+using DNR26V2.Services.Reports;
 
 namespace DNR26V2.Forms.Invoices;
 
 public partial class FrmRechnungList : BaseListForm
 {
     private readonly IInvoiceService _invoiceService;
-    private readonly SemaphoreSlim   _lock = new(1, 1);
-    private bool                     _isLoading;
+    private readonly IReportRenderService _reportService;
+    private readonly SemaphoreSlim _lock = new(1, 1);
+    private bool _isLoading;
 
     public FrmRechnungList()
     {
         _invoiceService = null!;
+        _reportService = null!;
         InitializeComponent();
         WireUpEvents();
     }
 
-    public FrmRechnungList(IInvoiceService invoiceService)
+    public FrmRechnungList(IInvoiceService invoiceService, IReportRenderService reportService)
     {
         _invoiceService = invoiceService;
+        _reportService = reportService;
         InitializeComponent();
         WireUpEvents();
     }
@@ -36,11 +40,12 @@ public partial class FrmRechnungList : BaseListForm
     {
         Load += FrmRechnungList_Load;
 
-        btnSuchen.Click                  += async (_, _) => await LoadRechnungenAsync();
-        txtKundeFilter.KeyDown           += async (_, e) => { if (e.KeyCode == Keys.Enter) await LoadRechnungenAsync(); };
-        cmbStatus.SelectedIndexChanged   += async (_, _) => { if (!_isLoading) await LoadRechnungenAsync(); };
-        dgwRechnungen.SelectionChanged   += DgwRechnungen_SelectionChanged;
-        btnGutschrift.Click              += BtnGutschrift_Click;
+        btnSuchen.Click += async (_, _) => await LoadRechnungenAsync();
+        txtKundeFilter.KeyDown += async (_, e) => { if (e.KeyCode == Keys.Enter) await LoadRechnungenAsync(); };
+        cmbStatus.SelectedIndexChanged += async (_, _) => { if (!_isLoading) await LoadRechnungenAsync(); };
+        dgwRechnungen.SelectionChanged += DgwRechnungen_SelectionChanged;
+        btnGutschrift.Click += BtnGutschrift_Click;
+        btnDrucken.Click += async (_, _) => await BtnDrucken_ClickAsync();
     }
 
     // ── Load ─────────────────────────────────────────────────────────────────
@@ -58,18 +63,18 @@ public partial class FrmRechnungList : BaseListForm
         _isLoading = false;
 
         btnStornieren.Visible = false;   // deprecated — use Gutschrift instead
-        panelDetail.Visible  = true;
+        panelDetail.Visible = true;
         await LoadRechnungenAsync();
     }
 
     private void FillStatusCombo()
     {
         cmbStatus.Items.Clear();
-        cmbStatus.Items.Add(new StatusItem(null,                       "Alle"));
-        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gebucht,        "Gebucht"));
+        cmbStatus.Items.Add(new StatusItem(null, "Alle"));
+        cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gebucht, "Gebucht"));
         cmbStatus.Items.Add(new StatusItem(InvoiceStatus.Gutgeschrieben, "Gutgeschrieben"));
-        cmbStatus.DisplayMember   = "Text";
-        cmbStatus.SelectedIndex   = 0;
+        cmbStatus.DisplayMember = "Text";
+        cmbStatus.SelectedIndex = 0;
     }
 
     private record StatusItem(InvoiceStatus? Value, string Text);
@@ -89,7 +94,7 @@ public partial class FrmRechnungList : BaseListForm
         try
         {
             Cursor = Cursors.WaitCursor;
-            liste  = await _invoiceService.GetRechnungListeAsync(
+            liste = await _invoiceService.GetRechnungListeAsync(
                 dtpVon.Value.Date,
                 dtpBis.Value.Date,
                 string.IsNullOrWhiteSpace(txtKundeFilter.Text) ? null : txtKundeFilter.Text.Trim(),
@@ -143,15 +148,15 @@ public partial class FrmRechnungList : BaseListForm
         ConfigureGrid(dgwRechnungen);
         foreach (DataGridViewColumn col in dgwRechnungen.Columns) col.Visible = false;
 
-        ShowRCol("Rechnungsnummer",   "Rechnungs-Nr.",    130);
-        ShowRCol("Rechnungsdatum",    "Datum",             90, format: "dd.MM.yyyy");
-        ShowRCol("Von",               "Zeitr. Von",        90, format: "dd.MM.yyyy");
-        ShowRCol("Bis",               "Zeitr. Bis",        90, format: "dd.MM.yyyy");
-        ShowRCol("Kundenname",        "Kunde",               0, fill: true);
-        ShowRCol("AnzahlPositionen",  "Pos.",               50, right: true);
-        ShowRCol("Gesamtnetto",       "Netto \u20ac",      100, format: "N2", right: true);
-        ShowRCol("Gesamtbrutto",      "Brutto \u20ac",     100, format: "N2", right: true);
-        ShowRCol("IstSammelrechnung", "Sammel",             55);
+        ShowRCol("Rechnungsnummer", "Rechnungs-Nr.", 130);
+        ShowRCol("Rechnungsdatum", "Datum", 90, format: "dd.MM.yyyy");
+        ShowRCol("Von", "Zeitr. Von", 90, format: "dd.MM.yyyy");
+        ShowRCol("Bis", "Zeitr. Bis", 90, format: "dd.MM.yyyy");
+        ShowRCol("Kundenname", "Kunde", 0, fill: true);
+        ShowRCol("AnzahlPositionen", "Pos.", 50, right: true);
+        ShowRCol("Gesamtnetto", "Netto \u20ac", 100, format: "N2", right: true);
+        ShowRCol("Gesamtbrutto", "Brutto \u20ac", 100, format: "N2", right: true);
+        ShowRCol("IstSammelrechnung", "Sammel", 55);
         // NOTE: Gesamtnetto / Gesamtbrutto are stored POSITIVE for all BelegArt values.
         // For BelegArt = Gutschrift, the presentation layer (this grid, print, reports)
         // must render amounts with a leading minus sign. Implement in CellFormatting
@@ -162,8 +167,8 @@ public partial class FrmRechnungList : BaseListForm
         bool fill = false, string? format = null, bool right = false)
     {
         if (!dgwRechnungen.Columns.Contains(name)) return;
-        var col        = dgwRechnungen.Columns[name];
-        col.Visible    = true;
+        var col = dgwRechnungen.Columns[name];
+        col.Visible = true;
         col.HeaderText = header;
         if (fill) col.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
@@ -189,38 +194,44 @@ public partial class FrmRechnungList : BaseListForm
 
     private void UpdateDetailPanel(RechnungListDto dto)
     {
-        lblRechnungsnrWert.Text  = dto.Rechnungsnummer;
-        lblNettoWert.Text        = $"{dto.Gesamtnetto:N2} \u20ac";
-        lblBruttoWert.Text       = $"{dto.Gesamtbrutto:N2} \u20ac";
-        lblStatusWert.Text       = dto.BelegArt == InvoiceDocumentType.Gutschrift
+        lblRechnungsnrWert.Text = dto.Rechnungsnummer;
+        lblNettoWert.Text = $"{dto.Gesamtnetto:N2} \u20ac";
+        lblBruttoWert.Text = $"{dto.Gesamtbrutto:N2} \u20ac";
+        lblStatusWert.Text = dto.BelegArt == InvoiceDocumentType.Gutschrift
             ? $"Gutschrift ({dto.Status})"
             : dto.Status.ToString();
-        lblStatusWert.ForeColor  = dto.Status switch
+        lblStatusWert.ForeColor = dto.Status switch
         {
-            InvoiceStatus.Storniert                                                  => Color.Firebrick,
-            InvoiceStatus.Gutgeschrieben                                             => Color.DarkOrange,
+            InvoiceStatus.Storniert => Color.Firebrick,
+            InvoiceStatus.Gutgeschrieben => Color.DarkOrange,
             InvoiceStatus.Gebucht when dto.BelegArt == InvoiceDocumentType.Gutschrift => Color.SteelBlue,
-            _                                                                        => Color.DarkGreen,
+            _ => Color.DarkGreen,
         };
 
-        bool canAction        = dto.Status == InvoiceStatus.Gebucht
+        bool canAction = dto.Status == InvoiceStatus.Gebucht
                              && dto.BelegArt == InvoiceDocumentType.Rechnung;
 
-        btnGutschrift.Enabled   = canAction;
+        btnGutschrift.Enabled = canAction;
         btnGutschrift.BackColor = canAction
             ? Color.FromArgb(30, 100, 160)
+            : Color.FromArgb(160, 160, 160);
+        btnDrucken.Enabled = dto is not null;  // printable for any status
+        btnDrucken.BackColor = (dto is not null)
+            ? Color.FromArgb(0, 140, 80)
             : Color.FromArgb(160, 160, 160);
     }
 
     private void ClearDetail()
     {
         lblRechnungsnrWert.Text = "\u2013";
-        lblNettoWert.Text       = "\u2013";
-        lblBruttoWert.Text      = "\u2013";
-        lblStatusWert.Text      = "\u2013";
+        lblNettoWert.Text = "\u2013";
+        lblBruttoWert.Text = "\u2013";
+        lblStatusWert.Text = "\u2013";
         lblStatusWert.ForeColor = SystemColors.ControlText;
-        btnGutschrift.Enabled   = false;
+        btnGutschrift.Enabled = false;
         btnGutschrift.BackColor = Color.FromArgb(160, 160, 160);
+        btnDrucken.Enabled = false;
+        btnDrucken.BackColor = Color.FromArgb(160, 160, 160);
     }
 
     private async Task LoadZeilenAsync(int rechnungId)
@@ -249,22 +260,22 @@ public partial class FrmRechnungList : BaseListForm
         ConfigureGrid(dgwZeilen);
         foreach (DataGridViewColumn col in dgwZeilen.Columns) col.Visible = false;
 
-        ShowZCol("Artikelnummer",      "Artikelnr.",         90);
-        ShowZCol("Bezeichnung",        "Bezeichnung",          0, fill: true);
-        ShowZCol("Lieferscheinnummer", "Lieferschein",       120);
-        ShowZCol("Lieferdatum",        "Lieferdatum",         90, format: "dd.MM.yyyy");
-        ShowZCol("Menge",              "Menge",               70, format: "N3", right: true);
-        ShowZCol("Preis",              "Preis €",             80, format: "N2", right: true);
-        ShowZCol("MwstProzent",        "MwSt %",              60, format: "N2", right: true);
-        ShowZCol("LineAmount",         "Gesamt €",            90, format: "N2", right: true);
+        ShowZCol("Artikelnummer", "Artikelnr.", 90);
+        ShowZCol("Bezeichnung", "Bezeichnung", 0, fill: true);
+        ShowZCol("Lieferscheinnummer", "Lieferschein", 120);
+        ShowZCol("Lieferdatum", "Lieferdatum", 90, format: "dd.MM.yyyy");
+        ShowZCol("Menge", "Menge", 70, format: "N3", right: true);
+        ShowZCol("Preis", "Preis €", 80, format: "N2", right: true);
+        ShowZCol("MwstProzent", "MwSt %", 60, format: "N2", right: true);
+        ShowZCol("LineAmount", "Gesamt €", 90, format: "N2", right: true);
     }
 
     private void ShowZCol(string name, string header, int width,
         bool fill = false, string? format = null, bool right = false)
     {
         if (!dgwZeilen.Columns.Contains(name)) return;
-        var col        = dgwZeilen.Columns[name];
-        col.Visible    = true;
+        var col = dgwZeilen.Columns[name];
+        col.Visible = true;
         col.HeaderText = header;
         if (fill) col.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         else { col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; col.Width = width; }
@@ -290,7 +301,7 @@ public partial class FrmRechnungList : BaseListForm
         await _lock.WaitAsync();
         try
         {
-            Cursor     = Cursors.WaitCursor;
+            Cursor = Cursors.WaitCursor;
             gutschrift = await _invoiceService.CreateGutschriftAsync(dto.Id);
         }
         catch (Exception ex) { ShowError($"Gutschrift fehlgeschlagen:\n{ex.Message}"); return; }
@@ -306,5 +317,32 @@ public partial class FrmRechnungList : BaseListForm
     {
         if (keyData == Keys.F5) { _ = LoadRechnungenAsync(); return true; }
         return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    // ── Drucken / PDF ─────────────────────────────────────────────────────────
+
+    private async Task BtnDrucken_ClickAsync()
+    {
+        if (dgwRechnungen.CurrentRow?.DataBoundItem is not RechnungListDto dto) return;
+
+        byte[] pdf;
+        string fileName;
+        try
+        {
+            Cursor = Cursors.WaitCursor;
+            (pdf, fileName) = await _reportService.RenderInvoicePdfAsync(dto.Id);
+        }
+        catch (Exception ex) { ShowError($"Druckfehler:\n{ex.Message}"); return; }
+        finally { Cursor = Cursors.Default; }
+
+        // Save to temp folder and open with default PDF viewer
+        var tempPath = Path.Combine(Path.GetTempPath(), fileName);
+        await File.WriteAllBytesAsync(tempPath, pdf);
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = tempPath,
+            UseShellExecute = true   // opens with default PDF viewer
+        });
     }
 }

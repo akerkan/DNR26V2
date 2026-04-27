@@ -8,35 +8,35 @@ namespace DNR26V2.Domain.Entities.System;
 public class AppSetup : AuditableEntity
 {
     /// <summary>Singleton-PK – darf nur den Wert 1 haben (CHECK-Constraint in DB).</summary>
-    public int     Id                   { get; set; } = 1;
+    public int Id { get; set; } = 1;
 
     // Firmendaten
-    public string  Firmenname           { get; set; } = string.Empty;
-    public string? Firmenadresse        { get; set; }
-    public string? FirmenPLZ            { get; set; }
-    public string? FirmenOrt            { get; set; }
-    public string  FirmenLand           { get; set; } = "Deutschland";
-    public string? FirmenTelefon        { get; set; }
-    public string? FirmenEmail          { get; set; }
-    public string? FirmenSteuernummer   { get; set; }
-    public string? FirmenUStIdNr        { get; set; }
+    public string Firmenname { get; set; } = string.Empty;
+    public string? Firmenadresse { get; set; }
+    public string? FirmenPLZ { get; set; }
+    public string? FirmenOrt { get; set; }
+    public string FirmenLand { get; set; } = "Deutschland";
+    public string? FirmenTelefon { get; set; }
+    public string? FirmenEmail { get; set; }
+    public string? FirmenSteuernummer { get; set; }
+    public string? FirmenUStIdNr { get; set; }
 
     // Steuer + Standort
-    public decimal StandardMwstProzent  { get; set; } = 7.00m;
+    public decimal StandardMwstProzent { get; set; } = 7.00m;
     public string? StandardStandortCode { get; set; }
 
     // Drucker
     public string? DruckerWeissesPapier { get; set; }
-    public string? DruckerMitLogo       { get; set; }
+    public string? DruckerMitLogo { get; set; }
 
     // Nummernserien-Präfixe
-    public string RechnungPraefix      { get; set; } = "RE";
-    public string LieferscheinPraefix  { get; set; } = "LS";
-    public string GutschriftPraefix    { get; set; } = "GS";
-    public string ZahlungPraefix       { get; set; } = "ZA";
+    public string RechnungPraefix { get; set; } = "RE";
+    public string LieferscheinPraefix { get; set; } = "LS";
+    public string GutschriftPraefix { get; set; } = "GS";
+    public string ZahlungPraefix { get; set; } = "ZA";
 
     // UI
-    public int SeitenGroesse           { get; set; } = 20;
+    public int SeitenGroesse { get; set; } = 20;
 
     // ── Order archiving (Module 4) ────────────────────────────────────────────
     /// <summary>
@@ -60,14 +60,28 @@ public class AppSetup : AuditableEntity
     public string? ColorOrderLabelStorniert { get; set; } = null;
 
     // ── Zahlungskonditionen (für Rechnungen) ──────────────────────────────────
-    public string? BankName           { get; set; }
-    public string? IBAN               { get; set; }
-    public string? BIC                { get; set; }
-    public string? Kontoinhaber       { get; set; }
-    public int     ZahlungszielTage   { get; set; } = 14;
-    public decimal SkontoProzent      { get; set; } = 0.00m;
-    public int     SkontoTage         { get; set; } = 7;
+    public string? BankName { get; set; }
+    public string? IBAN { get; set; }
+    public string? BIC { get; set; }
+    public string? Kontoinhaber { get; set; }
+    public int ZahlungszielTage { get; set; } = 14;
+    public decimal SkontoProzent { get; set; } = 0.00m;
+    public int SkontoTage { get; set; } = 7;
 
     // ── Preisformel ───────────────────────────────────────────────────────────
     public PreisFormel PreisFormel { get; set; } = PreisFormel.MengeXPreis;
+
+    // ── Druck / Logo ──────────────────────────────────────────────────────────
+    /// <summary>
+    /// true = Firmenlogo aus LogoPfad auf Ausdruck einbetten.
+    /// false = Firmenname/-adresse als Text drucken.
+    /// </summary>
+    public bool LogoVerwenden { get; set; } = false;
+    public string? LogoPfad { get; set; }
+
+    /// <summary>
+    /// true = Vorbedrucktes Briefpapier — RDLC blendet Kopfzeile/Logo aus.
+    /// Bevorzugter Drucker: DruckerMitLogo.
+    /// </summary>
+    public bool BriefpapierVerwenden { get; set; } = false;
 }

@@ -251,7 +251,7 @@ partial class FrmRechnungList
         btnStornieren.Enabled = false;
         btnStornieren.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnStornieren.ForeColor = Color.White;
-        btnStornieren.Location = new Point(928, 9);
+        btnStornieren.Location = new Point(728, 9);
         btnStornieren.Name = "btnStornieren";
         btnStornieren.Size = new Size(130, 44);
         btnStornieren.TabIndex = 8;

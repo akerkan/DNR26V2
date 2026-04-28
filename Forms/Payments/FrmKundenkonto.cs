@@ -4,6 +4,7 @@ using DNR26V2.Domain.DTOs.Payments;
 using DNR26V2.Forms.Base;
 using DNR26V2.Services.MasterData;
 using DNR26V2.Services.Payments;
+using DNR26V2.Services.Reports;
 
 namespace DNR26V2.Forms.Payments;
 
@@ -11,6 +12,7 @@ public partial class FrmKundenkonto : BaseListForm
 {
     private readonly ICustomerService _customerService;
     private readonly ICustomerAccountService _customerAccountService;
+    private readonly IReportRenderService _reportRenderService;
 
     private List<CustomerListDto> _allCustomers = [];
     private bool _suppressCustomerSelectionChanged;
@@ -19,15 +21,18 @@ public partial class FrmKundenkonto : BaseListForm
     {
         _customerService = null!;
         _customerAccountService = null!;
+        _reportRenderService = null!;
         InitializeComponent();
     }
 
     public FrmKundenkonto(
         ICustomerService customerService,
-        ICustomerAccountService customerAccountService)
+        ICustomerAccountService customerAccountService,
+        IReportRenderService reportRenderService)
     {
         _customerService = customerService;
         _customerAccountService = customerAccountService;
+        _reportRenderService = reportRenderService;
 
         InitializeComponent();
         WireUpEvents();
@@ -46,6 +51,8 @@ public partial class FrmKundenkonto : BaseListForm
             await OnKundeGridSelectionChangedAsync();
         };
         btnLaden.Click += async (_, _) => await LoadKundenkontoAsync();
+        btnPreview.Click += async (_, _) => await OnPreviewKundenkontoAsync();
+        btnPdf.Click += async (_, _) => await OnPdfKundenkontoAsync();
     }
 
     private async Task OnLoadAsync()
@@ -202,5 +209,40 @@ public partial class FrmKundenkonto : BaseListForm
         }
 
         await LoadKundenkontoAsync();
+    }
+
+    private async Task OnPreviewKundenkontoAsync()
+    {
+        var kunde = GetSelectedKunde();
+        if (kunde == null)
+        {
+            ShowError("Bitte einen Kunden auswählen.");
+            return;
+        }
+        await _reportRenderService.PreviewKundenkontoAsync(kunde.Id, dtpVon.Value.Date, dtpBis.Value.Date);
+    }
+
+    private async Task OnPdfKundenkontoAsync()
+    {
+        var kunde = GetSelectedKunde();
+        if (kunde == null)
+        {
+            ShowError("Bitte einen Kunden auswählen.");
+            return;
+        }
+        var pdf = await _reportRenderService.RenderKundenkontoPdfAsync(kunde.Id, dtpVon.Value.Date, dtpBis.Value.Date);
+        var fileName = $"Kundenkonto_{kunde.Kundennummer}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), fileName);
+        await File.WriteAllBytesAsync(path, pdf);
+        MessageBox.Show($"PDF gespeichert: {path}", "PDF Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private CustomerListDto? GetSelectedKunde()
+    {
+        if (dgwKunden.CurrentRow?.DataBoundItem is CustomerListDto gridKunde)
+            return gridKunde;
+        if (cboKunde.SelectedItem is CustomerListDto cb)
+            return cb;
+        return null;
     }
 }

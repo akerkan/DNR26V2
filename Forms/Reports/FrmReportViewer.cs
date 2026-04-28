@@ -60,5 +60,7 @@ public partial class FrmReportViewer : Form
         if (!string.IsNullOrWhiteSpace(_windowTitle))
             Text = _windowTitle;
     }
+
+    public ReportViewer ReportViewer => reportViewerMain;
 }
 

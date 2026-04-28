@@ -15,12 +15,15 @@
        doppelt kompilieren (einmal hier, einmal in deren eigenem .csproj).
        ═══════════════════════════════════════════════════════════════════════ -->
   <ItemGroup>
+    <Compile Remove="Datasets\**" />
     <Compile Remove="DNR26V2.Domain\**" />
     <Compile Remove="DNR26V2.Data\**" />
     <Compile Remove="DNR26V2.Services\**" />
+    <EmbeddedResource Remove="Datasets\**" />
     <EmbeddedResource Remove="DNR26V2.Domain\**" />
     <EmbeddedResource Remove="DNR26V2.Data\**" />
     <EmbeddedResource Remove="DNR26V2.Services\**" />
+    <None Remove="Datasets\**" />
     <None Remove="DNR26V2.Domain\**" />
     <None Remove="DNR26V2.Data\**" />
     <None Remove="DNR26V2.Services\**" />
@@ -56,6 +59,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -64,6 +68,25 @@
     </Content>
     <None Update="Reports\*.rdlc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Data\Datasets\dsInvoice.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>dsInvoice.xsd</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Data\Datasets\dsInvoice.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>dsInvoice.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
 

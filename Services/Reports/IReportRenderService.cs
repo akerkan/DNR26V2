@@ -20,4 +20,9 @@ public interface IReportRenderService
     Task PrintDeliveryAsync(int deliveryId, string? printerName = null);
     Task PrintDeliveriesAsync(IEnumerable<int> deliveryIds, string? printerName = null);
     Task<byte[]> RenderDeliveryPdfAsync(int deliveryId);
+
+    // --- Kundenkonto report ---
+    Task PreviewKundenkontoAsync(int kundeId, DateTime von, DateTime bis);
+    Task<byte[]> RenderKundenkontoPdfAsync(int kundeId, DateTime von, DateTime bis);
+    Task PrintKundenkontoAsync(int kundeId, DateTime von, DateTime bis, string? printerName = null);
 }

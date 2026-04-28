@@ -43,6 +43,8 @@ partial class FrmKundenkonto
         colHaben = new DataGridViewTextBoxColumn();
         colSaldo = new DataGridViewTextBoxColumn();
         colNotiz = new DataGridViewTextBoxColumn();
+        btnPreview = new Button();
+        btnPdf = new Button();
         panelLeft.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgwKunden).BeginInit();
         panelSummary.SuspendLayout();
@@ -178,6 +180,8 @@ partial class FrmKundenkonto
         panelSummary.Controls.Add(lblSaldo);
         panelSummary.Controls.Add(lblKundennameValue);
         panelSummary.Controls.Add(lblKundenname);
+        panelSummary.Controls.Add(btnPreview);
+        panelSummary.Controls.Add(btnPdf);
         panelSummary.Dock = DockStyle.Top;
         panelSummary.Location = new Point(491, 29);
         panelSummary.Margin = new Padding(3, 4, 3, 4);
@@ -332,6 +336,24 @@ partial class FrmKundenkonto
         colNotiz.Name = "colNotiz";
         colNotiz.ReadOnly = true;
         // 
+        // btnPreview
+        // 
+        btnPreview.Location = new Point(200, 13);
+        btnPreview.Name = "btnPreview";
+        btnPreview.Size = new Size(120, 32);
+        btnPreview.TabIndex = 10;
+        btnPreview.Text = "Vorschau / Druck";
+        btnPreview.UseVisualStyleBackColor = true;
+        // 
+        // btnPdf
+        // 
+        btnPdf.Location = new Point(330, 13);
+        btnPdf.Name = "btnPdf";
+        btnPdf.Size = new Size(80, 32);
+        btnPdf.TabIndex = 11;
+        btnPdf.Text = "PDF";
+        btnPdf.UseVisualStyleBackColor = true;
+        // 
         // FrmKundenkonto
         // 
         AutoScaleDimensions = new SizeF(8F, 20F);
@@ -383,4 +405,6 @@ partial class FrmKundenkonto
     private DataGridViewTextBoxColumn colHaben;
     private DataGridViewTextBoxColumn colSaldo;
     private DataGridViewTextBoxColumn colNotiz;
+    private Button btnPreview;
+    private Button btnPdf;
 }

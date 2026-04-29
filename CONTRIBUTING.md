@@ -61,6 +61,20 @@
 
 ---
 
+# RDLC Reporting Rules (2024)
+
+- All RDLC reports must use SQL View → DataTable → ReportDataSource (with correct dataset name).
+- No business logic or DTO mapping in C# for reporting.
+- All report logic must be centralized in RdlcReportRenderService.
+- Forms must not contain report loading logic.
+- Dataset names in RDLC must match the DataTable binding name in code.
+- SQL Views must provide all required fields for reporting.
+- XSD datasets are only for design-time support and must match the SQL View.
+- Do not edit RDLC or XSD files in this repository unless you are updating design-time fields.
+- Remove obsolete DTO/report data services only if they are definitely unused after migration to DataTable-based reporting.
+
+---
+
 # RULE_DB
 
 1. TABLE names → **English** (`PaymentHeaders`, `Invoices`)

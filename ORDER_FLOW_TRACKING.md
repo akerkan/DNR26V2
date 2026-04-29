@@ -429,3 +429,26 @@ ReferenceType = 1 in PaymentLines
 | Method | Reason | Replacement |
 |---|---|---|
 | `InvoiceService.StornierenAsync` | No Gegendokument | `CreateGutschriftAsync` |
+
+---
+
+# RDLC Reporting Flow (2024)
+
+## Architecture
+- All reporting data comes from SQL Views (e.g. vwInvoiceReport, vwOrderReport, vwDeliveryReport, vwKundenkontoReport).
+- At runtime, data is loaded via ADO.NET (SqlConnection, SqlCommand, SqlDataAdapter) into a DataTable.
+- DataTable is bound to the RDLC ReportViewer using ReportDataSource with the exact dataset name (e.g. dsInvoice, dsOrder, dsDelivery, dsKundenkonto).
+- All report logic is centralized in RdlcReportRenderService.
+- Forms must call only the centralized report service (never load or bind reports directly).
+- No business logic or DTO mapping in C# for reporting.
+- XSD datasets are only for RDLC design-time support and must match the SQL View.
+
+## Migration Steps
+- Remove old report DTO/service code only if it is no longer referenced after migration.
+- Do not remove business/domain DTOs used outside reporting.
+- Do not edit RDLC or XSD files unless updating design-time fields.
+
+## Manual Steps for Developers
+- Ensure each RDLC file has a dataset matching the DataTable name in code.
+- Ensure each XSD dataset matches the SQL View columns for design-time support.
+- Create/refresh the XSD and RDLC datasets as needed.

@@ -116,9 +116,6 @@ static class Program
 
         // --- Reporting ---
         services.AddScoped<IInvoiceReportDataService, InvoiceReportDataService>();
-        services.AddScoped<IOrderReportDataService, OrderReportDataService>();
-        services.AddScoped<IDeliveryReportDataService, DeliveryReportDataService>();
-        services.AddScoped<IKundenkontoReportDataService, KundenkontoReportDataService>();
         services.AddScoped<IReportRenderService, RdlcReportRenderService>();
         services.AddTransient<FrmReportViewer>();
 

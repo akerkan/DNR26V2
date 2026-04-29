@@ -14,26 +14,14 @@ public class RdlcReportRenderService : IReportRenderService
     private const string LieferscheinRdlc = "Reports\\Lieferschein.rdlc";
     private const string KundenkontoRdlc = "Reports\\Kundenkonto.rdlc";
 
-    private readonly IInvoiceReportDataService _invoiceReportDataService;
-    private readonly IOrderReportDataService _orderReportDataService;
-    private readonly IDeliveryReportDataService _deliveryReportDataService;
     private readonly IAppSetupService _appSetupService;
-    private readonly IKundenkontoReportDataService _kundenkontoReportDataService;
     private readonly IConfiguration _configuration;
 
     public RdlcReportRenderService(
-        IInvoiceReportDataService invoiceReportDataService,
-        IOrderReportDataService orderReportDataService,
-        IDeliveryReportDataService deliveryReportDataService,
         IAppSetupService appSetupService,
-        IKundenkontoReportDataService kundenkontoReportDataService,
         IConfiguration configuration)
     {
-        _invoiceReportDataService = invoiceReportDataService;
-        _orderReportDataService = orderReportDataService;
-        _deliveryReportDataService = deliveryReportDataService;
         _appSetupService = appSetupService;
-        _kundenkontoReportDataService = kundenkontoReportDataService;
         _configuration = configuration;
     }
 
@@ -41,14 +29,6 @@ public class RdlcReportRenderService : IReportRenderService
     {
         var dt = await LoadInvoiceReportDataAsync(invoiceId);
         ShowInvoicePreview(dt);
-    }
-
-    private string GetConnectionString()
-    {
-        var useLocalDb = _configuration.GetValue<bool>("AppSettings:UseLocalDb");
-        return useLocalDb
-            ? _configuration.GetConnectionString("LocalDb")
-            : _configuration.GetConnectionString("SqlServer");
     }
 
     private async Task<DataTable> LoadInvoiceReportDataAsync(int invoiceId)
@@ -76,9 +56,22 @@ public class RdlcReportRenderService : IReportRenderService
 
     public async Task PreviewInvoicesAsync(IEnumerable<int> invoiceIds)
     {
-        var reports = await _invoiceReportDataService.GetInvoiceReportDataAsync(invoiceIds);
-        using var form = new FrmReportViewer(GetRdlcPath(RechnungRdlc), reports);
-        form.ShowDialog();
+        var dt = await LoadBulkInvoiceReportDataAsync(invoiceIds);
+        ShowInvoicePreview(dt);
+    }
+
+    private async Task<DataTable> LoadBulkInvoiceReportDataAsync(IEnumerable<int> invoiceIds)
+    {
+        var dt = new DataTable();
+        var ids = invoiceIds.ToList();
+        if (ids.Count == 0) return dt;
+        var idList = string.Join(",", ids);
+        var sql = $"SELECT * FROM dbo.vwInvoiceReport WHERE RechnungId IN ({idList}) ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
+        using var con = new SqlConnection(GetConnectionString());
+        using var cmd = new SqlCommand(sql, con);
+        using var da = new SqlDataAdapter(cmd);
+        await Task.Run(() => da.Fill(dt));
+        return dt;
     }
 
     public async Task PrintInvoiceAsync(int invoiceId, string? printerName = null)
@@ -95,11 +88,10 @@ public class RdlcReportRenderService : IReportRenderService
 
     public async Task<byte[]> RenderInvoicePdfAsync(int invoiceId)
     {
-        var report = await _invoiceReportDataService.GetInvoiceReportDataAsync(invoiceId);
+        var dt = await LoadInvoiceReportDataAsync(invoiceId);
         return RenderPdf(
-            GetRdlcPath(RechnungRdlc),
-            ReportDataTableFactory.SingleRowTable(report.Header),
-            ReportDataTableFactory.ToDataTable(report.Lines));
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Invoice.rdlc"),
+            dt);
     }
 
     public async Task<byte[]> RenderInvoicesPdfAsync(IEnumerable<int> invoiceIds)
@@ -113,12 +105,30 @@ public class RdlcReportRenderService : IReportRenderService
 
     public async Task PreviewOrderAsync(int orderId)
     {
-        var report = await _orderReportDataService.GetOrderReportDataAsync(orderId);
-        using var form = new FrmReportViewer(
-            GetRdlcPath(AuftragRdlc),
-            ReportDataTableFactory.SingleRowTable(report.Header),
-            ReportDataTableFactory.ToDataTable(report.Lines),
-            $"Auftragsbestätigung - {report.Header.Auftragsnummer}");
+        var dt = await LoadOrderReportDataAsync(orderId);
+        ShowOrderPreview(dt);
+    }
+
+    private async Task<DataTable> LoadOrderReportDataAsync(int orderId)
+    {
+        var dt = new DataTable();
+        var sql = @"SELECT * FROM dbo.vwOrderReport WHERE OrderId = @OrderId ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
+        using var con = new SqlConnection(GetConnectionString());
+        using var cmd = new SqlCommand(sql, con);
+        cmd.Parameters.AddWithValue("@OrderId", orderId);
+        using var da = new SqlDataAdapter(cmd);
+        await Task.Run(() => da.Fill(dt));
+        return dt;
+    }
+
+    private void ShowOrderPreview(DataTable table)
+    {
+        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Order.rdlc");
+        using var form = new FrmReportViewer();
+        form.ReportViewer.LocalReport.DataSources.Clear();
+        form.ReportViewer.LocalReport.DataSources.Add(new ReportDataSource("dsOrder", table));
+        form.ReportViewer.LocalReport.ReportPath = rdlcPath;
+        form.ReportViewer.RefreshReport();
         form.ShowDialog();
     }
 
@@ -130,33 +140,59 @@ public class RdlcReportRenderService : IReportRenderService
 
     public async Task<byte[]> RenderOrderPdfAsync(int orderId)
     {
-        var report = await _orderReportDataService.GetOrderReportDataAsync(orderId);
+        var dt = await LoadOrderReportDataAsync(orderId);
         return RenderPdf(
-            GetRdlcPath(AuftragRdlc),
-            ReportDataTableFactory.SingleRowTable(report.Header),
-            ReportDataTableFactory.ToDataTable(report.Lines));
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Order.rdlc"),
+            dt);
     }
 
     public async Task PreviewDeliveryAsync(int deliveryId)
     {
-        var report = await _deliveryReportDataService.GetDeliveryReportDataAsync(deliveryId);
-        using var form = new FrmReportViewer(
-            GetRdlcPath(LieferscheinRdlc),
-            ReportDataTableFactory.SingleRowTable(report.Header),
-            ReportDataTableFactory.ToDataTable(report.Lines),
-            $"Lieferschein - {report.Header.Lieferscheinnummer}");
+        var dt = await LoadDeliveryReportDataAsync(deliveryId);
+        ShowDeliveryPreview(dt);
+    }
+
+    private async Task<DataTable> LoadDeliveryReportDataAsync(int deliveryId)
+    {
+        var dt = new DataTable();
+        var sql = @"SELECT * FROM dbo.vwDeliveryReport WHERE DeliveryId = @DeliveryId ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
+        using var con = new SqlConnection(GetConnectionString());
+        using var cmd = new SqlCommand(sql, con);
+        cmd.Parameters.AddWithValue("@DeliveryId", deliveryId);
+        using var da = new SqlDataAdapter(cmd);
+        await Task.Run(() => da.Fill(dt));
+        return dt;
+    }
+
+    private void ShowDeliveryPreview(DataTable table)
+    {
+        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Delivery.rdlc");
+        using var form = new FrmReportViewer();
+        form.ReportViewer.LocalReport.DataSources.Clear();
+        form.ReportViewer.LocalReport.DataSources.Add(new ReportDataSource("dsDelivery", table));
+        form.ReportViewer.LocalReport.ReportPath = rdlcPath;
+        form.ReportViewer.RefreshReport();
         form.ShowDialog();
     }
 
     public async Task PreviewDeliveriesAsync(IEnumerable<int> deliveryIds)
     {
-        var reports = await _deliveryReportDataService.GetDeliveryReportDataAsync(deliveryIds);
-        using var form = new FrmReportViewer(
-            GetRdlcPath(LieferscheinRdlc),
-            ReportDataTableFactory.ToDataTable(reports.Select(x => x.Header)),
-            ReportDataTableFactory.ToDataTable(reports.SelectMany(x => x.Lines)),
-            $"Lieferschein-Vorschau - {reports.Count} Dokumente");
-        form.ShowDialog();
+        var dt = await LoadBulkDeliveryReportDataAsync(deliveryIds);
+        ShowDeliveryPreview(dt);
+    }
+
+    private async Task<DataTable> LoadBulkDeliveryReportDataAsync(IEnumerable<int> deliveryIds)
+    {
+        var dt = new DataTable();
+        var ids = deliveryIds.ToList();
+        if (ids.Count == 0) return dt;
+        var idList = string.Join(",", ids);
+        var sql = $"SELECT * FROM dbo.vwDeliveryReport WHERE DeliveryId IN ({idList}) ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
+        using var con = new SqlConnection(GetConnectionString());
+        using var cmd = new SqlCommand(sql, con);
+        using var da = new SqlDataAdapter(cmd);
+        await Task.Run(() => da.Fill(dt));
+        return dt;
     }
 
     public async Task PrintDeliveryAsync(int deliveryId, string? printerName = null)
@@ -173,31 +209,49 @@ public class RdlcReportRenderService : IReportRenderService
 
     public async Task<byte[]> RenderDeliveryPdfAsync(int deliveryId)
     {
-        var report = await _deliveryReportDataService.GetDeliveryReportDataAsync(deliveryId);
+        var dt = await LoadDeliveryReportDataAsync(deliveryId);
         return RenderPdf(
-            GetRdlcPath(LieferscheinRdlc),
-            ReportDataTableFactory.SingleRowTable(report.Header),
-            ReportDataTableFactory.ToDataTable(report.Lines));
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Delivery.rdlc"),
+            dt);
     }
 
     public async Task PreviewKundenkontoAsync(int kundeId, DateTime von, DateTime bis)
     {
-        var report = await _kundenkontoReportDataService.GetKundenkontoReportDataAsync(kundeId, von, bis);
-        using var form = new FrmReportViewer(
-            GetRdlcPath(KundenkontoRdlc),
-            ReportDataTableFactory.SingleRowTable(report.Header),
-            ReportDataTableFactory.ToDataTable(report.Lines),
-            $"Kundenkonto - {report.Header.KundenNr}");
+        var dt = await LoadKundenkontoReportDataAsync(kundeId, von, bis);
+        ShowKundenkontoPreview(dt);
+    }
+
+    private async Task<DataTable> LoadKundenkontoReportDataAsync(int kundeId, DateTime von, DateTime bis)
+    {
+        var dt = new DataTable();
+        var sql = @"SELECT * FROM dbo.vwKundenkontoReport WHERE KundeId = @KundeId AND Datum BETWEEN @Von AND @Bis ORDER BY Datum, BelegNr;";
+        using var con = new SqlConnection(GetConnectionString());
+        using var cmd = new SqlCommand(sql, con);
+        cmd.Parameters.AddWithValue("@KundeId", kundeId);
+        cmd.Parameters.AddWithValue("@Von", von);
+        cmd.Parameters.AddWithValue("@Bis", bis);
+        using var da = new SqlDataAdapter(cmd);
+        await Task.Run(() => da.Fill(dt));
+        return dt;
+    }
+
+    private void ShowKundenkontoPreview(DataTable table)
+    {
+        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Kundenkonto.rdlc");
+        using var form = new FrmReportViewer();
+        form.ReportViewer.LocalReport.DataSources.Clear();
+        form.ReportViewer.LocalReport.DataSources.Add(new ReportDataSource("dsKundenkonto", table));
+        form.ReportViewer.LocalReport.ReportPath = rdlcPath;
+        form.ReportViewer.RefreshReport();
         form.ShowDialog();
     }
 
     public async Task<byte[]> RenderKundenkontoPdfAsync(int kundeId, DateTime von, DateTime bis)
     {
-        var report = await _kundenkontoReportDataService.GetKundenkontoReportDataAsync(kundeId, von, bis);
+        var dt = await LoadKundenkontoReportDataAsync(kundeId, von, bis);
         return RenderPdf(
-            GetRdlcPath(KundenkontoRdlc),
-            ReportDataTableFactory.SingleRowTable(report.Header),
-            ReportDataTableFactory.ToDataTable(report.Lines));
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Kundenkonto.rdlc"),
+            dt);
     }
 
     public async Task PrintKundenkontoAsync(int kundeId, DateTime von, DateTime bis, string? printerName = null)
@@ -206,13 +260,21 @@ public class RdlcReportRenderService : IReportRenderService
         await PrintPdfAsync(pdf, $"kundenkonto_{kundeId}.pdf", printerName);
     }
 
-    private static byte[] RenderPdf(string rdlcPath, DataTable headerTable, DataTable linesTable)
+    private static byte[] RenderPdf(string rdlcPath, DataTable table)
     {
         using var localReport = new LocalReport();
         localReport.ReportPath = rdlcPath;
         localReport.DataSources.Clear();
-        localReport.DataSources.Add(new ReportDataSource(ReportDataTableFactory.DsHeader, headerTable));
-        localReport.DataSources.Add(new ReportDataSource(ReportDataTableFactory.DsLines, linesTable));
+        // The dataset name must match the RDLC file (e.g. dsDelivery)
+        var dsName = Path.GetFileNameWithoutExtension(rdlcPath).ToLower() switch
+        {
+            "delivery" => "dsDelivery",
+            "order" => "dsOrder",
+            "kundenkonto" => "dsKundenkonto",
+            "invoice" => "dsInvoice",
+            _ => "dsLines"
+        };
+        localReport.DataSources.Add(new ReportDataSource(dsName, table));
         return localReport.Render("PDF");
     }
 
@@ -222,20 +284,16 @@ public class RdlcReportRenderService : IReportRenderService
         var targetPrinter = string.IsNullOrWhiteSpace(printerName)
             ? ResolveConfiguredPrinter(setup)
             : printerName;
-
         var tempFile = Path.Combine(Path.GetTempPath(), fileName);
         await File.WriteAllBytesAsync(tempFile, pdf);
-
         var psi = new global::System.Diagnostics.ProcessStartInfo
         {
             FileName = tempFile,
             Verb = "print",
             UseShellExecute = true
         };
-
         if (!string.IsNullOrWhiteSpace(targetPrinter))
             psi.Arguments = $"\"{targetPrinter}\"";
-
         global::System.Diagnostics.Process.Start(psi);
     }
 
@@ -244,11 +302,11 @@ public class RdlcReportRenderService : IReportRenderService
             ? (setup.DruckerMitLogo ?? setup.DruckerWeissesPapier ?? string.Empty)
             : (setup.DruckerWeissesPapier ?? setup.DruckerMitLogo ?? string.Empty);
 
-    private static string GetRdlcPath(string relativePath)
+    private string GetConnectionString()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativePath);
-        if (!File.Exists(path))
-            throw new FileNotFoundException($"RDLC nicht gefunden: {path}");
-        return path;
+        var useLocalDb = _configuration.GetValue<bool>("AppSettings:UseLocalDb");
+        return useLocalDb
+            ? _configuration.GetConnectionString("LocalDb")
+            : _configuration.GetConnectionString("SqlServer");
     }
 }

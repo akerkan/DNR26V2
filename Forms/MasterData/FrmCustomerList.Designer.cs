@@ -215,8 +215,6 @@ partial class FrmCustomerList
         nudLimit = new NumericUpDown();
         lblLimit = new Label();
         lblAusnahmeTour = new Label();
-        lblReceivableSource = new Label();
-        cmbReceivableSource = new ComboBox();
         tabLiefertage = new TabPage();
         tlpLiefertage = new TableLayoutPanel();
         lblLiefertageTitel = new Label();
@@ -1155,26 +1153,6 @@ partial class FrmCustomerList
         lblAusnahmeTour.Text = "Ausnahme-Tour";
         lblAusnahmeTour.TextAlign = ContentAlignment.MiddleLeft;
         // 
-        // lblReceivableSource
-        // 
-        lblReceivableSource.Dock = DockStyle.Fill;
-        lblReceivableSource.Location = new Point(8, 244);
-        lblReceivableSource.Margin = new Padding(0, 5, 8, 5);
-        lblReceivableSource.Name = "lblReceivableSource";
-        lblReceivableSource.Size = new Size(152, 23);
-        lblReceivableSource.TabIndex = 22;
-        lblReceivableSource.Text = "Forderungsart";
-        lblReceivableSource.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // cmbReceivableSource
-        // 
-        cmbReceivableSource.Dock = DockStyle.Fill;
-        cmbReceivableSource.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbReceivableSource.Location = new Point(168, 244);
-        cmbReceivableSource.Margin = new Padding(0, 5, 0, 5);
-        cmbReceivableSource.Name = "cmbReceivableSource";
-        cmbReceivableSource.Size = new Size(220, 23);
-        cmbReceivableSource.TabIndex = 23;
         // 
         // tabLiefertage
         // 

@@ -76,17 +76,56 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Data\Datasets\dsDelivery.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>dsDelivery.xsd</DependentUpon>
+    </Compile>
     <Compile Update="Data\Datasets\dsInvoice.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>dsInvoice.xsd</DependentUpon>
     </Compile>
+    <Compile Update="Data\Datasets\dsKundenkonto.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>dsKundenkonto.xsd</DependentUpon>
+    </Compile>
+    <Compile Update="Data\Datasets\dsOrder.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>dsOrder.xsd</DependentUpon>
+    </Compile>
+    <Compile Update="Data\Datasets\dsTourList.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>dsTourList.xsd</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\Datasets\dsDelivery.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>dsDelivery.Designer.cs</LastGenOutput>
+    </None>
     <None Update="Data\Datasets\dsInvoice.xsd">
       <Generator>MSDataSetGenerator</Generator>
       <LastGenOutput>dsInvoice.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="Data\Datasets\dsKundenkonto.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>dsKundenkonto.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="Data\Datasets\dsOrder.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>dsOrder.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="Data\Datasets\dsTourList.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>dsTourList.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="Reports\Auftragsbestaetigung.rdlc">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

@@ -16,7 +16,7 @@ public sealed class CustomerListDto
     public string?  Tur             { get; set; }      // AttributeValue.Bezeichnung
     public string?  AusnahmeTur     { get; set; }
     public string?  KundenGruppe    { get; set; }      // war: Kundenfilter
-    public int      Routenfolge     { get; set; }
+    public string?  RoutenFolge     { get; set; }
     public decimal  Limit           { get; set; }
     public bool     LiefertMo       { get; set; }
     public bool     LiefertDi       { get; set; }

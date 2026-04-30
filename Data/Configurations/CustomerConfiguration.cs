@@ -35,7 +35,6 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         entity.Property(e => e.ALOrt)     .HasMaxLength(100);
         entity.Property(e => e.ALLand)    .HasMaxLength(100);
 
-        entity.Property(e => e.Routenfolge).HasDefaultValue(0);
         entity.Property(e => e.Limit)      .HasPrecision(10, 2).HasDefaultValue(0m);
 
         entity.Property(e => e.Geraete1).HasMaxLength(200);
@@ -71,6 +70,12 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         entity.HasOne(e => e.KundenGruppeWert)
               .WithMany()
               .HasForeignKey(e => e.KundenGruppeWertId)
+              .OnDelete(DeleteBehavior.NoAction);
+
+        // Routenfolge → ProductAttributeValue (EntityType = Routenfolge)
+        entity.HasOne(e => e.RoutenFolgeWert)
+              .WithMany()
+              .HasForeignKey(e => e.RoutenFolgeWertId)
               .OnDelete(DeleteBehavior.NoAction);
 
         entity.Property(e => e.ErstelltAm)  .HasDefaultValueSql("GETDATE()");

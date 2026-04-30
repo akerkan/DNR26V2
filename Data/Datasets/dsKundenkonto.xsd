@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="dsKundenkonto" targetNamespace="http://tempuri.org/dsKundenkonto.xsd" xmlns:mstns="http://tempuri.org/dsKundenkonto.xsd" xmlns="http://tempuri.org/dsKundenkonto.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection ConnectionStringObject="Data Source=(LocalDB)\MSSQLLocalDB;Initial Catalog=DNR26V2;Integrated Security=True;Encrypt=True" IsAppSettingsProperty="false" Modifier="Assembly" Name="DNR26V2ConnectionString" ParameterPrefix="@" Provider="Microsoft.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="vwKundenkontoReportTableAdapter" GeneratorDataComponentClassName="vwKundenkontoReportTableAdapter" Name="vwKundenkontoReport" UserDataComponentName="vwKundenkontoReportTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="DNR26V2ConnectionString" DbObjectName="DNR26V2.dbo.vwKundenkontoReport" DbObjectType="View" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT EntryType, EntryId, KundeId, Kundennummer, Kundenname, Name2, Inhaber, KundeAdresse, KundeAdresse2, KundePLZ, KundeOrt, KundeLand, Buchungsdatum, Belegnummer, BelegArt, BelegArtText, Notiz, Gesamtnetto, Gesamtmwst, Gesamtbrutto, Betrag, Zahlung, SaldoWirkung FROM dbo.vwKundenkontoReport</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="EntryType" DataSetColumn="EntryType" />
+              <Mapping SourceColumn="EntryId" DataSetColumn="EntryId" />
+              <Mapping SourceColumn="KundeId" DataSetColumn="KundeId" />
+              <Mapping SourceColumn="Kundennummer" DataSetColumn="Kundennummer" />
+              <Mapping SourceColumn="Kundenname" DataSetColumn="Kundenname" />
+              <Mapping SourceColumn="Name2" DataSetColumn="Name2" />
+              <Mapping SourceColumn="Inhaber" DataSetColumn="Inhaber" />
+              <Mapping SourceColumn="KundeAdresse" DataSetColumn="KundeAdresse" />
+              <Mapping SourceColumn="KundeAdresse2" DataSetColumn="KundeAdresse2" />
+              <Mapping SourceColumn="KundePLZ" DataSetColumn="KundePLZ" />
+              <Mapping SourceColumn="KundeOrt" DataSetColumn="KundeOrt" />
+              <Mapping SourceColumn="KundeLand" DataSetColumn="KundeLand" />
+              <Mapping SourceColumn="Buchungsdatum" DataSetColumn="Buchungsdatum" />
+              <Mapping SourceColumn="Belegnummer" DataSetColumn="Belegnummer" />
+              <Mapping SourceColumn="BelegArt" DataSetColumn="BelegArt" />
+              <Mapping SourceColumn="BelegArtText" DataSetColumn="BelegArtText" />
+              <Mapping SourceColumn="Notiz" DataSetColumn="Notiz" />
+              <Mapping SourceColumn="Gesamtnetto" DataSetColumn="Gesamtnetto" />
+              <Mapping SourceColumn="Gesamtmwst" DataSetColumn="Gesamtmwst" />
+              <Mapping SourceColumn="Gesamtbrutto" DataSetColumn="Gesamtbrutto" />
+              <Mapping SourceColumn="Betrag" DataSetColumn="Betrag" />
+              <Mapping SourceColumn="Zahlung" DataSetColumn="Zahlung" />
+              <Mapping SourceColumn="SaldoWirkung" DataSetColumn="SaldoWirkung" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="dsKundenkonto" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_UserDSName="dsKundenkonto" msprop:Generator_DataSetName="dsKundenkonto">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="vwKundenkontoReport" msprop:Generator_RowEvHandlerName="vwKundenkontoReportRowChangeEventHandler" msprop:Generator_RowDeletedName="vwKundenkontoReportRowDeleted" msprop:Generator_RowDeletingName="vwKundenkontoReportRowDeleting" msprop:Generator_RowEvArgName="vwKundenkontoReportRowChangeEvent" msprop:Generator_TablePropName="vwKundenkontoReport" msprop:Generator_RowChangedName="vwKundenkontoReportRowChanged" msprop:Generator_RowChangingName="vwKundenkontoReportRowChanging" msprop:Generator_TableClassName="vwKundenkontoReportDataTable" msprop:Generator_RowClassName="vwKundenkontoReportRow" msprop:Generator_TableVarName="tablevwKundenkontoReport" msprop:Generator_UserTableName="vwKundenkontoReport">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="EntryType" msprop:Generator_ColumnPropNameInRow="EntryType" msprop:Generator_ColumnPropNameInTable="EntryTypeColumn" msprop:Generator_ColumnVarNameInTable="columnEntryType" msprop:Generator_UserColumnName="EntryType" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="EntryId" msprop:Generator_ColumnPropNameInRow="EntryId" msprop:Generator_ColumnPropNameInTable="EntryIdColumn" msprop:Generator_ColumnVarNameInTable="columnEntryId" msprop:Generator_UserColumnName="EntryId" type="xs:int" />
+              <xs:element name="KundeId" msprop:Generator_ColumnPropNameInRow="KundeId" msprop:Generator_ColumnPropNameInTable="KundeIdColumn" msprop:Generator_ColumnVarNameInTable="columnKundeId" msprop:Generator_UserColumnName="KundeId" type="xs:int" />
+              <xs:element name="Kundennummer" msprop:Generator_ColumnPropNameInRow="Kundennummer" msprop:Generator_ColumnPropNameInTable="KundennummerColumn" msprop:Generator_ColumnVarNameInTable="columnKundennummer" msprop:Generator_UserColumnName="Kundennummer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Kundenname" msprop:Generator_ColumnPropNameInRow="Kundenname" msprop:Generator_ColumnPropNameInTable="KundennameColumn" msprop:Generator_ColumnVarNameInTable="columnKundenname" msprop:Generator_UserColumnName="Kundenname">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Name2" msprop:Generator_ColumnPropNameInRow="Name2" msprop:Generator_ColumnPropNameInTable="Name2Column" msprop:Generator_ColumnVarNameInTable="columnName2" msprop:Generator_UserColumnName="Name2" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Inhaber" msprop:Generator_ColumnPropNameInRow="Inhaber" msprop:Generator_ColumnPropNameInTable="InhaberColumn" msprop:Generator_ColumnVarNameInTable="columnInhaber" msprop:Generator_UserColumnName="Inhaber" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="KundeAdresse" msprop:Generator_ColumnPropNameInRow="KundeAdresse" msprop:Generator_ColumnPropNameInTable="KundeAdresseColumn" msprop:Generator_ColumnVarNameInTable="columnKundeAdresse" msprop:Generator_UserColumnName="KundeAdresse" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="300" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="KundeAdresse2" msprop:Generator_ColumnPropNameInRow="KundeAdresse2" msprop:Generator_ColumnPropNameInTable="KundeAdresse2Column" msprop:Generator_ColumnVarNameInTable="columnKundeAdresse2" msprop:Generator_UserColumnName="KundeAdresse2" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="300" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="KundePLZ" msprop:Generator_ColumnPropNameInRow="KundePLZ" msprop:Generator_ColumnPropNameInTable="KundePLZColumn" msprop:Generator_ColumnVarNameInTable="columnKundePLZ" msprop:Generator_UserColumnName="KundePLZ" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="10" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="KundeOrt" msprop:Generator_ColumnPropNameInRow="KundeOrt" msprop:Generator_ColumnPropNameInTable="KundeOrtColumn" msprop:Generator_ColumnVarNameInTable="columnKundeOrt" msprop:Generator_UserColumnName="KundeOrt" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="KundeLand" msprop:Generator_ColumnPropNameInRow="KundeLand" msprop:Generator_ColumnPropNameInTable="KundeLandColumn" msprop:Generator_ColumnVarNameInTable="columnKundeLand" msprop:Generator_UserColumnName="KundeLand">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Buchungsdatum" msprop:Generator_ColumnPropNameInRow="Buchungsdatum" msprop:Generator_ColumnPropNameInTable="BuchungsdatumColumn" msprop:Generator_ColumnVarNameInTable="columnBuchungsdatum" msprop:Generator_UserColumnName="Buchungsdatum" type="xs:dateTime" />
+              <xs:element name="Belegnummer" msprop:Generator_ColumnPropNameInRow="Belegnummer" msprop:Generator_ColumnPropNameInTable="BelegnummerColumn" msprop:Generator_ColumnVarNameInTable="columnBelegnummer" msprop:Generator_UserColumnName="Belegnummer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="BelegArt" msprop:Generator_ColumnPropNameInRow="BelegArt" msprop:Generator_ColumnPropNameInTable="BelegArtColumn" msprop:Generator_ColumnVarNameInTable="columnBelegArt" msprop:Generator_UserColumnName="BelegArt" type="xs:int" minOccurs="0" />
+              <xs:element name="BelegArtText" msprop:Generator_ColumnPropNameInRow="BelegArtText" msprop:Generator_ColumnPropNameInTable="BelegArtTextColumn" msprop:Generator_ColumnVarNameInTable="columnBelegArtText" msprop:Generator_UserColumnName="BelegArtText" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Notiz" msprop:Generator_ColumnPropNameInRow="Notiz" msprop:Generator_ColumnPropNameInTable="NotizColumn" msprop:Generator_ColumnVarNameInTable="columnNotiz" msprop:Generator_UserColumnName="Notiz" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="500" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Gesamtnetto" msprop:Generator_ColumnPropNameInRow="Gesamtnetto" msprop:Generator_ColumnPropNameInTable="GesamtnettoColumn" msprop:Generator_ColumnVarNameInTable="columnGesamtnetto" msprop:Generator_UserColumnName="Gesamtnetto" type="xs:decimal" minOccurs="0" />
+              <xs:element name="Gesamtmwst" msprop:Generator_ColumnPropNameInRow="Gesamtmwst" msprop:Generator_ColumnPropNameInTable="GesamtmwstColumn" msprop:Generator_ColumnVarNameInTable="columnGesamtmwst" msprop:Generator_UserColumnName="Gesamtmwst" type="xs:decimal" minOccurs="0" />
+              <xs:element name="Gesamtbrutto" msprop:Generator_ColumnPropNameInRow="Gesamtbrutto" msprop:Generator_ColumnPropNameInTable="GesamtbruttoColumn" msprop:Generator_ColumnVarNameInTable="columnGesamtbrutto" msprop:Generator_UserColumnName="Gesamtbrutto" type="xs:decimal" minOccurs="0" />
+              <xs:element name="Betrag" msprop:Generator_ColumnPropNameInRow="Betrag" msprop:Generator_ColumnPropNameInTable="BetragColumn" msprop:Generator_ColumnVarNameInTable="columnBetrag" msprop:Generator_UserColumnName="Betrag" type="xs:decimal" minOccurs="0" />
+              <xs:element name="Zahlung" msprop:Generator_ColumnPropNameInRow="Zahlung" msprop:Generator_ColumnPropNameInTable="ZahlungColumn" msprop:Generator_ColumnVarNameInTable="columnZahlung" msprop:Generator_UserColumnName="Zahlung" type="xs:decimal" minOccurs="0" />
+              <xs:element name="SaldoWirkung" msprop:Generator_ColumnPropNameInRow="SaldoWirkung" msprop:Generator_ColumnPropNameInTable="SaldoWirkungColumn" msprop:Generator_ColumnVarNameInTable="columnSaldoWirkung" msprop:Generator_UserColumnName="SaldoWirkung" type="xs:decimal" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -6,5 +6,6 @@ public enum AttributeEntityType
     CustomerProduct = 2,
     Tour            = 3,
     KundenGruppe    = 4,
+    RoutenFolge     = 5,
     Shared          = 99
 }

@@ -40,35 +40,39 @@ public class OrderService : IOrderService
     {
         string dayFilter = tag switch
         {
-            DayOfWeek.Monday    => "AND c.LiefertMo = 1",
-            DayOfWeek.Tuesday   => "AND c.LiefertDi = 1",
+            DayOfWeek.Monday => "AND c.LiefertMo = 1",
+            DayOfWeek.Tuesday => "AND c.LiefertDi = 1",
             DayOfWeek.Wednesday => "AND c.LiefertMi = 1",
-            DayOfWeek.Thursday  => "AND c.LiefertDo = 1",
-            DayOfWeek.Friday    => "AND c.LiefertFr = 1",
-            DayOfWeek.Saturday  => "AND c.LiefertSa = 1",
-            DayOfWeek.Sunday    => "AND c.LiefertSo = 1",
-            _                   => string.Empty
+            DayOfWeek.Thursday => "AND c.LiefertDo = 1",
+            DayOfWeek.Friday => "AND c.LiefertFr = 1",
+            DayOfWeek.Saturday => "AND c.LiefertSa = 1",
+            DayOfWeek.Sunday => "AND c.LiefertSo = 1",
+            _ => string.Empty
         };
 
-        // Exclude Storniert(3) and Geloescht(4) — show Offen, Freigegeben and Gebucht
         var sql = $"""
-            SELECT c.Id,
-                   c.Kundennummer,
-                   c.Kundenname,
-                   tv.Bezeichnung   AS Tur,
-                   c.Routenfolge,
-                   c.PreisAusblenden,
-                   o.Id             AS AuftragId,
-                   o.Status         AS AuftragStatus
-            FROM   Customer c
-            LEFT   JOIN ProductAttributeValue tv ON tv.Id = c.TurWertId
-            LEFT   JOIN Orders o ON o.KundeId     = c.Id
-                                AND CAST(o.LieferDatum AS date) = CAST(@Datum AS date)
-                                AND o.Status NOT IN (3, 4)
-            WHERE  c.Aktiv = 1
-            {dayFilter}
-            ORDER  BY tv.Bezeichnung, c.Routenfolge, c.Kundenname
-            """;
+        SELECT c.Id,
+               c.Kundennummer,
+               c.Kundenname,
+               tv.Bezeichnung AS Tur,
+               rv.Bezeichnung AS RoutenFolge,
+               c.PreisAusblenden,
+               o.Id           AS AuftragId,
+               o.Status       AS AuftragStatus
+        FROM   Customer c
+        LEFT   JOIN ProductAttributeValue tv ON tv.Id = c.TurWertId
+        LEFT   JOIN ProductAttributeValue rv ON rv.Id = c.RoutenFolgeWertId
+        LEFT   JOIN Orders o ON o.KundeId = c.Id
+                            AND CAST(o.LieferDatum AS date) = CAST(@Datum AS date)
+                            AND o.Status NOT IN (3, 4)
+        WHERE  c.Aktiv = 1
+        {dayFilter}
+        ORDER BY 
+               tv.Bezeichnung,
+               TRY_CONVERT(int, rv.Bezeichnung),
+               rv.Bezeichnung,
+               c.Kundenname
+        """;
 
         using var conn = _dapper.CreateConnection();
         return (await conn.QueryAsync<OrderKundeListDto>(sql, new { Datum = datum })).AsList();

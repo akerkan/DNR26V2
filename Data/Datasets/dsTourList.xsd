@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="dsTourList" targetNamespace="http://tempuri.org/dsTourList.xsd" xmlns:mstns="http://tempuri.org/dsTourList.xsd" xmlns="http://tempuri.org/dsTourList.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection ConnectionStringObject="Data Source=(LocalDB)\MSSQLLocalDB;Initial Catalog=DNR26V2;Integrated Security=True;Encrypt=True" IsAppSettingsProperty="false" Modifier="Assembly" Name="DNR26V2ConnectionString" ParameterPrefix="@" Provider="Microsoft.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="vwTourListReportTableAdapter" GeneratorDataComponentClassName="vwTourListReportTableAdapter" Name="vwTourListReport" UserDataComponentName="vwTourListReportTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="DNR26V2ConnectionString" DbObjectName="DNR26V2.dbo.vwTourListReport" DbObjectType="View" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT LieferDatum, RouteId, Routenfolge, KundeId, Kundennummer, Kundenname, ArtikelId, Artikelnummer, Bezeichnung, Bezeichnung2, Einheit, Menge, Gewicht, ZeileNotiz, LieferscheinNotiz FROM dbo.vwTourListReport</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="LieferDatum" DataSetColumn="LieferDatum" />
+              <Mapping SourceColumn="RouteId" DataSetColumn="RouteId" />
+              <Mapping SourceColumn="Routenfolge" DataSetColumn="Routenfolge" />
+              <Mapping SourceColumn="KundeId" DataSetColumn="KundeId" />
+              <Mapping SourceColumn="Kundennummer" DataSetColumn="Kundennummer" />
+              <Mapping SourceColumn="Kundenname" DataSetColumn="Kundenname" />
+              <Mapping SourceColumn="ArtikelId" DataSetColumn="ArtikelId" />
+              <Mapping SourceColumn="Artikelnummer" DataSetColumn="Artikelnummer" />
+              <Mapping SourceColumn="Bezeichnung" DataSetColumn="Bezeichnung" />
+              <Mapping SourceColumn="Bezeichnung2" DataSetColumn="Bezeichnung2" />
+              <Mapping SourceColumn="Einheit" DataSetColumn="Einheit" />
+              <Mapping SourceColumn="Menge" DataSetColumn="Menge" />
+              <Mapping SourceColumn="Gewicht" DataSetColumn="Gewicht" />
+              <Mapping SourceColumn="ZeileNotiz" DataSetColumn="ZeileNotiz" />
+              <Mapping SourceColumn="LieferscheinNotiz" DataSetColumn="LieferscheinNotiz" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="dsTourList" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_UserDSName="dsTourList" msprop:Generator_DataSetName="dsTourList">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="vwTourListReport" msprop:Generator_RowEvHandlerName="vwTourListReportRowChangeEventHandler" msprop:Generator_RowDeletedName="vwTourListReportRowDeleted" msprop:Generator_RowDeletingName="vwTourListReportRowDeleting" msprop:Generator_RowEvArgName="vwTourListReportRowChangeEvent" msprop:Generator_TablePropName="vwTourListReport" msprop:Generator_RowChangedName="vwTourListReportRowChanged" msprop:Generator_RowChangingName="vwTourListReportRowChanging" msprop:Generator_TableClassName="vwTourListReportDataTable" msprop:Generator_RowClassName="vwTourListReportRow" msprop:Generator_TableVarName="tablevwTourListReport" msprop:Generator_UserTableName="vwTourListReport">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="LieferDatum" msprop:Generator_ColumnPropNameInRow="LieferDatum" msprop:Generator_ColumnPropNameInTable="LieferDatumColumn" msprop:Generator_ColumnVarNameInTable="columnLieferDatum" msprop:Generator_UserColumnName="LieferDatum" type="xs:dateTime" />
+              <xs:element name="RouteId" msprop:Generator_ColumnPropNameInRow="RouteId" msprop:Generator_ColumnPropNameInTable="RouteIdColumn" msprop:Generator_ColumnVarNameInTable="columnRouteId" msprop:Generator_UserColumnName="RouteId" type="xs:int" minOccurs="0" />
+              <xs:element name="Routenfolge" msprop:Generator_ColumnPropNameInRow="Routenfolge" msprop:Generator_ColumnPropNameInTable="RoutenfolgeColumn" msprop:Generator_ColumnVarNameInTable="columnRoutenfolge" msprop:Generator_UserColumnName="Routenfolge" type="xs:int" />
+              <xs:element name="KundeId" msprop:Generator_ColumnPropNameInRow="KundeId" msprop:Generator_ColumnPropNameInTable="KundeIdColumn" msprop:Generator_ColumnVarNameInTable="columnKundeId" msprop:Generator_UserColumnName="KundeId" type="xs:int" />
+              <xs:element name="Kundennummer" msprop:Generator_ColumnPropNameInRow="Kundennummer" msprop:Generator_ColumnPropNameInTable="KundennummerColumn" msprop:Generator_ColumnVarNameInTable="columnKundennummer" msprop:Generator_UserColumnName="Kundennummer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Kundenname" msprop:Generator_ColumnPropNameInRow="Kundenname" msprop:Generator_ColumnPropNameInTable="KundennameColumn" msprop:Generator_ColumnVarNameInTable="columnKundenname" msprop:Generator_UserColumnName="Kundenname">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="ArtikelId" msprop:Generator_ColumnPropNameInRow="ArtikelId" msprop:Generator_ColumnPropNameInTable="ArtikelIdColumn" msprop:Generator_ColumnVarNameInTable="columnArtikelId" msprop:Generator_UserColumnName="ArtikelId" type="xs:int" />
+              <xs:element name="Artikelnummer" msprop:Generator_ColumnPropNameInRow="Artikelnummer" msprop:Generator_ColumnPropNameInTable="ArtikelnummerColumn" msprop:Generator_ColumnVarNameInTable="columnArtikelnummer" msprop:Generator_UserColumnName="Artikelnummer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Bezeichnung" msprop:Generator_ColumnPropNameInRow="Bezeichnung" msprop:Generator_ColumnPropNameInTable="BezeichnungColumn" msprop:Generator_ColumnVarNameInTable="columnBezeichnung" msprop:Generator_UserColumnName="Bezeichnung">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Bezeichnung2" msprop:Generator_ColumnPropNameInRow="Bezeichnung2" msprop:Generator_ColumnPropNameInTable="Bezeichnung2Column" msprop:Generator_ColumnVarNameInTable="columnBezeichnung2" msprop:Generator_UserColumnName="Bezeichnung2" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Einheit" msprop:Generator_ColumnPropNameInRow="Einheit" msprop:Generator_ColumnPropNameInTable="EinheitColumn" msprop:Generator_ColumnVarNameInTable="columnEinheit" msprop:Generator_UserColumnName="Einheit">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Menge" msprop:Generator_ColumnPropNameInRow="Menge" msprop:Generator_ColumnPropNameInTable="MengeColumn" msprop:Generator_ColumnVarNameInTable="columnMenge" msprop:Generator_UserColumnName="Menge" type="xs:decimal" minOccurs="0" />
+              <xs:element name="Gewicht" msprop:Generator_ColumnPropNameInRow="Gewicht" msprop:Generator_ColumnPropNameInTable="GewichtColumn" msprop:Generator_ColumnVarNameInTable="columnGewicht" msprop:Generator_UserColumnName="Gewicht" type="xs:decimal" minOccurs="0" />
+              <xs:element name="ZeileNotiz" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInRow="ZeileNotiz" msprop:Generator_ColumnPropNameInTable="ZeileNotizColumn" msprop:Generator_ColumnVarNameInTable="columnZeileNotiz" msprop:Generator_UserColumnName="ZeileNotiz" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="LieferscheinNotiz" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInRow="LieferscheinNotiz" msprop:Generator_ColumnPropNameInTable="LieferscheinNotizColumn" msprop:Generator_ColumnVarNameInTable="columnLieferscheinNotiz" msprop:Generator_UserColumnName="LieferscheinNotiz" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:vwTourListReport" />
+      <xs:field xpath="mstns:KundeId" />
+      <xs:field xpath="mstns:ArtikelId" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>

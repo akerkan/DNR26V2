@@ -45,7 +45,7 @@ public class RdlcReportRenderService : IReportRenderService
 
     private void ShowInvoicePreview(DataTable table)
     {
-        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Invoice.rdlc");
+        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, RechnungRdlc);
         using var form = new FrmReportViewer();
         form.ReportViewer.LocalReport.DataSources.Clear();
         form.ReportViewer.LocalReport.DataSources.Add(new ReportDataSource("dsInvoice", table));
@@ -90,7 +90,7 @@ public class RdlcReportRenderService : IReportRenderService
     {
         var dt = await LoadInvoiceReportDataAsync(invoiceId);
         return RenderPdf(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Invoice.rdlc"),
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, RechnungRdlc),
             dt);
     }
 
@@ -112,10 +112,10 @@ public class RdlcReportRenderService : IReportRenderService
     private async Task<DataTable> LoadOrderReportDataAsync(int orderId)
     {
         var dt = new DataTable();
-        var sql = @"SELECT * FROM dbo.vwOrderReport WHERE OrderId = @OrderId ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
+        var sql = @"SELECT * FROM dbo.vwOrderReport WHERE AuftragId = @AuftragId;";
         using var con = new SqlConnection(GetConnectionString());
         using var cmd = new SqlCommand(sql, con);
-        cmd.Parameters.AddWithValue("@OrderId", orderId);
+        cmd.Parameters.AddWithValue("@AuftragId", orderId);
         using var da = new SqlDataAdapter(cmd);
         await Task.Run(() => da.Fill(dt));
         return dt;
@@ -123,7 +123,7 @@ public class RdlcReportRenderService : IReportRenderService
 
     private void ShowOrderPreview(DataTable table)
     {
-        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Order.rdlc");
+        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AuftragRdlc);
         using var form = new FrmReportViewer();
         form.ReportViewer.LocalReport.DataSources.Clear();
         form.ReportViewer.LocalReport.DataSources.Add(new ReportDataSource("dsOrder", table));
@@ -142,7 +142,7 @@ public class RdlcReportRenderService : IReportRenderService
     {
         var dt = await LoadOrderReportDataAsync(orderId);
         return RenderPdf(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Order.rdlc"),
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AuftragRdlc),
             dt);
     }
 
@@ -155,10 +155,10 @@ public class RdlcReportRenderService : IReportRenderService
     private async Task<DataTable> LoadDeliveryReportDataAsync(int deliveryId)
     {
         var dt = new DataTable();
-        var sql = @"SELECT * FROM dbo.vwDeliveryReport WHERE DeliveryId = @DeliveryId ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
+        var sql = @"SELECT * FROM dbo.vwDeliveryReport WHERE LieferscheinId = @LieferscheinId ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
         using var con = new SqlConnection(GetConnectionString());
         using var cmd = new SqlCommand(sql, con);
-        cmd.Parameters.AddWithValue("@DeliveryId", deliveryId);
+        cmd.Parameters.AddWithValue("@LieferscheinId", deliveryId);
         using var da = new SqlDataAdapter(cmd);
         await Task.Run(() => da.Fill(dt));
         return dt;
@@ -166,7 +166,7 @@ public class RdlcReportRenderService : IReportRenderService
 
     private void ShowDeliveryPreview(DataTable table)
     {
-        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Delivery.rdlc");
+        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, LieferscheinRdlc);
         using var form = new FrmReportViewer();
         form.ReportViewer.LocalReport.DataSources.Clear();
         form.ReportViewer.LocalReport.DataSources.Add(new ReportDataSource("dsDelivery", table));
@@ -187,7 +187,7 @@ public class RdlcReportRenderService : IReportRenderService
         var ids = deliveryIds.ToList();
         if (ids.Count == 0) return dt;
         var idList = string.Join(",", ids);
-        var sql = $"SELECT * FROM dbo.vwDeliveryReport WHERE DeliveryId IN ({idList}) ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
+        var sql = $"SELECT * FROM dbo.vwDeliveryReport WHERE LieferscheinId IN ({idList}) ORDER BY Lieferdatum, Lieferscheinnummer, Artikelnummer;";
         using var con = new SqlConnection(GetConnectionString());
         using var cmd = new SqlCommand(sql, con);
         using var da = new SqlDataAdapter(cmd);
@@ -211,7 +211,7 @@ public class RdlcReportRenderService : IReportRenderService
     {
         var dt = await LoadDeliveryReportDataAsync(deliveryId);
         return RenderPdf(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Delivery.rdlc"),
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, LieferscheinRdlc),
             dt);
     }
 
@@ -250,7 +250,7 @@ public class RdlcReportRenderService : IReportRenderService
     {
         var dt = await LoadKundenkontoReportDataAsync(kundeId, von, bis);
         return RenderPdf(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "Kundenkonto.rdlc"),
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, KundenkontoRdlc),
             dt);
     }
 

@@ -35,7 +35,7 @@ public class CustomerService : ICustomerService
                    vTur.Bezeichnung           AS Tur,
                    vAus.Bezeichnung           AS AusnahmeTur,
                    vGrp.Bezeichnung           AS KundenGruppe,
-                   c.Routenfolge,
+                   vRoutenFolge.Bezeichnung   AS RoutenFolge,
                    c.Limit,
                    c.LiefertMo, c.LiefertDi, c.LiefertMi,
                    c.LiefertDo, c.LiefertFr, c.LiefertSa, c.LiefertSo,
@@ -46,6 +46,7 @@ public class CustomerService : ICustomerService
             LEFT JOIN ProductAttributeValue vTur ON vTur.Id = c.TurWertId
             LEFT JOIN ProductAttributeValue vAus ON vAus.Id = c.AusnahmeTurWertId
             LEFT JOIN ProductAttributeValue vGrp ON vGrp.Id = c.KundenGruppeWertId
+            LEFT JOIN ProductAttributeValue vRoutenFolge ON vRoutenFolge.Id = c.RoutenFolgeWertId
             WHERE  (@Suche              IS NULL
                     OR c.Kundenname    LIKE '%' + @Suche + '%'
                     OR c.Kundennummer  LIKE '%' + @Suche + '%'

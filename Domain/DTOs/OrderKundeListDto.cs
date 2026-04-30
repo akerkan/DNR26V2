@@ -8,7 +8,7 @@ public sealed class OrderKundeListDto
     public string        Kundennummer    { get; set; } = string.Empty;
     public string        Kundenname      { get; set; } = string.Empty;
     public string?       Tur             { get; set; }
-    public int           Routenfolge     { get; set; }
+    public string?       Routenfolge     { get; set; }
     public bool          PreisAusblenden { get; set; }
     public int?          AuftragId       { get; set; }
     public OrderStatus?  AuftragStatus   { get; set; }

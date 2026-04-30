@@ -31,12 +31,14 @@ public class Customer : AuditableEntity
     public string? ALLand     { get; set; }
 
     // Tour / Route — jetzt über AttributeValue (EntityType = Tour)
-    public int  Routenfolge     { get; set; } = 0;
+    public int? RoutenFolgeWertId { get; set; } 
     public int? TurWertId       { get; set; }   // FK → ProductAttributeValue (Tour)
     public int? AusnahmeTurWertId { get; set; } // FK → ProductAttributeValue (Tour)
 
     // Kundengruppe — über AttributeValue (EntityType = KundenGruppe)
     public int? KundenGruppeWertId { get; set; } // FK → ProductAttributeValue (KundenGruppe)
+
+
 
     // Finanzen
     public decimal Limit           { get; set; } = 0;
@@ -69,4 +71,5 @@ public class Customer : AuditableEntity
     public ProductAttributeValue? TurWert          { get; set; }
     public ProductAttributeValue? AusnahmeTurWert   { get; set; }
     public ProductAttributeValue? KundenGruppeWert  { get; set; }
+    public ProductAttributeValue? RoutenFolgeWert { get; set; } // FK → ProductAttributeValue (Routenfolge) 
 }

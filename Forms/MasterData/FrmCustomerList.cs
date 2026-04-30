@@ -105,6 +105,8 @@ public partial class FrmCustomerList : BaseListForm
         cmbTur.DropDown            += CmbTur_DropDown;
         cmbAusnahmeTur.DropDown    += CmbAusnahmeTur_DropDown;
         cmbKundenfilter.DropDown   += CmbKundenfilter_DropDown;
+        cmbRoutenfolge.DropDown    += CmbRoutenfolge_DropDown;
+
 
         _searchTimer.Tick += async (_, _) =>
         {
@@ -151,6 +153,16 @@ public partial class FrmCustomerList : BaseListForm
         try
         {
             _suppressFilterChanged = true;
+
+
+
+            // ── Detail: Routenfolge ─────────────────────────────────────────
+            var routenfolgen = await _attributeService.GetValuesByEntityTypeAsync(AttributeEntityType.RoutenFolge);
+            cmbRoutenfolge.Items.Clear();
+            cmbRoutenfolge.Items.Add(new ComboItem(0, "(keine)"));
+            foreach (var r in routenfolgen)
+                cmbRoutenfolge.Items.Add(new ComboItem(r.Id, r.Bezeichnung));
+
 
             // Tour- und Gruppen-Werte jetzt via AttributeService
             var touren  = await _attributeService.GetValuesByEntityTypeAsync(AttributeEntityType.Tour);
@@ -246,7 +258,8 @@ public partial class FrmCustomerList : BaseListForm
                 Suche              = txtSuche.Text.NullIfEmpty(),
                 NurAktiv           = chkNurAktiv.Checked ? true : null,
                 TourWertId         = (cmbRouteOben.SelectedItem  as ComboItem)?.Id is > 0 and int t ? t : null,
-                KundenGruppeWertId = (cmbFilterOben.SelectedItem as ComboItem)?.Id is > 0 and int g ? g : null
+                KundenGruppeWertId = (cmbFilterOben.SelectedItem as ComboItem)?.Id is > 0 and int g ? g : null,
+                //RoutenFolgeWertId  = (cmbRoutenfolge.SelectedItem  as ComboItem)?.Id is > 0 and int rf ? rf : null,    
             };
 
             var prevId = SelectedId();
@@ -351,6 +364,7 @@ public partial class FrmCustomerList : BaseListForm
         SelectCombo(cmbTur,          c.TurWertId);
         SelectCombo(cmbAusnahmeTur,  c.AusnahmeTurWertId);
         SelectCombo(cmbKundenfilter, c.KundenGruppeWertId);
+        SelectCombo(cmbRoutenfolge,  c.RoutenFolgeWertId);
 
         nudLimit.Value = c.Limit;
 
@@ -405,6 +419,7 @@ public partial class FrmCustomerList : BaseListForm
         c.TurWertId          = (cmbTur.SelectedItem         as ComboItem)?.Id is > 0 and int t  ? t  : null;
         c.AusnahmeTurWertId  = (cmbAusnahmeTur.SelectedItem  as ComboItem)?.Id is > 0 and int at ? at : null;
         c.KundenGruppeWertId = (cmbKundenfilter.SelectedItem as ComboItem)?.Id is > 0 and int kg ? kg : null;
+        c.RoutenFolgeWertId  = (cmbRoutenfolge.SelectedItem as ComboItem)?.Id is > 0 and int rf ? rf : null;
 
         c.Limit = nudLimit.Value;
 
@@ -603,6 +618,9 @@ public partial class FrmCustomerList : BaseListForm
 
     private async void CmbKundenfilter_DropDown(object? s, EventArgs e)
         => await CheckAndPromptForAttributeAsync(AttributeEntityType.KundenGruppe, "Kundengruppe");
+
+    private async void CmbRoutenfolge_DropDown(object? s, EventArgs e)
+        => await CheckAndPromptForAttributeAsync(AttributeEntityType.RoutenFolge, "Routenfolge");
 
     // Ersetze CheckAndPromptForAttributeAsync():
     private async Task CheckAndPromptForAttributeAsync(AttributeEntityType entityType, string displayName)

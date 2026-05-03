@@ -1,4 +1,5 @@
 ﻿using DNR26V2.Domain.Entities;
+using DNR26V2.Domain.Entities.Etikett;
 using DNR26V2.Domain.Entities.MasterData;
 using DNR26V2.Domain.Entities.System;
 using DNR26V2.Domain.Entities.Orders;
@@ -45,6 +46,9 @@ public class AppDbContext : DbContext
     public DbSet<InvoiceLine>   InvoiceLines { get; set; } = null!;
     public DbSet<DNR26V2.Domain.Entities.Payments.PaymentHeader> PaymentHeaders { get; set; } = null!;
     public DbSet<DNR26V2.Domain.Entities.Payments.PaymentLine>   PaymentLines   { get; set; } = null!;
+
+    // ── Modul 8: Etikett ──────────────────────────────────────────────────────
+    public DbSet<EtiketLayoutField> EtiketLayoutFields { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

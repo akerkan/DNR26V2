@@ -18,8 +18,11 @@ partial class FrmAppSetup
     private TextBox     txtFirmenEmail   = null!;
     private TextBox     txtSteuernummer  = null!;
     private TextBox     txtUStIdNr       = null!;
-    private TextBox     txtDrucker1      = null!;
-    private TextBox     txtDrucker2      = null!;
+    private ComboBox  cmbDrucker1     = null!;
+    private ComboBox  cmbDrucker2     = null!;
+    private ComboBox  cmbDrucker3     = null!;  // Etikett
+    private CheckBox    chkEtiketInAuftrag      = null!;
+    private CheckBox    chkEtiketInLieferschein = null!;
     private NumericUpDown nudMwst        = null!;
     private NumericUpDown nudSeitengroesse = null!;
     private DataGridView  dgwNoSeries    = null!;
@@ -131,15 +134,21 @@ partial class FrmAppSetup
         panelDrucker.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));
         panelDrucker.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        txtDrucker1 = new TextBox { Dock = DockStyle.Fill };
-        txtDrucker2 = new TextBox { Dock = DockStyle.Fill };
+        cmbDrucker1 = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
+        cmbDrucker2 = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
+        cmbDrucker3 = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
+        chkEtiketInAuftrag      = new CheckBox { Dock = DockStyle.Left };
+        chkEtiketInLieferschein = new CheckBox { Dock = DockStyle.Left };
 
-        AddLabelAndControl(panelDrucker, "Drucker (weißes Papier)", txtDrucker1);
-        AddLabelAndControl(panelDrucker, "Drucker (mit Logo)",      txtDrucker2);
+        AddLabelAndControl(panelDrucker, "Drucker (weißes Papier)",      cmbDrucker1);
+        AddLabelAndControl(panelDrucker, "Drucker (mit Logo)",             cmbDrucker2);
+        AddLabelAndControl(panelDrucker, "Drucker (Etikett)",              cmbDrucker3);
+        AddLabelAndControl(panelDrucker, "Etikett-Button in Aufträgen",    chkEtiketInAuftrag);
+        AddLabelAndControl(panelDrucker, "Etikett-Button in Lieferungen",  chkEtiketInLieferschein);
 
         var lblHinweis = new Label
         {
-            Text      = "Druckernamen exakt wie in Windows angeben.",
+            Text      = "Klicken Sie auf das Dropdown-Pfeil um installierte Drucker zu laden.",
             ForeColor = Color.Gray,
             AutoSize  = true,
             Margin    = new Padding(5, 15, 0, 0)

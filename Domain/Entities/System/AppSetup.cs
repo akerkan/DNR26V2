@@ -26,8 +26,13 @@ public class AppSetup : AuditableEntity
     public string? StandardStandortCode { get; set; }
 
     // Drucker
-    public string? DruckerWeissesPapier { get; set; }
-    public string? DruckerMitLogo { get; set; }
+    public string? DruckerWeissesPapier  { get; set; }
+    public string? DruckerMitLogo        { get; set; }
+    public string? DruckerEtikett        { get; set; }
+
+    // Etikett-Modul: show label button in other modules
+    public bool EtiketButtonInAuftrag     { get; set; } = false;
+    public bool EtiketButtonInLieferschein{ get; set; } = false;
 
     // Nummernserien-Präfixe
     public string RechnungPraefix { get; set; } = "RE";

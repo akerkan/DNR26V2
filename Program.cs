@@ -23,6 +23,8 @@ using DNR26V2.Forms.Payments;
 using DNR26V2.Forms.Reports;
 using DNR26V2.Services.Payments;
 using DNR26V2.Services.Reports;
+using DNR26V2.Forms.Etikett;
+using DNR26V2.Services.Etikett;
 
 namespace DNR26V2;
 
@@ -130,6 +132,12 @@ static class Program
             sp.GetRequiredService<INoSeriesService>()));
         services.AddTransient<FrmZahlungseingaenge>();
         services.AddTransient<FrmKundenkonto>();
+
+        // --- Modul 8: Etikett ---
+        services.AddScoped<IEtiketService, EtiketService>();
+        services.AddTransient<FrmEtikett>(sp => new FrmEtikett(
+            sp.GetRequiredService<IEtiketService>(),
+            sp.GetRequiredService<AppDbContext>()));
 
         return services;
     }

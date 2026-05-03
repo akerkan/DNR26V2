@@ -2,6 +2,7 @@
 using DNR26V2.Domain.Configuration;
 using DNR26V2.Forms.Base;
 using DNR26V2.Forms.Deliveries;
+using DNR26V2.Forms.Etikett;
 using DNR26V2.Forms.Invoices;
 using DNR26V2.Forms.MasterData;
 using DNR26V2.Forms.Orders;
@@ -189,4 +190,11 @@ public partial class FrmMain : Form
 
     private void MenuKundenkonto_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmKundenkonto>(ref FrmKundenkontoInstance, this, () => GetService<FrmKundenkonto>());
+
+    // ── Etikett-Menü ──────────────────────────────────────────────────────
+
+    private FrmEtikett? FrmEtikettInstance;
+
+    private void MenuEtikett_Click(object? sender, EventArgs e)
+        => BaseListForm.GetOrCreateInstance<FrmEtikett>(ref FrmEtikettInstance, this, () => GetService<FrmEtikett>());
 }

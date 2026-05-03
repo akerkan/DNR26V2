@@ -46,8 +46,19 @@ public partial class FrmAppSetup : BaseCardForm
             txtUStIdNr.Text             = _setup.FirmenUStIdNr ?? string.Empty;
 
             // Drucker
-            txtDrucker1.Text            = _setup.DruckerWeissesPapier ?? string.Empty;
-            txtDrucker2.Text            = _setup.DruckerMitLogo ?? string.Empty;
+            cmbDrucker1.Text                    = _setup.DruckerWeissesPapier ?? string.Empty;
+            cmbDrucker2.Text                    = _setup.DruckerMitLogo ?? string.Empty;
+            cmbDrucker3.Text                    = _setup.DruckerEtikett ?? string.Empty;
+            chkEtiketInAuftrag.Checked          = _setup.EtiketButtonInAuftrag;
+            chkEtiketInLieferschein.Checked     = _setup.EtiketButtonInLieferschein;
+
+            // Wire up printer loading on DropDown (lazy, avoids slow startup)
+            cmbDrucker1.DropDown -= CmbDrucker_DropDown;
+            cmbDrucker2.DropDown -= CmbDrucker_DropDown;
+            cmbDrucker3.DropDown -= CmbDrucker_DropDown;
+            cmbDrucker1.DropDown += CmbDrucker_DropDown;
+            cmbDrucker2.DropDown += CmbDrucker_DropDown;
+            cmbDrucker3.DropDown += CmbDrucker_DropDown;
 
             // Sonstige
             nudMwst.Value               = (decimal)_setup.StandardMwstProzent;
@@ -106,8 +117,11 @@ public partial class FrmAppSetup : BaseCardForm
             _setup.FirmenEmail         = txtFirmenEmail.Text.NullIfEmpty();
             _setup.FirmenSteuernummer  = txtSteuernummer.Text.NullIfEmpty();
             _setup.FirmenUStIdNr       = txtUStIdNr.Text.NullIfEmpty();
-            _setup.DruckerWeissesPapier = txtDrucker1.Text.NullIfEmpty();
-            _setup.DruckerMitLogo      = txtDrucker2.Text.NullIfEmpty();
+            _setup.DruckerWeissesPapier        = cmbDrucker1.Text.NullIfEmpty();
+            _setup.DruckerMitLogo              = cmbDrucker2.Text.NullIfEmpty();
+            _setup.DruckerEtikett              = cmbDrucker3.Text.NullIfEmpty();
+            _setup.EtiketButtonInAuftrag       = chkEtiketInAuftrag.Checked;
+            _setup.EtiketButtonInLieferschein  = chkEtiketInLieferschein.Checked;
             _setup.StandardMwstProzent = nudMwst.Value;
             _setup.SeitenGroesse       = (int)nudSeitengroesse.Value;
 
@@ -129,6 +143,20 @@ public partial class FrmAppSetup : BaseCardForm
     }
 
     private void BtnSchliessen_Click(object sender, EventArgs e) => Close();
+
+    /// <summary>
+    /// Populates installed printers into the combo on first open.
+    /// Preserves any manually typed value.
+    /// </summary>
+    private void CmbDrucker_DropDown(object? sender, EventArgs e)
+    {
+        if (sender is not ComboBox cmb) return;
+        var current = cmb.Text;
+        cmb.Items.Clear();
+        foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+            cmb.Items.Add(printer);
+        cmb.Text = current;
+    }
 }
 
 // Kleine Hilfs-Extension – nur für diesen Kontext

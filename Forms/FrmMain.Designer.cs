@@ -95,9 +95,14 @@ partial class FrmMain
             new ToolStripSeparator(), menuBeenden
         });
 
+        // --- Etikett ---
+        var menuEtikett    = new ToolStripMenuItem("&Etikett");
+        var menuEtikettErstellen = new ToolStripMenuItem("&Etikett erstellen", null, MenuEtikett_Click);
+        menuEtikett.DropDownItems.Add(menuEtikettErstellen);
+
         menuStrip.Items.AddRange(new ToolStripItem[]
         {
-            menuStammdaten, menuVerkauf, menuFinanzen, menuBerichte, menuSystem
+            menuStammdaten, menuVerkauf, menuFinanzen, menuBerichte, menuEtikett, menuSystem
         });
 
         // ==== STATUS BAR ====

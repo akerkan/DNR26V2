@@ -1,5 +1,6 @@
 ﻿using DNR26V2.Data.Context;
 using DNR26V2.Domain.Entities.System;
+using DNR26V2.Services.Etikett;
 using Microsoft.EntityFrameworkCore;
 
 namespace DNR26V2.Data.Seed;
@@ -21,6 +22,7 @@ public class DatabaseSeeder
         await SeedLocationAsync();
         await SeedAppSetupAsync();
         await SeedNoSeriesAsync();
+        await SeedEtiketLayoutAsync();
     }
 
     private async Task SeedLocationAsync()
@@ -74,6 +76,13 @@ public class DatabaseSeeder
             new NoSeries { Seriencode = "AUF", Beschreibung = "Auftragsnummer",     Praefix = "AUF", ErstelltVon = "SYSTEM" }
         );
 
+        await _db.SaveChangesAsync();
+    }
+    private async Task SeedEtiketLayoutAsync()
+    {
+        if (await _db.EtiketLayoutFields.AnyAsync()) return;
+
+        _db.EtiketLayoutFields.AddRange(EtiketDefaultLayout.Build("Default"));
         await _db.SaveChangesAsync();
     }
 }

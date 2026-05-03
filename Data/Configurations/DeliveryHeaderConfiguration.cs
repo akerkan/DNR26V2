@@ -36,5 +36,18 @@ internal sealed class DeliveryHeaderConfiguration : IEntityTypeConfiguration<Del
         entity.Property(e => e.Gesamtnetto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
         entity.Property(e => e.Gesamtmwst).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
         entity.Property(e => e.Gesamtbrutto).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
+        entity.Property(e => e.TurWertId).IsRequired(false);
+        entity.Property(e => e.RoutenFolgeWertId).IsRequired(false);
+
+        entity.HasOne(e => e.TurWert)
+              .WithMany()
+              .HasForeignKey(e => e.TurWertId)
+              .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(e => e.RoutenFolgeWert)
+              .WithMany()
+              .HasForeignKey(e => e.RoutenFolgeWertId)
+              .OnDelete(DeleteBehavior.Restrict);
     }
 }

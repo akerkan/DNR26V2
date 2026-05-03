@@ -82,6 +82,7 @@ public partial class FrmMain : Form
     private FrmProductAttributeList?     FrmProductAttributeListInstance;
     private FrmCustomerProductTemplate?  FrmCustomerProductTemplateInstance;
 
+
     private void MenuKunden_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmCustomerList>(ref FrmCustomerListInstance, this, () => GetService<FrmCustomerList>());
 
@@ -112,6 +113,9 @@ public partial class FrmMain : Form
         var frm = BaseListForm.GetOrCreateInstance<FrmOrderEntry>(ref FrmOrderEntryInstance, this, () => GetService<FrmOrderEntry>());
         frm.NavigateToAuftrag(kundeId, lieferdatum);
     }
+
+   
+
 
     // ── System-Menü ───────────────────────────────────────────────────────────
 
@@ -151,6 +155,14 @@ public partial class FrmMain : Form
         var frm = BaseListForm.GetOrCreateInstance<FrmDeliveryList>(ref FrmDeliveryListInstance, this, () => GetService<FrmDeliveryList>());
         frm.NavigateToLieferschein(lieferscheinNr);
     }
+
+    private FrmTourList? FrmTourListInstance;
+
+    private void MenuTouren_Click(object? sender, EventArgs e)
+    {
+        BaseListForm.GetOrCreateInstance<FrmTourList>(ref FrmTourListInstance, this, () => GetService<FrmTourList>());
+    }
+
 
     // ── Rechnung-Menü (Erweiterung) ──────────────────────────────────────────
 

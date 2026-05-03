@@ -1,4 +1,5 @@
-﻿using DNR26V2.Domain.Enums;
+﻿using DNR26V2.Domain.Entities.MasterData;
+using DNR26V2.Domain.Enums;
 
 namespace DNR26V2.Domain.Entities.Deliveries;
 
@@ -21,4 +22,9 @@ public class DeliveryHeader : AuditableEntity
     public decimal Gesamtnetto   { get; set; }
     public decimal Gesamtmwst    { get; set; }
     public decimal Gesamtbrutto  { get; set; }
+
+    public int? TurWertId { get; set; }
+    public ProductAttributeValue? TurWert { get; set; }
+    public int? RoutenFolgeWertId { get; set; }
+    public ProductAttributeValue? RoutenFolgeWert { get; set; }
 }

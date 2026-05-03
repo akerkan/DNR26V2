@@ -224,7 +224,7 @@ public class RdlcReportRenderService : IReportRenderService
     private async Task<DataTable> LoadKundenkontoReportDataAsync(int kundeId, DateTime von, DateTime bis)
     {
         var dt = new DataTable();
-        var sql = @"SELECT * FROM dbo.vwKundenkontoReport WHERE KundeId = @KundeId AND Datum BETWEEN @Von AND @Bis ORDER BY Datum, BelegNr;";
+        var sql = @"SELECT * FROM dbo.vwKundenkontoReport WHERE KundeId = @KundeId AND Buchungsdatum BETWEEN @Von AND @Bis ORDER BY Buchungsdatum, Belegnummer;";
         using var con = new SqlConnection(GetConnectionString());
         using var cmd = new SqlCommand(sql, con);
         cmd.Parameters.AddWithValue("@KundeId", kundeId);
@@ -308,5 +308,40 @@ public class RdlcReportRenderService : IReportRenderService
         return useLocalDb
             ? _configuration.GetConnectionString("LocalDb")
             : _configuration.GetConnectionString("SqlServer");
+    }
+
+    public async Task PreviewTourListAsync(int turWertId, DateTime lieferDatum)
+    {
+        var dt = await LoadTourListReportDataAsync(turWertId, lieferDatum);
+        ShowTourListPreview(dt);
+    }
+
+    private async Task<DataTable> LoadTourListReportDataAsync(int turWertId, DateTime lieferDatum)
+    {
+        var dt = new DataTable();
+        var sql = @"
+        SELECT *
+        FROM dbo.vwTourListReport
+        WHERE TurWertId = @TurWertId
+          AND CAST(LieferDatum AS date) = CAST(@LieferDatum AS date)
+        ORDER BY TRY_CONVERT(int, Routenfolge), Routenfolge, Kundenname, Bezeichnung;";
+        using var con = new SqlConnection(GetConnectionString());
+        using var cmd = new SqlCommand(sql, con);
+        cmd.Parameters.AddWithValue("@TurWertId", turWertId);
+        cmd.Parameters.AddWithValue("@LieferDatum", lieferDatum.Date);
+        using var da = new SqlDataAdapter(cmd);
+        await Task.Run(() => da.Fill(dt));
+        return dt;
+    }
+
+    private void ShowTourListPreview(DataTable table)
+    {
+        var rdlcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports", "TourList.rdlc");
+        using var form = new FrmReportViewer();
+        form.ReportViewer.LocalReport.DataSources.Clear();
+        form.ReportViewer.LocalReport.DataSources.Add(new ReportDataSource("dsTourList", table));
+        form.ReportViewer.LocalReport.ReportPath = rdlcPath;
+        form.ReportViewer.RefreshReport();
+        form.ShowDialog();
     }
 }

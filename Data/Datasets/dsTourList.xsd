@@ -12,7 +12,7 @@
               <DbSource ConnectionRef="DNR26V2ConnectionString" DbObjectName="DNR26V2.dbo.vwTourListReport" DbObjectType="View" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
                 <SelectCommand>
                   <DbCommand CommandType="Text" ModifiedByUser="false">
-                    <CommandText>SELECT LieferDatum, RouteId, Routenfolge, KundeId, Kundennummer, Kundenname, ArtikelId, Artikelnummer, Bezeichnung, Bezeichnung2, Einheit, Menge, Gewicht, ZeileNotiz, LieferscheinNotiz FROM dbo.vwTourListReport</CommandText>
+                    <CommandText>SELECT LieferDatum, TurWertId, Tur, RoutenFolgeWertId, RoutenFolge, KundeId, Kundennummer, Kundenname, ArtikelId, Artikelnummer, Bezeichnung, Bezeichnung2, Einheit, Menge, Gewicht, ZeileNotiz, LieferscheinNotiz FROM dbo.vwTourListReport</CommandText>
                     <Parameters />
                   </DbCommand>
                 </SelectCommand>
@@ -20,8 +20,10 @@
             </MainSource>
             <Mappings>
               <Mapping SourceColumn="LieferDatum" DataSetColumn="LieferDatum" />
-              <Mapping SourceColumn="RouteId" DataSetColumn="RouteId" />
-              <Mapping SourceColumn="Routenfolge" DataSetColumn="Routenfolge" />
+              <Mapping SourceColumn="TurWertId" DataSetColumn="TurWertId" />
+              <Mapping SourceColumn="Tur" DataSetColumn="Tur" />
+              <Mapping SourceColumn="RoutenFolgeWertId" DataSetColumn="RoutenFolgeWertId" />
+              <Mapping SourceColumn="RoutenFolge" DataSetColumn="RoutenFolge" />
               <Mapping SourceColumn="KundeId" DataSetColumn="KundeId" />
               <Mapping SourceColumn="Kundennummer" DataSetColumn="Kundennummer" />
               <Mapping SourceColumn="Kundenname" DataSetColumn="Kundenname" />
@@ -42,15 +44,29 @@
       </DataSource>
     </xs:appinfo>
   </xs:annotation>
-  <xs:element name="dsTourList" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_UserDSName="dsTourList" msprop:Generator_DataSetName="dsTourList">
+  <xs:element name="dsTourList" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:Generator_UserDSName="dsTourList" msprop:EnableTableAdapterManager="true" msprop:Generator_DataSetName="dsTourList">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element name="vwTourListReport" msprop:Generator_RowEvHandlerName="vwTourListReportRowChangeEventHandler" msprop:Generator_RowDeletedName="vwTourListReportRowDeleted" msprop:Generator_RowDeletingName="vwTourListReportRowDeleting" msprop:Generator_RowEvArgName="vwTourListReportRowChangeEvent" msprop:Generator_TablePropName="vwTourListReport" msprop:Generator_RowChangedName="vwTourListReportRowChanged" msprop:Generator_RowChangingName="vwTourListReportRowChanging" msprop:Generator_TableClassName="vwTourListReportDataTable" msprop:Generator_RowClassName="vwTourListReportRow" msprop:Generator_TableVarName="tablevwTourListReport" msprop:Generator_UserTableName="vwTourListReport">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="LieferDatum" msprop:Generator_ColumnPropNameInRow="LieferDatum" msprop:Generator_ColumnPropNameInTable="LieferDatumColumn" msprop:Generator_ColumnVarNameInTable="columnLieferDatum" msprop:Generator_UserColumnName="LieferDatum" type="xs:dateTime" />
-              <xs:element name="RouteId" msprop:Generator_ColumnPropNameInRow="RouteId" msprop:Generator_ColumnPropNameInTable="RouteIdColumn" msprop:Generator_ColumnVarNameInTable="columnRouteId" msprop:Generator_UserColumnName="RouteId" type="xs:int" minOccurs="0" />
-              <xs:element name="Routenfolge" msprop:Generator_ColumnPropNameInRow="Routenfolge" msprop:Generator_ColumnPropNameInTable="RoutenfolgeColumn" msprop:Generator_ColumnVarNameInTable="columnRoutenfolge" msprop:Generator_UserColumnName="Routenfolge" type="xs:int" />
+              <xs:element name="TurWertId" msprop:Generator_ColumnPropNameInRow="TurWertId" msprop:Generator_ColumnPropNameInTable="TurWertIdColumn" msprop:Generator_ColumnVarNameInTable="columnTurWertId" msprop:Generator_UserColumnName="TurWertId" type="xs:int" minOccurs="0" />
+              <xs:element name="Tur" msprop:Generator_ColumnPropNameInRow="Tur" msprop:Generator_ColumnPropNameInTable="TurColumn" msprop:Generator_ColumnVarNameInTable="columnTur" msprop:Generator_UserColumnName="Tur" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="RoutenFolgeWertId" msprop:Generator_ColumnPropNameInRow="RoutenFolgeWertId" msprop:Generator_ColumnPropNameInTable="RoutenFolgeWertIdColumn" msprop:Generator_ColumnVarNameInTable="columnRoutenFolgeWertId" msprop:Generator_UserColumnName="RoutenFolgeWertId" type="xs:int" minOccurs="0" />
+              <xs:element name="RoutenFolge" msprop:Generator_ColumnPropNameInRow="RoutenFolge" msprop:Generator_ColumnPropNameInTable="RoutenFolgeColumn" msprop:Generator_ColumnVarNameInTable="columnRoutenFolge" msprop:Generator_UserColumnName="RoutenFolge" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
               <xs:element name="KundeId" msprop:Generator_ColumnPropNameInRow="KundeId" msprop:Generator_ColumnPropNameInTable="KundeIdColumn" msprop:Generator_ColumnVarNameInTable="columnKundeId" msprop:Generator_UserColumnName="KundeId" type="xs:int" />
               <xs:element name="Kundennummer" msprop:Generator_ColumnPropNameInRow="Kundennummer" msprop:Generator_ColumnPropNameInTable="KundennummerColumn" msprop:Generator_ColumnVarNameInTable="columnKundennummer" msprop:Generator_UserColumnName="Kundennummer">
                 <xs:simpleType>

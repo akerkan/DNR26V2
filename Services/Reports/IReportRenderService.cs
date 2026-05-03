@@ -25,4 +25,6 @@ public interface IReportRenderService
     Task PreviewKundenkontoAsync(int kundeId, DateTime von, DateTime bis);
     Task<byte[]> RenderKundenkontoPdfAsync(int kundeId, DateTime von, DateTime bis);
     Task PrintKundenkontoAsync(int kundeId, DateTime von, DateTime bis, string? printerName = null);
+
+    Task PreviewTourListAsync(int turWertId, DateTime lieferDatum);
 }

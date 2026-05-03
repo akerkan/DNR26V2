@@ -26,14 +26,14 @@ partial class FrmMain
         var menuProdukte = new ToolStripMenuItem("&Produkte", null, MenuArtikel_Click);
         var menuAttribute = new ToolStripMenuItem("&Attribute", null, MenuArtikelattribute_Click);
         var menuKundenVorlage = new ToolStripMenuItem("&Kunden-/Artikelvorlage", null, MenuKundenArtikelvorlage_Click);
-        var menuRouten = new ToolStripMenuItem("&Routen", null, OnMenuItemNotImplemented);
+        //var menuRouten = new ToolStripMenuItem("&Routen", null, OnMenuItemNotImplemented);
         var menuFahrer = new ToolStripMenuItem("&Fahrer", null, OnMenuItemNotImplemented);
         var menuStandort = new ToolStripMenuItem("S&tandort", null, OnMenuItemNotImplemented);
         menuStammdaten.DropDownItems.AddRange(new ToolStripItem[]
         {
             menuKunden, menuProdukte, menuAttribute, menuKundenVorlage,
             new ToolStripSeparator(),
-            menuRouten, menuFahrer, menuStandort
+            menuFahrer, menuStandort
         });
 
         // --- Verkauf ---
@@ -48,7 +48,7 @@ partial class FrmMain
         var menuSammelrechnung = new ToolStripMenuItem("&Sammelrechnung", null, MenuSammelrechnung_Click);
         var menuRechnungListe = new ToolStripMenuItem("Rechnungsliste", null, MenuRechnungListe_Click);
 
-        var menuTouren = new ToolStripMenuItem("T&ouren", null, OnMenuItemNotImplemented);
+        var menuTouren = new ToolStripMenuItem("T&ouren", null, MenuTouren_Click);
         menuVerkauf.DropDownItems.AddRange(new ToolStripItem[]
         {
             menuTagesbestellung, menuAuftraege, new ToolStripSeparator(),

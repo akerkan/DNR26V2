@@ -7,7 +7,7 @@
         <DataProvider>System.Data.DataSet</DataProvider>
         <ConnectString>/* Local Connection */</ConnectString>
       </ConnectionProperties>
-      <rd:DataSourceID>e116693b-453a-4123-98a8-185493bdc515</rd:DataSourceID>
+      <rd:DataSourceID>87dfb39f-c11e-4461-b734-388d6e33a0fe</rd:DataSourceID>
     </DataSource>
   </DataSources>
   <DataSets>
@@ -21,13 +21,21 @@
           <DataField>LieferDatum</DataField>
           <rd:TypeName>System.DateTime</rd:TypeName>
         </Field>
-        <Field Name="RouteId">
-          <DataField>RouteId</DataField>
+        <Field Name="TurWertId">
+          <DataField>TurWertId</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
-        <Field Name="Routenfolge">
-          <DataField>Routenfolge</DataField>
+        <Field Name="Tur">
+          <DataField>Tur</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="RoutenFolgeWertId">
+          <DataField>RoutenFolgeWertId</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="RoutenFolge">
+          <DataField>RoutenFolge</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="KundeId">
           <DataField>KundeId</DataField>
@@ -690,29 +698,17 @@
                       <GroupExpression>=Fields!Kundenname.Value</GroupExpression>
                     </GroupExpressions>
                   </Group>
-                  <SortExpressions>
-                    <SortExpression>
-                      <Value>=IIf(
-    Parameters!prmTur.Value = "" OR Fields!Routenfolge.Value = "",
-    Fields!Kundenname.Value,
-    Fields!Routenfolge.Value
-)</Value>
-                    </SortExpression>
-                    <SortExpression>
-                      <Value>=Fields!Produktnummer.Value</Value>
-                    </SortExpression>
-                  </SortExpressions>
                   <TablixHeader>
                     <Size>1.44167cm</Size>
                     <CellContents>
-                      <Textbox Name="Routenfolge">
+                      <Textbox Name="RoutenFolge">
                         <CanGrow>true</CanGrow>
                         <KeepTogether>true</KeepTogether>
                         <Paragraphs>
                           <Paragraph>
                             <TextRuns>
                               <TextRun>
-                                <Value>=Fields!Routenfolge.Value</Value>
+                                <Value>=Fields!RoutenFolge.Value</Value>
                                 <Style>
                                   <FontWeight>Bold</FontWeight>
                                 </Style>
@@ -721,7 +717,7 @@
                             <Style />
                           </Paragraph>
                         </Paragraphs>
-                        <rd:DefaultName>Routenfolge</rd:DefaultName>
+                        <rd:DefaultName>RoutenFolge</rd:DefaultName>
                         <Style>
                           <Border>
                             <Style>None</Style>
@@ -846,7 +842,7 @@
                 </TablixMember>
               </TablixMembers>
             </TablixRowHierarchy>
-            <DataSetName>DataSet1</DataSetName>
+            <DataSetName>dsTourList</DataSetName>
             <Height>1.2cm</Height>
             <Width>19.51067cm</Width>
             <Style>
@@ -2060,9 +2056,6 @@
             <Height>4.81625cm</Height>
             <Width>19.5142cm</Width>
             <ZIndex>1</ZIndex>
-            <Visibility>
-              <Hidden>=IIf(IsNothing(Parameters!prmTur.Value) Or Parameters!prmTur.Value = "", True, False)</Hidden>
-            </Visibility>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2087,7 +2080,7 @@
                 <Paragraph>
                   <TextRuns>
                     <TextRun>
-                      <Value>="Fahrerliste : "  &amp; (Fields!LieferDatum.Value, "dsTourList")</Value>
+                      <Value>=First(Fields!LieferDatum.Value, "dsTourList")</Value>
                       <Style>
                         <FontSize>12pt</FontSize>
                         <FontWeight>Bold</FontWeight>

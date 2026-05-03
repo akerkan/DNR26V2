@@ -113,6 +113,8 @@ static class Program
         services.AddTransient<FrmRechnungErfassung>();
         services.AddTransient<FrmSammelRechnung>();
         services.AddTransient<FrmRechnungList>();
+        services.AddTransient<FrmTourList>(sp => new FrmTourList(sp.GetRequiredService<IReportRenderService>(),sp.GetRequiredService<IProductAttributeService>()));
+
 
         // --- Reporting ---
         services.AddScoped<IInvoiceReportDataService, InvoiceReportDataService>();

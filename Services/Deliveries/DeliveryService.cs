@@ -55,13 +55,17 @@ public class DeliveryService : IDeliveryService
 
         var nummer = await _noSeries.GetNextNumberAsync("LS", order.LieferDatum);
 
+        var kunde = await _db.Customer.FindAsync(order.KundeId);
+
         var lieferschein = new DeliveryHeader
         {
             Lieferscheinnummer = nummer,
             KundeId            = order.KundeId,
             AuftragId          = order.Id,
             LieferDatum        = order.LieferDatum,
-            Status             = DeliveryStatus.Offen
+            Status             = DeliveryStatus.Offen,
+            TurWertId          = kunde?.TurWertId,
+            RoutenFolgeWertId  = kunde?.RoutenFolgeWertId
         };
         _db.DeliveryHeader.Add(lieferschein);
         await _db.SaveChangesAsync();

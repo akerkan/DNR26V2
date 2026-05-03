@@ -283,9 +283,13 @@ namespace DNR26V2.Data.Datasets {
             
             private global::System.Data.DataColumn columnLieferDatum;
             
-            private global::System.Data.DataColumn columnRouteId;
+            private global::System.Data.DataColumn columnTurWertId;
             
-            private global::System.Data.DataColumn columnRoutenfolge;
+            private global::System.Data.DataColumn columnTur;
+            
+            private global::System.Data.DataColumn columnRoutenFolgeWertId;
+            
+            private global::System.Data.DataColumn columnRoutenFolge;
             
             private global::System.Data.DataColumn columnKundeId;
             
@@ -356,17 +360,33 @@ namespace DNR26V2.Data.Datasets {
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public global::System.Data.DataColumn RouteIdColumn {
+            public global::System.Data.DataColumn TurWertIdColumn {
                 get {
-                    return this.columnRouteId;
+                    return this.columnTurWertId;
                 }
             }
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public global::System.Data.DataColumn RoutenfolgeColumn {
+            public global::System.Data.DataColumn TurColumn {
                 get {
-                    return this.columnRoutenfolge;
+                    return this.columnTur;
+                }
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public global::System.Data.DataColumn RoutenFolgeWertIdColumn {
+                get {
+                    return this.columnRoutenFolgeWertId;
+                }
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public global::System.Data.DataColumn RoutenFolgeColumn {
+                get {
+                    return this.columnRoutenFolge;
                 }
             }
             
@@ -503,12 +523,31 @@ namespace DNR26V2.Data.Datasets {
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public vwTourListReportRow AddvwTourListReportRow(System.DateTime LieferDatum, int RouteId, int Routenfolge, int KundeId, string Kundennummer, string Kundenname, int ArtikelId, string Artikelnummer, string Bezeichnung, string Bezeichnung2, string Einheit, decimal Menge, decimal Gewicht, string ZeileNotiz, string LieferscheinNotiz) {
+            public vwTourListReportRow AddvwTourListReportRow(
+                        System.DateTime LieferDatum, 
+                        int TurWertId, 
+                        string Tur, 
+                        int RoutenFolgeWertId, 
+                        string RoutenFolge, 
+                        int KundeId, 
+                        string Kundennummer, 
+                        string Kundenname, 
+                        int ArtikelId, 
+                        string Artikelnummer, 
+                        string Bezeichnung, 
+                        string Bezeichnung2, 
+                        string Einheit, 
+                        decimal Menge, 
+                        decimal Gewicht, 
+                        string ZeileNotiz, 
+                        string LieferscheinNotiz) {
                 vwTourListReportRow rowvwTourListReportRow = ((vwTourListReportRow)(this.NewRow()));
                 object[] columnValuesArray = new object[] {
                         LieferDatum,
-                        RouteId,
-                        Routenfolge,
+                        TurWertId,
+                        Tur,
+                        RoutenFolgeWertId,
+                        RoutenFolge,
                         KundeId,
                         Kundennummer,
                         Kundenname,
@@ -552,8 +591,10 @@ namespace DNR26V2.Data.Datasets {
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
             internal void InitVars() {
                 this.columnLieferDatum = base.Columns["LieferDatum"];
-                this.columnRouteId = base.Columns["RouteId"];
-                this.columnRoutenfolge = base.Columns["Routenfolge"];
+                this.columnTurWertId = base.Columns["TurWertId"];
+                this.columnTur = base.Columns["Tur"];
+                this.columnRoutenFolgeWertId = base.Columns["RoutenFolgeWertId"];
+                this.columnRoutenFolge = base.Columns["RoutenFolge"];
                 this.columnKundeId = base.Columns["KundeId"];
                 this.columnKundennummer = base.Columns["Kundennummer"];
                 this.columnKundenname = base.Columns["Kundenname"];
@@ -573,10 +614,14 @@ namespace DNR26V2.Data.Datasets {
             private void InitClass() {
                 this.columnLieferDatum = new global::System.Data.DataColumn("LieferDatum", typeof(global::System.DateTime), null, global::System.Data.MappingType.Element);
                 base.Columns.Add(this.columnLieferDatum);
-                this.columnRouteId = new global::System.Data.DataColumn("RouteId", typeof(int), null, global::System.Data.MappingType.Element);
-                base.Columns.Add(this.columnRouteId);
-                this.columnRoutenfolge = new global::System.Data.DataColumn("Routenfolge", typeof(int), null, global::System.Data.MappingType.Element);
-                base.Columns.Add(this.columnRoutenfolge);
+                this.columnTurWertId = new global::System.Data.DataColumn("TurWertId", typeof(int), null, global::System.Data.MappingType.Element);
+                base.Columns.Add(this.columnTurWertId);
+                this.columnTur = new global::System.Data.DataColumn("Tur", typeof(string), null, global::System.Data.MappingType.Element);
+                base.Columns.Add(this.columnTur);
+                this.columnRoutenFolgeWertId = new global::System.Data.DataColumn("RoutenFolgeWertId", typeof(int), null, global::System.Data.MappingType.Element);
+                base.Columns.Add(this.columnRoutenFolgeWertId);
+                this.columnRoutenFolge = new global::System.Data.DataColumn("RoutenFolge", typeof(string), null, global::System.Data.MappingType.Element);
+                base.Columns.Add(this.columnRoutenFolge);
                 this.columnKundeId = new global::System.Data.DataColumn("KundeId", typeof(int), null, global::System.Data.MappingType.Element);
                 base.Columns.Add(this.columnKundeId);
                 this.columnKundennummer = new global::System.Data.DataColumn("Kundennummer", typeof(string), null, global::System.Data.MappingType.Element);
@@ -605,7 +650,8 @@ namespace DNR26V2.Data.Datasets {
                                 this.columnKundeId,
                                 this.columnArtikelId}, true));
                 this.columnLieferDatum.AllowDBNull = false;
-                this.columnRoutenfolge.AllowDBNull = false;
+                this.columnTur.MaxLength = 200;
+                this.columnRoutenFolge.MaxLength = 200;
                 this.columnKundeId.AllowDBNull = false;
                 this.columnKundennummer.AllowDBNull = false;
                 this.columnKundennummer.MaxLength = 20;
@@ -776,28 +822,65 @@ namespace DNR26V2.Data.Datasets {
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public int RouteId {
+            public int TurWertId {
                 get {
                     try {
-                        return ((int)(this[this.tablevwTourListReport.RouteIdColumn]));
+                        return ((int)(this[this.tablevwTourListReport.TurWertIdColumn]));
                     }
                     catch (global::System.InvalidCastException e) {
-                        throw new global::System.Data.StrongTypingException("Der Wert für Spalte RouteId in Tabelle vwTourListReport ist DBNull.", e);
+                        throw new global::System.Data.StrongTypingException("Der Wert für Spalte TurWertId in Tabelle vwTourListReport ist DBNull.", e);
                     }
                 }
                 set {
-                    this[this.tablevwTourListReport.RouteIdColumn] = value;
+                    this[this.tablevwTourListReport.TurWertIdColumn] = value;
                 }
             }
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public int Routenfolge {
+            public string Tur {
                 get {
-                    return ((int)(this[this.tablevwTourListReport.RoutenfolgeColumn]));
+                    try {
+                        return ((string)(this[this.tablevwTourListReport.TurColumn]));
+                    }
+                    catch (global::System.InvalidCastException e) {
+                        throw new global::System.Data.StrongTypingException("Der Wert für Spalte Tur in Tabelle vwTourListReport ist DBNull.", e);
+                    }
                 }
                 set {
-                    this[this.tablevwTourListReport.RoutenfolgeColumn] = value;
+                    this[this.tablevwTourListReport.TurColumn] = value;
+                }
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public int RoutenFolgeWertId {
+                get {
+                    try {
+                        return ((int)(this[this.tablevwTourListReport.RoutenFolgeWertIdColumn]));
+                    }
+                    catch (global::System.InvalidCastException e) {
+                        throw new global::System.Data.StrongTypingException("Der Wert für Spalte RoutenFolgeWertId in Tabelle vwTourListReport ist DBNull.", e);
+                    }
+                }
+                set {
+                    this[this.tablevwTourListReport.RoutenFolgeWertIdColumn] = value;
+                }
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public string RoutenFolge {
+                get {
+                    try {
+                        return ((string)(this[this.tablevwTourListReport.RoutenFolgeColumn]));
+                    }
+                    catch (global::System.InvalidCastException e) {
+                        throw new global::System.Data.StrongTypingException("Der Wert für Spalte RoutenFolge in Tabelle vwTourListReport ist DBNull.", e);
+                    }
+                }
+                set {
+                    this[this.tablevwTourListReport.RoutenFolgeColumn] = value;
                 }
             }
             
@@ -960,14 +1043,50 @@ namespace DNR26V2.Data.Datasets {
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public bool IsRouteIdNull() {
-                return this.IsNull(this.tablevwTourListReport.RouteIdColumn);
+            public bool IsTurWertIdNull() {
+                return this.IsNull(this.tablevwTourListReport.TurWertIdColumn);
             }
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public void SetRouteIdNull() {
-                this[this.tablevwTourListReport.RouteIdColumn] = global::System.Convert.DBNull;
+            public void SetTurWertIdNull() {
+                this[this.tablevwTourListReport.TurWertIdColumn] = global::System.Convert.DBNull;
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public bool IsTurNull() {
+                return this.IsNull(this.tablevwTourListReport.TurColumn);
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public void SetTurNull() {
+                this[this.tablevwTourListReport.TurColumn] = global::System.Convert.DBNull;
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public bool IsRoutenFolgeWertIdNull() {
+                return this.IsNull(this.tablevwTourListReport.RoutenFolgeWertIdColumn);
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public void SetRoutenFolgeWertIdNull() {
+                this[this.tablevwTourListReport.RoutenFolgeWertIdColumn] = global::System.Convert.DBNull;
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public bool IsRoutenFolgeNull() {
+                return this.IsNull(this.tablevwTourListReport.RoutenFolgeColumn);
+            }
+            
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
+            public void SetRoutenFolgeNull() {
+                this[this.tablevwTourListReport.RoutenFolgeColumn] = global::System.Convert.DBNull;
             }
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
@@ -1191,8 +1310,10 @@ namespace DNR26V2.Data.Datasets.dsTourListTableAdapters {
             tableMapping.SourceTable = "Table";
             tableMapping.DataSetTable = "vwTourListReport";
             tableMapping.ColumnMappings.Add("LieferDatum", "LieferDatum");
-            tableMapping.ColumnMappings.Add("RouteId", "RouteId");
-            tableMapping.ColumnMappings.Add("Routenfolge", "Routenfolge");
+            tableMapping.ColumnMappings.Add("TurWertId", "TurWertId");
+            tableMapping.ColumnMappings.Add("Tur", "Tur");
+            tableMapping.ColumnMappings.Add("RoutenFolgeWertId", "RoutenFolgeWertId");
+            tableMapping.ColumnMappings.Add("RoutenFolge", "RoutenFolge");
             tableMapping.ColumnMappings.Add("KundeId", "KundeId");
             tableMapping.ColumnMappings.Add("Kundennummer", "Kundennummer");
             tableMapping.ColumnMappings.Add("Kundenname", "Kundenname");
@@ -1222,9 +1343,9 @@ namespace DNR26V2.Data.Datasets.dsTourListTableAdapters {
             this._commandCollection = new global::Microsoft.Data.SqlClient.SqlCommand[1];
             this._commandCollection[0] = new global::Microsoft.Data.SqlClient.SqlCommand();
             this._commandCollection[0].Connection = this.Connection;
-            this._commandCollection[0].CommandText = "SELECT LieferDatum, RouteId, Routenfolge, KundeId, Kundennummer, Kundenname, Arti" +
-                "kelId, Artikelnummer, Bezeichnung, Bezeichnung2, Einheit, Menge, Gewicht, ZeileN" +
-                "otiz, LieferscheinNotiz FROM dbo.vwTourListReport";
+            this._commandCollection[0].CommandText = "SELECT LieferDatum, TurWertId, Tur, RoutenFolgeWertId, RoutenFolge, KundeId, Kund" +
+                "ennummer, Kundenname, ArtikelId, Artikelnummer, Bezeichnung, Bezeichnung2, Einhe" +
+                "it, Menge, Gewicht, ZeileNotiz, LieferscheinNotiz FROM dbo.vwTourListReport";
             this._commandCollection[0].CommandType = global::System.Data.CommandType.Text;
         }
         

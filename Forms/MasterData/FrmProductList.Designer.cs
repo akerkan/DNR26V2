@@ -20,6 +20,18 @@ partial class FrmProductList
         chkNurAktiv = new CheckBox();
         dgwArtikel = new DataGridView();
         panelDetail = new Panel();
+        btnPrintfarbe = new Button();
+        pnlPrintfarbe = new Panel();
+        lblPreisFormel = new Label();
+        cmbPreisFormel = new ComboBox();
+        lblFeld4 = new Label();
+        lblFeld3 = new Label();
+        lblFeld2 = new Label();
+        lblFeld1 = new Label();
+        txtFeld4 = new TextBox();
+        txtFeld3 = new TextBox();
+        txtFeld2 = new TextBox();
+        txtFeld1 = new TextBox();
         lblArtikelnummer = new Label();
         txtArtikelnummer = new TextBox();
         lblBezeichnung = new Label();
@@ -42,18 +54,6 @@ partial class FrmProductList
         btnNeu = new Button();
         btnSpeichern = new Button();
         btnDeaktivieren = new Button();
-        txtFeld1 = new TextBox();
-        txtFeld2 = new TextBox();
-        txtFeld3 = new TextBox();
-        txtFeld4 = new TextBox();
-        lblFeld1 = new Label();
-        lblFeld2 = new Label();
-        lblFeld3 = new Label();
-        lblFeld4 = new Label();
-        pnlPrintfarbe = new Panel();
-        btnPrintfarbe = new Button();
-        lblPreisFormel = new Label();
-        cmbPreisFormel = new ComboBox();
         pnlTop.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgwArtikel).BeginInit();
         panelDetail.SuspendLayout();
@@ -71,7 +71,7 @@ partial class FrmProductList
         pnlTop.Location = new Point(0, 0);
         pnlTop.Name = "pnlTop";
         pnlTop.Padding = new Padding(6, 6, 6, 0);
-        pnlTop.Size = new Size(1200, 40);
+        pnlTop.Size = new Size(1134, 40);
         pnlTop.TabIndex = 2;
         // 
         // lblSuche
@@ -159,9 +159,116 @@ partial class FrmProductList
         panelDetail.Location = new Point(560, 40);
         panelDetail.Name = "panelDetail";
         panelDetail.Padding = new Padding(16, 8, 16, 8);
-        panelDetail.Size = new Size(640, 660);
+        panelDetail.Size = new Size(574, 660);
         panelDetail.TabIndex = 0;
         panelDetail.Visible = false;
+        // 
+        // btnPrintfarbe
+        // 
+        btnPrintfarbe.Location = new Point(426, 400);
+        btnPrintfarbe.Name = "btnPrintfarbe";
+        btnPrintfarbe.Size = new Size(134, 23);
+        btnPrintfarbe.TabIndex = 31;
+        btnPrintfarbe.Text = "...";
+        btnPrintfarbe.UseVisualStyleBackColor = true;
+        // 
+        // pnlPrintfarbe
+        // 
+        pnlPrintfarbe.BorderStyle = BorderStyle.FixedSingle;
+        pnlPrintfarbe.Location = new Point(426, 338);
+        pnlPrintfarbe.Name = "pnlPrintfarbe";
+        pnlPrintfarbe.Size = new Size(134, 56);
+        pnlPrintfarbe.TabIndex = 30;
+        // 
+        // lblPreisFormel
+        // 
+        lblPreisFormel.AutoSize = true;
+        lblPreisFormel.Location = new Point(360, 216);
+        lblPreisFormel.Name = "lblPreisFormel";
+        lblPreisFormel.Size = new Size(67, 15);
+        lblPreisFormel.TabIndex = 32;
+        lblPreisFormel.Text = "Preisformel";
+        // 
+        // cmbPreisFormel
+        // 
+        cmbPreisFormel.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbPreisFormel.Font = new Font("Segoe UI", 10F);
+        cmbPreisFormel.Location = new Point(360, 234);
+        cmbPreisFormel.Name = "cmbPreisFormel";
+        cmbPreisFormel.Size = new Size(200, 25);
+        cmbPreisFormel.TabIndex = 33;
+        // 
+        // lblFeld4
+        // 
+        lblFeld4.AutoSize = true;
+        lblFeld4.Location = new Point(16, 527);
+        lblFeld4.Name = "lblFeld4";
+        lblFeld4.Size = new Size(38, 15);
+        lblFeld4.TabIndex = 29;
+        lblFeld4.Text = "Feld 4";
+        // 
+        // lblFeld3
+        // 
+        lblFeld3.AutoSize = true;
+        lblFeld3.Location = new Point(16, 496);
+        lblFeld3.Name = "lblFeld3";
+        lblFeld3.Size = new Size(38, 15);
+        lblFeld3.TabIndex = 28;
+        lblFeld3.Text = "Feld 3";
+        // 
+        // lblFeld2
+        // 
+        lblFeld2.AutoSize = true;
+        lblFeld2.Location = new Point(16, 465);
+        lblFeld2.Name = "lblFeld2";
+        lblFeld2.Size = new Size(38, 15);
+        lblFeld2.TabIndex = 27;
+        lblFeld2.Text = "Feld 2";
+        // 
+        // lblFeld1
+        // 
+        lblFeld1.AutoSize = true;
+        lblFeld1.Location = new Point(16, 434);
+        lblFeld1.Name = "lblFeld1";
+        lblFeld1.Size = new Size(38, 15);
+        lblFeld1.TabIndex = 26;
+        lblFeld1.Text = "Feld 1";
+        // 
+        // txtFeld4
+        // 
+        txtFeld4.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        txtFeld4.Font = new Font("Segoe UI", 10F);
+        txtFeld4.Location = new Point(74, 522);
+        txtFeld4.Name = "txtFeld4";
+        txtFeld4.Size = new Size(486, 25);
+        txtFeld4.TabIndex = 25;
+        // 
+        // txtFeld3
+        // 
+        txtFeld3.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        txtFeld3.Font = new Font("Segoe UI", 10F);
+        txtFeld3.Location = new Point(74, 491);
+        txtFeld3.Name = "txtFeld3";
+        txtFeld3.Size = new Size(486, 25);
+        txtFeld3.TabIndex = 24;
+        // 
+        // txtFeld2
+        // 
+        txtFeld2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        txtFeld2.Font = new Font("Segoe UI", 10F);
+        txtFeld2.Location = new Point(74, 460);
+        txtFeld2.Name = "txtFeld2";
+        txtFeld2.Size = new Size(486, 25);
+        txtFeld2.TabIndex = 23;
+        // 
+        // txtFeld1
+        // 
+        txtFeld1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        txtFeld1.Font = new Font("Segoe UI", 10F);
+        txtFeld1.Location = new Point(74, 429);
+        txtFeld1.Name = "txtFeld1";
+        txtFeld1.Size = new Size(486, 25);
+        txtFeld1.TabIndex = 22;
         // 
         // lblArtikelnummer
         // 
@@ -289,24 +396,6 @@ partial class FrmProductList
         nudMwstProzent.Size = new Size(80, 25);
         nudMwstProzent.TabIndex = 13;
         // 
-        // lblPreisFormel
-        // 
-        lblPreisFormel.AutoSize = true;
-        lblPreisFormel.Location = new Point(360, 216);
-        lblPreisFormel.Name = "lblPreisFormel";
-        lblPreisFormel.Size = new Size(66, 15);
-        lblPreisFormel.TabIndex = 32;
-        lblPreisFormel.Text = "Preisformel";
-        // 
-        // cmbPreisFormel
-        // 
-        cmbPreisFormel.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbPreisFormel.Font = new Font("Segoe UI", 10F);
-        cmbPreisFormel.Location = new Point(360, 234);
-        cmbPreisFormel.Name = "cmbPreisFormel";
-        cmbPreisFormel.Size = new Size(200, 25);
-        cmbPreisFormel.TabIndex = 33;
-        // 
         // lblBarcode
         // 
         lblBarcode.AutoSize = true;
@@ -348,7 +437,7 @@ partial class FrmProductList
         chkAktiv.AutoSize = true;
         chkAktiv.Checked = true;
         chkAktiv.CheckState = CheckState.Checked;
-        chkAktiv.Location = new Point(16, 430);
+        chkAktiv.Location = new Point(19, 566);
         chkAktiv.Name = "chkAktiv";
         chkAktiv.Size = new Size(53, 19);
         chkAktiv.TabIndex = 18;
@@ -356,7 +445,8 @@ partial class FrmProductList
         // 
         // btnNeu
         // 
-        btnNeu.Location = new Point(16, 470);
+        btnNeu.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        btnNeu.Location = new Point(234, 618);
         btnNeu.Name = "btnNeu";
         btnNeu.Size = new Size(100, 30);
         btnNeu.TabIndex = 19;
@@ -364,7 +454,8 @@ partial class FrmProductList
         // 
         // btnSpeichern
         // 
-        btnSpeichern.Location = new Point(124, 470);
+        btnSpeichern.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        btnSpeichern.Location = new Point(342, 618);
         btnSpeichern.Name = "btnSpeichern";
         btnSpeichern.Size = new Size(100, 30);
         btnSpeichern.TabIndex = 20;
@@ -372,102 +463,18 @@ partial class FrmProductList
         // 
         // btnDeaktivieren
         // 
-        btnDeaktivieren.Location = new Point(232, 470);
+        btnDeaktivieren.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        btnDeaktivieren.Location = new Point(450, 618);
         btnDeaktivieren.Name = "btnDeaktivieren";
         btnDeaktivieren.Size = new Size(110, 30);
         btnDeaktivieren.TabIndex = 21;
         btnDeaktivieren.Text = "Deaktivieren";
         // 
-        // txtFeld1
-        // 
-        txtFeld1.Font = new Font("Segoe UI", 10F);
-        txtFeld1.Location = new Point(124, 516);
-        txtFeld1.Name = "txtFeld1";
-        txtFeld1.Size = new Size(380, 25);
-        txtFeld1.TabIndex = 22;
-        // 
-        // txtFeld2
-        // 
-        txtFeld2.Font = new Font("Segoe UI", 10F);
-        txtFeld2.Location = new Point(124, 547);
-        txtFeld2.Name = "txtFeld2";
-        txtFeld2.Size = new Size(380, 25);
-        txtFeld2.TabIndex = 23;
-        // 
-        // txtFeld3
-        // 
-        txtFeld3.Font = new Font("Segoe UI", 10F);
-        txtFeld3.Location = new Point(124, 578);
-        txtFeld3.Name = "txtFeld3";
-        txtFeld3.Size = new Size(380, 25);
-        txtFeld3.TabIndex = 24;
-        // 
-        // txtFeld4
-        // 
-        txtFeld4.Font = new Font("Segoe UI", 10F);
-        txtFeld4.Location = new Point(124, 609);
-        txtFeld4.Name = "txtFeld4";
-        txtFeld4.Size = new Size(380, 25);
-        txtFeld4.TabIndex = 25;
-        // 
-        // lblFeld1
-        // 
-        lblFeld1.AutoSize = true;
-        lblFeld1.Location = new Point(19, 526);
-        lblFeld1.Name = "lblFeld1";
-        lblFeld1.Size = new Size(38, 15);
-        lblFeld1.TabIndex = 26;
-        lblFeld1.Text = "Feld 1";
-        // 
-        // lblFeld2
-        // 
-        lblFeld2.AutoSize = true;
-        lblFeld2.Location = new Point(21, 557);
-        lblFeld2.Name = "lblFeld2";
-        lblFeld2.Size = new Size(38, 15);
-        lblFeld2.TabIndex = 27;
-        lblFeld2.Text = "Feld 2";
-        // 
-        // lblFeld3
-        // 
-        lblFeld3.AutoSize = true;
-        lblFeld3.Location = new Point(24, 588);
-        lblFeld3.Name = "lblFeld3";
-        lblFeld3.Size = new Size(38, 15);
-        lblFeld3.TabIndex = 28;
-        lblFeld3.Text = "Feld 3";
-        // 
-        // lblFeld4
-        // 
-        lblFeld4.AutoSize = true;
-        lblFeld4.Location = new Point(24, 619);
-        lblFeld4.Name = "lblFeld4";
-        lblFeld4.Size = new Size(38, 15);
-        lblFeld4.TabIndex = 29;
-        lblFeld4.Text = "Feld 4";
-        // 
-        // pnlPrintfarbe
-        // 
-        pnlPrintfarbe.BorderStyle = BorderStyle.FixedSingle;
-        pnlPrintfarbe.Location = new Point(475, 404);
-        pnlPrintfarbe.Name = "pnlPrintfarbe";
-        pnlPrintfarbe.Size = new Size(77, 37);
-        pnlPrintfarbe.TabIndex = 30;
-        // 
-        // btnPrintfarbe
-        // 
-        btnPrintfarbe.Location = new Point(474, 444);
-        btnPrintfarbe.Name = "btnPrintfarbe";
-        btnPrintfarbe.Size = new Size(75, 23);
-        btnPrintfarbe.TabIndex = 31;
-        btnPrintfarbe.Text = "...";
-        btnPrintfarbe.UseVisualStyleBackColor = true;
-        // 
         // FrmProductList
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1200, 700);
+        ClientSize = new Size(1134, 700);
         Controls.Add(panelDetail);
         Controls.Add(dgwArtikel);
         Controls.Add(pnlTop);

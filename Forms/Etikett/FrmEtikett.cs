@@ -153,21 +153,69 @@ public partial class FrmEtikett : BaseListForm
     private async void BtnDesigner_Click(object? sender, EventArgs e)
     {
         var layout = await _service.GetLayoutAsync();
-        using var frm = new FrmEtikettDesigner(_service, layout);
+        using var frm = new FrmEtiketDesigner(_service, layout);
         frm.ShowDialog(this);
     }
 
-    // ?? Grid styling ??????????????????????????????????????????????????????????
+    // ?? Grid styling ????????????????????????????????????????????????????????
 
     private void StyleGrids()
     {
+        // ?? Kunden grid ??????????????????????????????????????????????????????
         ConfigureGrid(dgwKunden);
+        dgwKunden.AutoGenerateColumns = false;
+        dgwKunden.Columns.Clear();
+        dgwKunden.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            DataPropertyName = "Kundenname",
+            HeaderText       = "Kundenname",
+            Name             = "colKdName",
+            AutoSizeMode     = DataGridViewAutoSizeColumnMode.Fill,
+            ReadOnly         = true,
+        });
+        dgwKunden.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            DataPropertyName = "Tur",
+            HeaderText       = "Tur",
+            Name             = "colKdTur",
+            Width            = 55,
+            ReadOnly         = true,
+        });
 
+        // ?? Produkte grid ??????????????????????????????????????????????????
         ConfigureGrid(dgwProdukte);
-        dgwProdukte.ReadOnly = false;
-        colMenge.ReadOnly    = false;
-        colGewicht.ReadOnly  = false;
-        colEtikett.ReadOnly  = true;
+        dgwProdukte.AutoGenerateColumns = false;
+        dgwProdukte.Columns.Clear();
+        dgwProdukte.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            DataPropertyName = "Artikelnummer", HeaderText = "Art.-Nr.",
+            Name = "colArtikelnummer", Width = 90, ReadOnly = true,
+        });
+        dgwProdukte.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            DataPropertyName = "Produktname", HeaderText = "Produktname",
+            Name = "colProduktname",
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, ReadOnly = true,
+        });
+        dgwProdukte.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            DataPropertyName = "Menge", HeaderText = "Menge",
+            Name = "colMenge", Width = 75, ReadOnly = false,
+        });
+        dgwProdukte.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            DataPropertyName = "Gewicht", HeaderText = "Gewicht Kg",
+            Name = "colGewicht", Width = 95, ReadOnly = false,
+        });
+        dgwProdukte.Columns.Add(new DataGridViewButtonColumn
+        {
+            HeaderText = "Etikett", Name = "colEtikettBtn",
+            Text = "Drucken", UseColumnTextForButtonValue = true,
+            Width = 72, ReadOnly = true,
+        });
+
+        // Update the field reference so CellClick still works
+        colEtikett = (DataGridViewButtonColumn)dgwProdukte.Columns["colEtikettBtn"];
     }
 }
 

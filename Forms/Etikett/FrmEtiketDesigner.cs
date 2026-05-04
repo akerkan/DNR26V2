@@ -8,12 +8,16 @@ namespace DNR26V2.Forms.Etikett;
 /// <summary>
 /// Split-panel label designer.
 /// Left  = live properties (X/Y/W/H + font/color).
-/// Right = 10×15 cm canvas with draggable, resizable field panels.
+/// Right = scrollable canvas, size driven by <see cref="EtiketPaperConfig"/>.
 /// </summary>
 public partial class FrmEtiketDesigner : BaseForm
 {
     private readonly IEtiketService          _service;
     private readonly List<EtiketLayoutField> _fields;
+
+    // ── Paper size (cm → px: 96 DPI, 1 cm = 96/2.54 px) ─────────────────────
+    private EtiketPaperConfig _paper = new();
+    private const double PxPerCm = 96.0 / 2.54;
 
     // ── Selection ─────────────────────────────────────────────────────────────
     private Panel?             _selectedPanel;
@@ -26,7 +30,7 @@ public partial class FrmEtiketDesigner : BaseForm
     // ── Resize state ──────────────────────────────────────────────────────────
     private Panel?             _resizing;
     private EtiketLayoutField? _resizingField;
-    private ResizeMode         _resizeMode    = ResizeMode.None;
+    private ResizeMode         _resizeMode   = ResizeMode.None;
     private Point              _resizeStart;
     private Rectangle          _resizeBounds;
 
@@ -43,14 +47,26 @@ public partial class FrmEtiketDesigner : BaseForm
     public FrmEtiketDesigner(IEtiketService service, IReadOnlyList<EtiketLayoutField> layout)
     {
         _service = service;
-        _fields = layout.ToList();
+        _fields  = layout.ToList();
         InitializeComponent();
-        BuildPropertiesPanel(); // ← neu, vor WirePropertyEvents
         WirePropertyEvents();
-        Load += (_, _) => { PopulateFontCombo(); BuildFieldPanels(); };
+        Load += async (_, _) => await OnFormLoadAsync();
     }
 
-    // ── Init ─────────────────────────────────────────────────────────────────
+    // Designer-only ctor
+    public FrmEtiketDesigner() : this(null!, Array.Empty<EtiketLayoutField>()) { }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    private async Task OnFormLoadAsync()
+    {
+        if (DesignMode) return;
+
+        _paper = await _service.GetPaperConfigAsync();
+        ApplyPaperSize(_paper.WidthCm, _paper.HeightCm, updateToolbar: true);
+        PopulateFontCombo();
+        BuildFieldPanels();
+    }
 
     private void PopulateFontCombo()
     {
@@ -61,17 +77,65 @@ public partial class FrmEtiketDesigner : BaseForm
 
     private void WirePropertyEvents()
     {
-        nudPropX.ValueChanged    += PropChanged;
-        nudPropY.ValueChanged    += PropChanged;
-        nudPropW.ValueChanged    += PropChanged;
-        nudPropH.ValueChanged    += PropChanged;
-        nudPropSize.ValueChanged += PropChanged;
-        cmbPropFont.TextUpdate   += PropChanged;
-        cmbPropFont.SelectedIndexChanged += PropChanged;
-        chkPropBold.CheckedChanged    += PropChanged;
-        chkPropItalic.CheckedChanged  += PropChanged;
-        chkPropVisible.CheckedChanged += PropChanged;
+        nudPropX.ValueChanged             += PropChanged;
+        nudPropY.ValueChanged             += PropChanged;
+        nudPropW.ValueChanged             += PropChanged;
+        nudPropH.ValueChanged             += PropChanged;
+        nudPropSize.ValueChanged          += PropChanged;
+        cmbPropFont.TextUpdate            += PropChanged;
+        cmbPropFont.SelectedIndexChanged  += PropChanged;
+        chkPropBold.CheckedChanged        += PropChanged;
+        chkPropItalic.CheckedChanged      += PropChanged;
+        chkPropVisible.CheckedChanged     += PropChanged;
         cmbPropAlign.SelectedIndexChanged += PropChanged;
+    }
+
+    // ── Paper size ────────────────────────────────────────────────────────────
+
+    private void ApplyPaperSize(float widthCm, float heightCm, bool updateToolbar = false)
+    {
+        var px = new Size(
+            (int)Math.Round(widthCm  * PxPerCm),
+            (int)Math.Round(heightCm * PxPerCm));
+
+        canvas.Size = px;
+        canvasContainer.AutoScrollMinSize = new Size(px.Width + 28, px.Height + 28);
+        Text = $"Label-Designer  ({widthCm:0.#} × {heightCm:0.#} cm)";
+
+        if (updateToolbar)
+        {
+            tsTxtBreiteCm.Text = widthCm.ToString("0.#");
+            tsTxtHoeheCm.Text  = heightCm.ToString("0.#");
+        }
+    }
+
+    private async void TsBtnPapierOk_Click(object? sender, EventArgs e)
+    {
+        if (!float.TryParse(tsTxtBreiteCm.Text.Replace(',', '.'),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out float w) || w < 1f ||
+            !float.TryParse(tsTxtHoeheCm.Text.Replace(',', '.'),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out float h) || h < 1f)
+        {
+            MessageBox.Show("Ungültige Maße. Bitte Zahlen > 0 eingeben (z.B. 10 × 15).",
+                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        _paper.WidthCm  = w;
+        _paper.HeightCm = h;
+        ApplyPaperSize(w, h);
+
+        try
+        {
+            await _service.SavePaperConfigAsync(_paper);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Fehler beim Speichern: " + ex.Message,
+                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     // ── Field panels ──────────────────────────────────────────────────────────
@@ -91,19 +155,19 @@ public partial class FrmEtiketDesigner : BaseForm
     {
         var pnl = new Panel
         {
-            Location = new Point(field.X, field.Y),
-            Size     = new Size(field.Width, field.Height),
-            Tag      = field,
-            BackColor= field.Visible
+            Location  = new Point(field.X, field.Y),
+            Size      = new Size(field.Width, field.Height),
+            Tag       = field,
+            BackColor = field.Visible
                 ? ParseColor(field.BackColorHex, Color.LightYellow)
                 : Color.LightGray,
         };
 
-        pnl.Paint += (_, pe) => PaintField(pe.Graphics, pnl, field);
-        pnl.MouseDown   += Panel_MouseDown;
-        pnl.MouseMove   += Panel_MouseMove;
-        pnl.MouseUp     += Panel_MouseUp;
-        pnl.MouseClick  += (_, e) => { if (e.Button == MouseButtons.Left) SelectField(pnl, field); };
+        pnl.Paint          += (_, pe) => PaintField(pe.Graphics, pnl, field);
+        pnl.MouseDown      += Panel_MouseDown;
+        pnl.MouseMove      += Panel_MouseMove;
+        pnl.MouseUp        += Panel_MouseUp;
+        pnl.MouseClick     += (_, e) => { if (e.Button == MouseButtons.Left) SelectField(pnl, field); };
         pnl.ContextMenuStrip = BuildContextMenu(field, pnl);
 
         return pnl;
@@ -111,7 +175,6 @@ public partial class FrmEtiketDesigner : BaseForm
 
     private void PaintField(Graphics g, Panel pnl, EtiketLayoutField field)
     {
-        // Selection highlight
         if (ReferenceEquals(pnl, _selectedPanel))
         {
             using var pen = new Pen(Color.DodgerBlue, 2);
@@ -123,7 +186,6 @@ public partial class FrmEtiketDesigner : BaseForm
             g.DrawRectangle(pen, 0, 0, pnl.Width - 1, pnl.Height - 1);
         }
 
-        // Field name text
         float fs = Math.Max(6f, Math.Min(9f, field.FontSize * 0.72f));
         using var font  = new Font(field.FontName, fs,
                                    field.Bold ? FontStyle.Bold : FontStyle.Regular,
@@ -147,7 +209,6 @@ public partial class FrmEtiketDesigner : BaseForm
         var prev = _selectedPanel;
         _selectedPanel = pnl;
         _selectedField = field;
-
         prev?.Invalidate();
         pnl.Invalidate();
         UpdatePropertiesPanel();
@@ -164,16 +225,18 @@ public partial class FrmEtiketDesigner : BaseForm
             {
                 pnlPropContent.Enabled = false;
                 lblSelectedFeld.Text   = "— kein Feld ausgewählt —";
+                lblSelectedFeld.ForeColor = Color.Gray;
                 return;
             }
 
-            pnlPropContent.Enabled = true;
-            lblSelectedFeld.Text   = FieldDisplayName(_selectedField.Feld);
+            pnlPropContent.Enabled    = true;
+            lblSelectedFeld.Text      = FieldDisplayName(_selectedField.Feld);
+            lblSelectedFeld.ForeColor = Color.FromArgb(0, 80, 160);
 
-            nudPropX.Value    = Math.Max(0,   _selectedField.X);
-            nudPropY.Value    = Math.Max(0,   _selectedField.Y);
-            nudPropW.Value    = Math.Max(MinSize, _selectedField.Width);
-            nudPropH.Value    = Math.Max(MinSize, _selectedField.Height);
+            nudPropX.Value    = Math.Max(0,       _selectedField.X);
+            nudPropY.Value    = Math.Max(0,       _selectedField.Y);
+            nudPropW.Value    = Math.Max(MinSize,  _selectedField.Width);
+            nudPropH.Value    = Math.Max(MinSize,  _selectedField.Height);
             nudPropSize.Value = (decimal)Math.Max(4f, _selectedField.FontSize);
 
             cmbPropFont.Text           = _selectedField.FontName;
@@ -195,16 +258,16 @@ public partial class FrmEtiketDesigner : BaseForm
     {
         if (_updatingProps || _selectedField is null || _selectedPanel is null) return;
 
-        _selectedField.X         = (int)nudPropX.Value;
-        _selectedField.Y         = (int)nudPropY.Value;
-        _selectedField.Width     = (int)nudPropW.Value;
-        _selectedField.Height    = (int)nudPropH.Value;
-        _selectedField.FontSize  = (float)nudPropSize.Value;
-        _selectedField.FontName  = cmbPropFont.Text;
-        _selectedField.Bold      = chkPropBold.Checked;
-        _selectedField.Italic    = chkPropItalic.Checked;
-        _selectedField.Visible   = chkPropVisible.Checked;
-        _selectedField.TextAlignH= cmbPropAlign.SelectedIndex;
+        _selectedField.X          = (int)nudPropX.Value;
+        _selectedField.Y          = (int)nudPropY.Value;
+        _selectedField.Width      = (int)nudPropW.Value;
+        _selectedField.Height     = (int)nudPropH.Value;
+        _selectedField.FontSize   = (float)nudPropSize.Value;
+        _selectedField.FontName   = cmbPropFont.Text;
+        _selectedField.Bold       = chkPropBold.Checked;
+        _selectedField.Italic     = chkPropItalic.Checked;
+        _selectedField.Visible    = chkPropVisible.Checked;
+        _selectedField.TextAlignH = cmbPropAlign.SelectedIndex;
 
         ApplyFieldToPanel(_selectedPanel, _selectedField);
     }
@@ -314,14 +377,13 @@ public partial class FrmEtiketDesigner : BaseForm
 
         if (_dragging != null && _dragging.Tag is EtiketLayoutField df)
         {
-            int nx = Math.Clamp(_dragging.Left + e.X - _dragOffset.X,
-                                0, canvas.Width  - _dragging.Width);
-            int ny = Math.Clamp(_dragging.Top  + e.Y - _dragOffset.Y,
-                                0, canvas.Height - _dragging.Height);
+            int nx = Math.Clamp(_dragging.Left + e.X - _dragOffset.X, 0, canvas.Width  - _dragging.Width);
+            int ny = Math.Clamp(_dragging.Top  + e.Y - _dragOffset.Y, 0, canvas.Height - _dragging.Height);
             _dragging.Location = new Point(nx, ny);
             df.X = nx; df.Y = ny;
             _updatingProps = true;
-            nudPropX.Value = nx; nudPropY.Value = ny;
+            nudPropX.Value = nx;
+            nudPropY.Value = ny;
             _updatingProps = false;
             return;
         }
@@ -350,14 +412,14 @@ public partial class FrmEtiketDesigner : BaseForm
             }
 
             _resizing.Bounds       = b;
-            _resizingField.X       = b.X;   _resizingField.Y      = b.Y;
-            _resizingField.Width   = b.Width; _resizingField.Height = b.Height;
+            _resizingField.X       = b.X;     _resizingField.Y      = b.Y;
+            _resizingField.Width   = b.Width;  _resizingField.Height = b.Height;
             _resizing.Invalidate();
 
             // Live-update property NUDs
             _updatingProps = true;
-            nudPropX.Value = b.X; nudPropY.Value = b.Y;
-            nudPropW.Value = b.Width; nudPropH.Value = b.Height;
+            nudPropX.Value = b.X;     nudPropY.Value = b.Y;
+            nudPropW.Value = b.Width;  nudPropH.Value = b.Height;
             _updatingProps = false;
         }
     }
@@ -395,7 +457,7 @@ public partial class FrmEtiketDesigner : BaseForm
     {
         try
         {
-            btnSpeichern.Enabled = false;
+            tsBtnSpeichern.Enabled = false;
             await _service.SaveLayoutAsync(_fields);
             MessageBox.Show("Layout gespeichert.", "Erfolg",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -405,7 +467,7 @@ public partial class FrmEtiketDesigner : BaseForm
             MessageBox.Show("Fehler: " + ex.Message, "Fehler",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-        finally { btnSpeichern.Enabled = true; }
+        finally { tsBtnSpeichern.Enabled = true; }
     }
 
     private async void BtnReset_Click(object? sender, EventArgs e)
@@ -426,7 +488,7 @@ public partial class FrmEtiketDesigner : BaseForm
 
     private static Color ParseColor(string hex, Color fallback)
     {
-        try { return ColorTranslator.FromHtml(hex); }
+        try   { return ColorTranslator.FromHtml(hex); }
         catch { return fallback; }
     }
 
@@ -436,20 +498,20 @@ public partial class FrmEtiketDesigner : BaseForm
 
     private static string FieldDisplayName(EtiketFeld feld) => feld switch
     {
-        EtiketFeld.Logo               => "Logo",
-        EtiketFeld.BarcodeObenLinks   => "Barcode links",
-        EtiketFeld.BarcodeObenRechts  => "Barcode rechts",
-        EtiketFeld.SchockGefroren     => "Schock gefrostet",
-        EtiketFeld.UrunAdi            => "Produktname",
-        EtiketFeld.Untertitel         => "Untertitel (Feld1)",
-        EtiketFeld.Zutaten            => "Zutaten (Feld2)",
-        EtiketFeld.Hinweis            => "Hinweis (Feld3)",
-        EtiketFeld.HaltbarBis         => "Haltbar bis",
-        EtiketFeld.Wochentag          => "Wochentag",
-        EtiketFeld.ChargeEingefrorenAm=> "Charge/eingefroren am",
-        EtiketFeld.Kundenname         => "Kundenname",
-        EtiketFeld.MengeGewicht       => "Menge / Gewicht",
-        EtiketFeld.FirmaFooter        => "Firma Footer",
-        _                             => feld.ToString(),
+        EtiketFeld.Logo                => "Logo",
+        EtiketFeld.BarcodeObenLinks    => "Barcode links",
+        EtiketFeld.BarcodeObenRechts   => "Barcode rechts",
+        EtiketFeld.SchockGefroren      => "Schock gefrostet",
+        EtiketFeld.UrunAdi             => "Produktname",
+        EtiketFeld.Untertitel          => "Untertitel (Feld1)",
+        EtiketFeld.Zutaten             => "Zutaten (Feld2)",
+        EtiketFeld.Hinweis             => "Hinweis (Feld3)",
+        EtiketFeld.HaltbarBis          => "Haltbar bis",
+        EtiketFeld.Wochentag           => "Wochentag",
+        EtiketFeld.ChargeEingefrorenAm => "Charge/eingefroren am",
+        EtiketFeld.Kundenname          => "Kundenname",
+        EtiketFeld.MengeGewicht        => "Menge / Gewicht",
+        EtiketFeld.FirmaFooter         => "Firma Footer",
+        _                              => feld.ToString(),
     };
 }

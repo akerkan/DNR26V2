@@ -16,39 +16,40 @@ public class AppDbContext : DbContext
         : base(options) { }
 
     // ── System ────────────────────────────────────────────────────────────────
-    public DbSet<AppSetup>       AppSetup       { get; set; } = null!;
-    public DbSet<NoSeries>       NoSeries       { get; set; } = null!;
-    public DbSet<AuditLog>       AuditLog       { get; set; } = null!;
-    public DbSet<Location>       Location       { get; set; } = null!;
+    public DbSet<AppSetup>        AppSetup        { get; set; } = null!;
+    public DbSet<NoSeries>        NoSeries        { get; set; } = null!;
+    public DbSet<AuditLog>        AuditLog        { get; set; } = null!;
+    public DbSet<Location>        Location        { get; set; } = null!;
     public DbSet<UserGridSetting> UserGridSetting { get; set; } = null!;
 
-    // ── Stammdaten (Modul 2/3 – Kundenprodukt-Schablone) ─────────────────────
-    public DbSet<Customer>       Customer       { get; set; } = null!;
-    public DbSet<Route>          Route          { get; set; } = null!;
-    public DbSet<Driver>         Driver         { get; set; } = null!;
+    // ── Stammdaten ────────────────────────────────────────────────────────────
+    public DbSet<Customer>                        Customer                        { get; set; } = null!;
+    public DbSet<Route>                           Route                           { get; set; } = null!;
+    public DbSet<Driver>                          Driver                          { get; set; } = null!;
     public DbSet<CustomerProduct>                 CustomerProduct                 { get; set; } = null!;
     public DbSet<CustomerProductAttributeMapping> CustomerProductAttributeMapping { get; set; } = null!;
+    public DbSet<Product>                         Product                         { get; set; } = null!;
+    public DbSet<ProductAttribute>                ProductAttribute                { get; set; } = null!;
+    public DbSet<ProductAttributeValue>           ProductAttributeValue           { get; set; } = null!;
+    public DbSet<ProductAttributeMapping>         ProductAttributeMapping         { get; set; } = null!;
 
-    // ── Stammdaten (Modul 3) ──────────────────────────────────────────────────
-    public DbSet<Product>                 Product                 { get; set; } = null!;
-    public DbSet<ProductAttribute>        ProductAttribute        { get; set; } = null!;
-    public DbSet<ProductAttributeValue>   ProductAttributeValue   { get; set; } = null!;
-    public DbSet<ProductAttributeMapping> ProductAttributeMapping { get; set; } = null!;
+    // ── Aufträge ──────────────────────────────────────────────────────────────
+    public DbSet<Order>     Order     { get; set; } = null!;
+    public DbSet<OrderLine> OrderLine { get; set; } = null!;
 
-    // ── Module 4: Orders ──────────────────────────────────────────────────────
-    public DbSet<Order>          Order          { get; set; } = null!;
-    public DbSet<OrderLine>      OrderLine      { get; set; } = null!;
-
-    // ── Module 5: Deliveries (entity needed for Buchen) ───────────────────────
+    // ── Lieferungen ───────────────────────────────────────────────────────────
     public DbSet<DeliveryHeader> DeliveryHeader { get; set; } = null!;
     public DbSet<DeliveryLine>   DeliveryLine   { get; set; } = null!;
-    public DbSet<InvoiceHeader> Invoices     { get; set; } = null!;
-    public DbSet<InvoiceLine>   InvoiceLines { get; set; } = null!;
+
+    // ── Rechnungen / Zahlungen ────────────────────────────────────────────────
+    public DbSet<InvoiceHeader>                              Invoices       { get; set; } = null!;
+    public DbSet<InvoiceLine>                                InvoiceLines   { get; set; } = null!;
     public DbSet<DNR26V2.Domain.Entities.Payments.PaymentHeader> PaymentHeaders { get; set; } = null!;
     public DbSet<DNR26V2.Domain.Entities.Payments.PaymentLine>   PaymentLines   { get; set; } = null!;
 
     // ── Modul 8: Etikett ──────────────────────────────────────────────────────
     public DbSet<EtiketLayoutField> EtiketLayoutFields { get; set; } = null!;
+    public DbSet<EtiketPaperConfig> EtiketPaperConfigs { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

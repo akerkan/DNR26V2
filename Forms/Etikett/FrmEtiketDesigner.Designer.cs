@@ -1,35 +1,50 @@
 ﻿using DNR26V2.Services.Etikett;
 
+using System.ComponentModel;
+
 namespace DNR26V2.Forms.Etikett;
 
 partial class FrmEtiketDesigner
 {
     private System.ComponentModel.IContainer components = null!;
 
-    // ── Properties panel controls ─────────────────────────────────────────────
-    private Label         lblSelectedFeld  = null!;
-    private Panel         pnlPropContent   = null!;
-    private NumericUpDown nudPropX         = null!;
-    private NumericUpDown nudPropY         = null!;
-    private NumericUpDown nudPropW         = null!;
-    private NumericUpDown nudPropH         = null!;
-    private ComboBox      cmbPropFont      = null!;
-    private NumericUpDown nudPropSize      = null!;
-    private CheckBox      chkPropBold      = null!;
-    private CheckBox      chkPropItalic    = null!;
-    private CheckBox      chkPropVisible   = null!;
-    private ComboBox      cmbPropAlign     = null!;
-    private Button        btnPropForeColor = null!;
-    private Button        btnPropBackColor = null!;
+    // ── Toolbar ───────────────────────────────────────────────────────────────
+    private ToolStrip          toolStrip        = null!;
+    private ToolStripButton    tsBtnSpeichern   = null!;
+    private ToolStripButton    tsBtnReset       = null!;
+    private ToolStripSeparator tsSep1           = null!;
+    private ToolStripLabel     tsLblPapier      = null!;
+    private ToolStripTextBox   tsTxtBreiteCm    = null!;
+    private ToolStripLabel     tsLblX           = null!;
+    private ToolStripTextBox   tsTxtHoeheCm     = null!;
+    private ToolStripLabel     tsLblCm          = null!;
+    private ToolStripButton    tsBtnPapierOk    = null!;
+    private ToolStripSeparator tsSep2           = null!;
+    private ToolStripButton    tsBtnSchliessen  = null!;
 
-    // ── Canvas ────────────────────────────────────────────────────────────────
-    internal Panel canvas = null!;
+    // ── Main split ────────────────────────────────────────────────────────────
+    private SplitContainer     mainSplit        = null!;
 
-    // ── Layout ───────────────────────────────────────────────────────────────
-    private SplitContainer designSplit  = null!;
-    private Button          btnSpeichern = null!;
-    private Button          btnReset     = null!;
-    private Button          btnSchliessen= null!;
+    // ── Left: Properties ──────────────────────────────────────────────────────
+    private Label              lblSelectedFeld  = null!;
+    private Panel              pnlPropContent   = null!;
+    private TableLayoutPanel   tbl              = null!;
+    private NumericUpDown      nudPropX         = null!;
+    private NumericUpDown      nudPropY         = null!;
+    private NumericUpDown      nudPropW         = null!;
+    private NumericUpDown      nudPropH         = null!;
+    private NumericUpDown      nudPropSize      = null!;
+    private ComboBox           cmbPropFont      = null!;
+    private CheckBox           chkPropBold      = null!;
+    private CheckBox           chkPropItalic    = null!;
+    private CheckBox           chkPropVisible   = null!;
+    private ComboBox           cmbPropAlign     = null!;
+    private Button             btnPropForeColor = null!;
+    private Button             btnPropBackColor = null!;
+
+    // ── Right: Canvas ─────────────────────────────────────────────────────────
+    private Panel              canvasContainer  = null!;
+    internal Panel             canvas           = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -39,12 +54,29 @@ partial class FrmEtiketDesigner
 
     private void InitializeComponent()
     {
-        btnSpeichern = new Button();
-        btnReset = new Button();
-        btnSchliessen = new Button();
-        pnlButtons = new FlowLayoutPanel();
-        lblSelectedFeld = new Label();
+        toolStrip = new ToolStrip();
+        tsBtnSpeichern = new ToolStripButton();
+        tsBtnReset = new ToolStripButton();
+        tsSep1 = new ToolStripSeparator();
+        tsLblPapier = new ToolStripLabel();
+        tsTxtBreiteCm = new ToolStripTextBox();
+        tsLblX = new ToolStripLabel();
+        tsTxtHoeheCm = new ToolStripTextBox();
+        tsLblCm = new ToolStripLabel();
+        tsBtnPapierOk = new ToolStripButton();
+        tsSep2 = new ToolStripSeparator();
+        tsBtnSchliessen = new ToolStripButton();
+        mainSplit = new SplitContainer();
+        pnlPropContent = new Panel();
         tbl = new TableLayoutPanel();
+        lblSelectedFeld = new Label();
+        canvasContainer = new Panel();
+        canvas = new Panel();
+        nudPropX = Nud(0, 2000);
+        nudPropY = Nud(0, 2000);
+        nudPropW = Nud(20, 2000);
+        nudPropH = Nud(20, 2000);
+        nudPropSize = Nud(4, 200);
         cmbPropFont = new ComboBox();
         chkPropBold = new CheckBox();
         chkPropItalic = new CheckBox();
@@ -52,75 +84,191 @@ partial class FrmEtiketDesigner
         cmbPropAlign = new ComboBox();
         btnPropForeColor = new Button();
         btnPropBackColor = new Button();
-        pnlPropContent = new Panel();
-        leftPanel = new Panel();
-        canvas = new Panel();
-        canvasContainer = new Panel();
-        designSplit = new SplitContainer();
-        pnlButtons.SuspendLayout();
-        leftPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)designSplit).BeginInit();
-        designSplit.Panel2.SuspendLayout();
-        designSplit.SuspendLayout();
+        toolStrip.SuspendLayout();
+        ((ISupportInitialize)mainSplit).BeginInit();
+        mainSplit.Panel1.SuspendLayout();
+        mainSplit.Panel2.SuspendLayout();
+        mainSplit.SuspendLayout();
+        pnlPropContent.SuspendLayout();
+        canvasContainer.SuspendLayout();
         SuspendLayout();
         // 
-        // btnSpeichern
+        // toolStrip
         // 
-        btnSpeichern.Location = new Point(3, 3);
-        btnSpeichern.Name = "btnSpeichern";
-        btnSpeichern.Size = new Size(75, 23);
-        btnSpeichern.TabIndex = 0;
-        btnSpeichern.Click += BtnSpeichern_Click;
+        toolStrip.Items.AddRange(new ToolStripItem[] { tsBtnSpeichern, tsBtnReset, tsSep1, tsLblPapier, tsTxtBreiteCm, tsLblX, tsTxtHoeheCm, tsLblCm, tsBtnPapierOk, tsSep2, tsBtnSchliessen });
+        toolStrip.Location = new Point(0, 0);
+        toolStrip.Name = "toolStrip";
+        toolStrip.Size = new Size(1020, 25);
+        toolStrip.TabIndex = 1;
         // 
-        // btnReset
+        // tsBtnSpeichern
         // 
-        btnReset.Location = new Point(84, 3);
-        btnReset.Name = "btnReset";
-        btnReset.Size = new Size(75, 23);
-        btnReset.TabIndex = 1;
-        btnReset.Click += BtnReset_Click;
+        tsBtnSpeichern.DisplayStyle = ToolStripItemDisplayStyle.Text;
+        tsBtnSpeichern.Name = "tsBtnSpeichern";
+        tsBtnSpeichern.Size = new Size(63, 22);
+        tsBtnSpeichern.Text = "Speichern";
+        tsBtnSpeichern.Click += BtnSpeichern_Click;
         // 
-        // btnSchliessen
+        // tsBtnReset
         // 
-        btnSchliessen.Location = new Point(165, 3);
-        btnSchliessen.Name = "btnSchliessen";
-        btnSchliessen.Size = new Size(75, 23);
-        btnSchliessen.TabIndex = 2;
-        btnSchliessen.Click += BtnSchliessen_Click;
+        tsBtnReset.DisplayStyle = ToolStripItemDisplayStyle.Text;
+        tsBtnReset.Name = "tsBtnReset";
+        tsBtnReset.Size = new Size(39, 22);
+        tsBtnReset.Text = "Reset";
+        tsBtnReset.Click += BtnReset_Click;
         // 
-        // pnlButtons
+        // tsSep1
         // 
-        pnlButtons.Controls.Add(btnSpeichern);
-        pnlButtons.Controls.Add(btnReset);
-        pnlButtons.Controls.Add(btnSchliessen);
-        pnlButtons.Controls.Add(canvas);
-        pnlButtons.Controls.Add(tbl);
-        pnlButtons.Controls.Add(pnlPropContent);
-        pnlButtons.Controls.Add(leftPanel);
-        pnlButtons.Controls.Add(canvasContainer);
-        pnlButtons.Location = new Point(13, 12);
-        pnlButtons.Name = "pnlButtons";
-        pnlButtons.Size = new Size(486, 334);
-        pnlButtons.TabIndex = 1;
+        tsSep1.Name = "tsSep1";
+        tsSep1.Size = new Size(6, 25);
         // 
-        // lblSelectedFeld
+        // tsLblPapier
         // 
-        lblSelectedFeld.Location = new Point(0, 0);
-        lblSelectedFeld.Name = "lblSelectedFeld";
-        lblSelectedFeld.Size = new Size(100, 23);
-        lblSelectedFeld.TabIndex = 1;
+        tsLblPapier.Name = "tsLblPapier";
+        tsLblPapier.Size = new Size(52, 22);
+        tsLblPapier.Text = "   Papier:";
+        // 
+        // tsTxtBreiteCm
+        // 
+        tsTxtBreiteCm.Name = "tsTxtBreiteCm";
+        tsTxtBreiteCm.Size = new Size(100, 25);
+        tsTxtBreiteCm.Text = "10";
+        tsTxtBreiteCm.ToolTipText = "Breite in cm";
+        // 
+        // tsLblX
+        // 
+        tsLblX.Name = "tsLblX";
+        tsLblX.Size = new Size(21, 22);
+        tsLblX.Text = " × ";
+        // 
+        // tsTxtHoeheCm
+        // 
+        tsTxtHoeheCm.Name = "tsTxtHoeheCm";
+        tsTxtHoeheCm.Size = new Size(100, 25);
+        tsTxtHoeheCm.Text = "15";
+        tsTxtHoeheCm.ToolTipText = "Höhe in cm";
+        // 
+        // tsLblCm
+        // 
+        tsLblCm.Name = "tsLblCm";
+        tsLblCm.Size = new Size(30, 22);
+        tsLblCm.Text = " cm ";
+        // 
+        // tsBtnPapierOk
+        // 
+        tsBtnPapierOk.DisplayStyle = ToolStripItemDisplayStyle.Text;
+        tsBtnPapierOk.Name = "tsBtnPapierOk";
+        tsBtnPapierOk.Size = new Size(23, 22);
+        tsBtnPapierOk.Text = "✓";
+        tsBtnPapierOk.ToolTipText = "Papierformat übernehmen & speichern";
+        tsBtnPapierOk.Click += TsBtnPapierOk_Click;
+        // 
+        // tsSep2
+        // 
+        tsSep2.Name = "tsSep2";
+        tsSep2.Size = new Size(6, 25);
+        // 
+        // tsBtnSchliessen
+        // 
+        tsBtnSchliessen.Alignment = ToolStripItemAlignment.Right;
+        tsBtnSchliessen.DisplayStyle = ToolStripItemDisplayStyle.Text;
+        tsBtnSchliessen.Name = "tsBtnSchliessen";
+        tsBtnSchliessen.Size = new Size(62, 22);
+        tsBtnSchliessen.Text = "Schließen";
+        tsBtnSchliessen.Click += BtnSchliessen_Click;
+        // 
+        // mainSplit
+        // 
+        mainSplit.Dock = DockStyle.Fill;
+        mainSplit.FixedPanel = FixedPanel.Panel1;
+        mainSplit.Location = new Point(0, 25);
+        mainSplit.Name = "mainSplit";
+        // 
+        // mainSplit.Panel1
+        // 
+        mainSplit.Panel1.Controls.Add(pnlPropContent);
+        mainSplit.Panel1.Controls.Add(lblSelectedFeld);
+        // 
+        // mainSplit.Panel2
+        // 
+        mainSplit.Panel2.Controls.Add(canvasContainer);
+        mainSplit.Size = new Size(1020, 675);
+        mainSplit.SplitterDistance = 286;
+        mainSplit.TabIndex = 0;
+        // 
+        // pnlPropContent
+        // 
+        pnlPropContent.AutoScroll = true;
+        pnlPropContent.Controls.Add(tbl);
+        pnlPropContent.Dock = DockStyle.Fill;
+        pnlPropContent.Enabled = false;
+        pnlPropContent.Location = new Point(0, 36);
+        pnlPropContent.Name = "pnlPropContent";
+        pnlPropContent.Size = new Size(286, 639);
+        pnlPropContent.TabIndex = 0;
         // 
         // tbl
         // 
-        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100F));
+        tbl.AutoSize = true;
+        tbl.ColumnCount = 2;
+        tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85F));
         tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        tbl.Location = new Point(3, 109);
+        tbl.Dock = DockStyle.Top;
+        tbl.Location = new Point(0, 0);
         tbl.Name = "tbl";
-        tbl.Size = new Size(200, 100);
+        tbl.Padding = new Padding(6, 8, 6, 8);
+        tbl.Size = new Size(286, 16);
         tbl.TabIndex = 0;
+        Row(tbl, "X:",      nudPropX);
+        Row(tbl, "Y:",      nudPropY);
+        Row(tbl, "Breite:", nudPropW);
+        Row(tbl, "Höhe:",   nudPropH);
+        Row(tbl, "Größe:",  nudPropSize);
+        Row(tbl, "Schrift:", cmbPropFont);
+        Row(tbl, "Fett:",   chkPropBold);
+        Row(tbl, "Kursiv:", chkPropItalic);
+        Row(tbl, "Sichtbar:", chkPropVisible);
+        Row(tbl, "Ausricht.:", cmbPropAlign);
+        Row(tbl, "Vorderf.:", btnPropForeColor);
+        Row(tbl, "Hinterf.:", btnPropBackColor);
+        // 
+        // lblSelectedFeld
+        // 
+        lblSelectedFeld.BackColor = Color.FromArgb(240, 240, 240);
+        lblSelectedFeld.Dock = DockStyle.Top;
+        lblSelectedFeld.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblSelectedFeld.ForeColor = Color.Gray;
+        lblSelectedFeld.Location = new Point(0, 0);
+        lblSelectedFeld.Name = "lblSelectedFeld";
+        lblSelectedFeld.Padding = new Padding(4);
+        lblSelectedFeld.Size = new Size(286, 36);
+        lblSelectedFeld.TabIndex = 1;
+        lblSelectedFeld.Text = "— kein Feld ausgewählt —";
+        lblSelectedFeld.TextAlign = ContentAlignment.MiddleCenter;
+        // 
+        // canvasContainer
+        // 
+        canvasContainer.AutoScroll = true;
+        canvasContainer.BackColor = Color.FromArgb(200, 200, 200);
+        canvasContainer.Controls.Add(canvas);
+        canvasContainer.Dock = DockStyle.Fill;
+        canvasContainer.Location = new Point(0, 0);
+        canvasContainer.Name = "canvasContainer";
+        canvasContainer.Padding = new Padding(14);
+        canvasContainer.Size = new Size(730, 675);
+        canvasContainer.TabIndex = 0;
+        // 
+        // canvas
+        // 
+        canvas.BackColor = Color.White;
+        canvas.Location = new Point(14, 14);
+        canvas.Name = "canvas";
+        canvas.Size = new Size(378, 567);
+        canvas.TabIndex = 0;
         // 
         // cmbPropFont
         // 
+        cmbPropFont.Dock = DockStyle.Fill;
         cmbPropFont.Location = new Point(0, 0);
         cmbPropFont.Name = "cmbPropFont";
         cmbPropFont.Size = new Size(121, 23);
@@ -128,27 +276,35 @@ partial class FrmEtiketDesigner
         // 
         // chkPropBold
         // 
+        chkPropBold.Dock = DockStyle.Fill;
         chkPropBold.Location = new Point(0, 0);
         chkPropBold.Name = "chkPropBold";
         chkPropBold.Size = new Size(104, 24);
         chkPropBold.TabIndex = 0;
+        chkPropBold.Text = "Fett";
         // 
         // chkPropItalic
         // 
+        chkPropItalic.Dock = DockStyle.Fill;
         chkPropItalic.Location = new Point(0, 0);
         chkPropItalic.Name = "chkPropItalic";
         chkPropItalic.Size = new Size(104, 24);
         chkPropItalic.TabIndex = 0;
+        chkPropItalic.Text = "Kursiv";
         // 
         // chkPropVisible
         // 
+        chkPropVisible.Dock = DockStyle.Fill;
         chkPropVisible.Location = new Point(0, 0);
         chkPropVisible.Name = "chkPropVisible";
         chkPropVisible.Size = new Size(104, 24);
         chkPropVisible.TabIndex = 0;
+        chkPropVisible.Text = "Sichtbar";
         // 
         // cmbPropAlign
         // 
+        cmbPropAlign.Dock = DockStyle.Fill;
+        cmbPropAlign.DropDownStyle = ComboBoxStyle.DropDownList;
         cmbPropAlign.Items.AddRange(new object[] { "Links", "Mitte", "Rechts" });
         cmbPropAlign.Location = new Point(0, 0);
         cmbPropAlign.Name = "cmbPropAlign";
@@ -157,126 +313,66 @@ partial class FrmEtiketDesigner
         // 
         // btnPropForeColor
         // 
+        btnPropForeColor.Dock = DockStyle.Fill;
         btnPropForeColor.Location = new Point(0, 0);
         btnPropForeColor.Name = "btnPropForeColor";
-        btnPropForeColor.Size = new Size(75, 23);
+        btnPropForeColor.Size = new Size(75, 26);
         btnPropForeColor.TabIndex = 0;
+        btnPropForeColor.Text = "Vorderfarbe";
         btnPropForeColor.Click += BtnPropForeColor_Click;
         // 
         // btnPropBackColor
         // 
+        btnPropBackColor.Dock = DockStyle.Fill;
         btnPropBackColor.Location = new Point(0, 0);
         btnPropBackColor.Name = "btnPropBackColor";
-        btnPropBackColor.Size = new Size(75, 23);
+        btnPropBackColor.Size = new Size(75, 26);
         btnPropBackColor.TabIndex = 0;
+        btnPropBackColor.Text = "Hinterfarbe";
         btnPropBackColor.Click += BtnPropBackColor_Click;
-        // 
-        // pnlPropContent
-        // 
-        pnlPropContent.Enabled = false;
-        pnlPropContent.Location = new Point(209, 109);
-        pnlPropContent.Name = "pnlPropContent";
-        pnlPropContent.Size = new Size(200, 100);
-        pnlPropContent.TabIndex = 0;
-        // 
-        // leftPanel
-        // 
-        leftPanel.Controls.Add(lblSelectedFeld);
-        leftPanel.Location = new Point(3, 215);
-        leftPanel.Name = "leftPanel";
-        leftPanel.Size = new Size(200, 100);
-        leftPanel.TabIndex = 0;
-        // 
-        // canvas
-        // 
-        canvas.Location = new Point(246, 3);
-        canvas.Name = "canvas";
-        canvas.Size = new Size(200, 100);
-        canvas.TabIndex = 0;
-        // 
-        // canvasContainer
-        // 
-        canvasContainer.AutoScroll = true;
-        canvasContainer.AutoScrollMinSize = new Size(378, 567);
-        canvasContainer.Location = new Point(209, 215);
-        canvasContainer.Name = "canvasContainer";
-        canvasContainer.Size = new Size(200, 100);
-        canvasContainer.TabIndex = 0;
-        // 
-        // designSplit
-        // 
-        designSplit.Location = new Point(0, 0);
-        designSplit.Name = "designSplit";
-        // 
-        // designSplit.Panel2
-        // 
-        designSplit.Panel2.Controls.Add(pnlButtons);
-        designSplit.Size = new Size(958, 635);
-        designSplit.SplitterDistance = 319;
-        designSplit.TabIndex = 0;
         // 
         // FrmEtiketDesigner
         // 
-        ClientSize = new Size(968, 643);
-        Controls.Add(designSplit);
+        ClientSize = new Size(1020, 700);
+        Controls.Add(mainSplit);
+        Controls.Add(toolStrip);
         MinimizeBox = false;
-        MinimumSize = new Size(720, 680);
+        MinimumSize = new Size(820, 500);
         Name = "FrmEtiketDesigner";
-        Text = "Label-Designer  (10 × 15 cm)";
-        pnlButtons.ResumeLayout(false);
-        leftPanel.ResumeLayout(false);
-        designSplit.Panel2.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)designSplit).EndInit();
-        designSplit.ResumeLayout(false);
+        Text = "Label-Designer";
+        toolStrip.ResumeLayout(false);
+        toolStrip.PerformLayout();
+        mainSplit.Panel1.ResumeLayout(false);
+        mainSplit.Panel2.ResumeLayout(false);
+        ((ISupportInitialize)mainSplit).EndInit();
+        mainSplit.ResumeLayout(false);
+        pnlPropContent.ResumeLayout(false);
+        pnlPropContent.PerformLayout();
+        canvasContainer.ResumeLayout(false);
         ResumeLayout(false);
+        PerformLayout();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Designer helpers (called only from InitializeComponent) ──────────────
 
     private static NumericUpDown Nud(int min, int max) => new()
     {
         Dock    = DockStyle.Fill,
         Minimum = min,
         Maximum = max,
+        Margin  = new Padding(0, 2, 0, 2),
     };
 
-    private static void Row(TableLayoutPanel tbl, string label, Control ctrl)
+    private static void Row(TableLayoutPanel tbl, string labelText, Control ctrl)
     {
         tbl.Controls.Add(new Label
         {
-            Text      = label,
+            Text      = labelText,
             Dock      = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Margin    = new Padding(0, 3, 4, 3),
+            TextAlign = ContentAlignment.MiddleRight,
+            Margin    = new Padding(0, 3, 6, 3),
         });
         ctrl.Margin = new Padding(0, 3, 0, 3);
         tbl.Controls.Add(ctrl);
-    }
-    private FlowLayoutPanel pnlButtons;
-    private TableLayoutPanel tbl;
-    private Panel leftPanel;
-    private Panel canvasContainer;
-
-    private void BuildPropertiesPanel()
-    {
-        tbl.RowCount = 0;
-        tbl.RowStyles.Clear();
-
-        nudPropX    = Nud(0, 9999);
-        nudPropY    = Nud(0, 9999);
-        nudPropW    = Nud(20, 9999);
-        nudPropH    = Nud(20, 9999);
-        nudPropSize = Nud(4, 200);
-
-        Row(tbl, "X",        nudPropX);
-        Row(tbl, "Y",        nudPropY);
-        Row(tbl, "Breite",   nudPropW);
-        Row(tbl, "Höhe",     nudPropH);
-        Row(tbl, "Schriftgröße", nudPropSize);
-
-        // Die anderen Controls (cmbPropFont, chkPropBold etc.)
-        // wurden in InitializeComponent() bereits erzeugt,
-        // müssen aber noch zu pnlPropContent hinzugefügt werden, falls nicht bereits geschehen.
-        pnlPropContent.Controls.Add(tbl);
     }
 }

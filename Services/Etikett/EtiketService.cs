@@ -1,8 +1,7 @@
-using Dapper;
+﻿using Dapper;
 using DNR26V2.Data.Context;
 using DNR26V2.Domain.DTOs.Etikett;
 using DNR26V2.Domain.Entities.Etikett;
-using DNR26V2.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace DNR26V2.Services.Etikett;
@@ -60,12 +59,10 @@ public class EtiketService : IEtiketService
     }
 
     public async Task<IReadOnlyList<EtiketLayoutField>> GetLayoutAsync(string layoutName = "Default")
-    {
-        return await _db.EtiketLayoutFields
+        => await _db.EtiketLayoutFields
             .Where(f => f.LayoutName == layoutName)
             .OrderBy(f => f.Feld)
             .ToListAsync();
-    }
 
     public async Task SaveLayoutAsync(IEnumerable<EtiketLayoutField> fields)
     {
@@ -73,21 +70,23 @@ public class EtiketService : IEtiketService
         {
             var existing = await _db.EtiketLayoutFields.FindAsync(field.Id);
             if (existing is null)
+            {
                 _db.EtiketLayoutFields.Add(field);
+            }
             else
             {
-                existing.X           = field.X;
-                existing.Y           = field.Y;
-                existing.Width       = field.Width;
-                existing.Height      = field.Height;
-                existing.FontName    = field.FontName;
-                existing.FontSize    = field.FontSize;
-                existing.Bold        = field.Bold;
-                existing.Italic      = field.Italic;
-                existing.ForeColorHex= field.ForeColorHex;
-                existing.BackColorHex= field.BackColorHex;
-                existing.TextAlignH  = field.TextAlignH;
-                existing.Visible     = field.Visible;
+                existing.X            = field.X;
+                existing.Y            = field.Y;
+                existing.Width        = field.Width;
+                existing.Height       = field.Height;
+                existing.FontName     = field.FontName;
+                existing.FontSize     = field.FontSize;
+                existing.Bold         = field.Bold;
+                existing.Italic       = field.Italic;
+                existing.ForeColorHex = field.ForeColorHex;
+                existing.BackColorHex = field.BackColorHex;
+                existing.TextAlignH   = field.TextAlignH;
+                existing.Visible      = field.Visible;
             }
         }
         await _db.SaveChangesAsync();
@@ -95,11 +94,32 @@ public class EtiketService : IEtiketService
 
     public async Task ResetLayoutAsync(string layoutName = "Default")
     {
-        var existing = _db.EtiketLayoutFields.Where(f => f.LayoutName == layoutName);
-        _db.EtiketLayoutFields.RemoveRange(existing);
+        _db.EtiketLayoutFields.RemoveRange(
+            _db.EtiketLayoutFields.Where(f => f.LayoutName == layoutName));
         await _db.SaveChangesAsync();
 
         _db.EtiketLayoutFields.AddRange(EtiketDefaultLayout.Build(layoutName));
+        await _db.SaveChangesAsync();
+    }
+
+    // ── Paper config ──────────────────────────────────────────────────────────
+
+    public async Task<EtiketPaperConfig> GetPaperConfigAsync(string layoutName = "Default")
+        => await _db.EtiketPaperConfigs.FirstOrDefaultAsync(c => c.LayoutName == layoutName)
+           ?? new EtiketPaperConfig { LayoutName = layoutName, WidthCm = 10f, HeightCm = 15f };
+
+    public async Task SavePaperConfigAsync(EtiketPaperConfig config)
+    {
+        var existing = await _db.EtiketPaperConfigs
+            .FirstOrDefaultAsync(c => c.LayoutName == config.LayoutName);
+
+        if (existing is null)
+            _db.EtiketPaperConfigs.Add(config);
+        else
+        {
+            existing.WidthCm  = config.WidthCm;
+            existing.HeightCm = config.HeightCm;
+        }
         await _db.SaveChangesAsync();
     }
 }

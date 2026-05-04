@@ -70,17 +70,17 @@ partial class FrmEtikett
         txtKundenSearch.Location = new Point(0, 0);
         txtKundenSearch.Name = "txtKundenSearch";
         txtKundenSearch.PlaceholderText = "Suche Kunde …";
-        txtKundenSearch.Size = new Size(392, 27);
+        txtKundenSearch.Size = new Size(392, 23);
         txtKundenSearch.TabIndex = 0;
         // 
         // dgwKunden
         // 
         dgwKunden.ColumnHeadersHeight = 29;
         dgwKunden.Dock = DockStyle.Fill;
-        dgwKunden.Location = new Point(0, 27);
+        dgwKunden.Location = new Point(0, 23);
         dgwKunden.Name = "dgwKunden";
         dgwKunden.RowHeadersWidth = 51;
-        dgwKunden.Size = new Size(392, 653);
+        dgwKunden.Size = new Size(392, 657);
         dgwKunden.TabIndex = 1;
         // 
         // leftPanel
@@ -99,7 +99,7 @@ partial class FrmEtikett
         dtpLieferDatum.Format = DateTimePickerFormat.Short;
         dtpLieferDatum.Location = new Point(8, 28);
         dtpLieferDatum.Name = "dtpLieferDatum";
-        dtpLieferDatum.Size = new Size(150, 36);
+        dtpLieferDatum.Size = new Size(150, 31);
         dtpLieferDatum.TabIndex = 0;
         dtpLieferDatum.Value = new DateTime(2026, 5, 3, 0, 0, 0, 0);
         // 
@@ -109,7 +109,7 @@ partial class FrmEtikett
         dtpHerstellDatum.Format = DateTimePickerFormat.Short;
         dtpHerstellDatum.Location = new Point(175, 28);
         dtpHerstellDatum.Name = "dtpHerstellDatum";
-        dtpHerstellDatum.Size = new Size(150, 36);
+        dtpHerstellDatum.Size = new Size(150, 31);
         dtpHerstellDatum.TabIndex = 1;
         dtpHerstellDatum.Value = new DateTime(2026, 5, 3, 0, 0, 0, 0);
         // 
@@ -119,12 +119,13 @@ partial class FrmEtikett
         nudKopien.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
         nudKopien.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
         nudKopien.Name = "nudKopien";
-        nudKopien.Size = new Size(55, 27);
+        nudKopien.Size = new Size(55, 23);
         nudKopien.TabIndex = 2;
         nudKopien.Value = new decimal(new int[] { 1, 0, 0, 0 });
+        nudKopien.Visible = false;
         // 
         // pnlDates
-        //
+        // 
         pnlDates.BackColor = Color.WhiteSmoke;
         pnlDates.Controls.Add(lblLiefer);
         pnlDates.Controls.Add(dtpLieferDatum);
@@ -141,17 +142,19 @@ partial class FrmEtikett
         // 
         // lblLiefer
         // 
-        lblLiefer.Location = new Point(0, 0);
+        lblLiefer.Location = new Point(8, 6);
         lblLiefer.Name = "lblLiefer";
-        lblLiefer.Size = new Size(100, 23);
+        lblLiefer.Size = new Size(100, 19);
         lblLiefer.TabIndex = 0;
+        lblLiefer.Text = "Lieferungsdatum";
         // 
         // lblHerstell
         // 
-        lblHerstell.Location = new Point(0, 0);
+        lblHerstell.Location = new Point(175, 6);
         lblHerstell.Name = "lblHerstell";
-        lblHerstell.Size = new Size(100, 23);
+        lblHerstell.Size = new Size(125, 17);
         lblHerstell.TabIndex = 1;
+        lblHerstell.Text = "Herstellungsdatum";
         // 
         // lblKopien
         // 
@@ -201,12 +204,7 @@ partial class FrmEtikett
         // dgwProdukte
         // 
         dgwProdukte.ColumnHeadersHeight = 29;
-        dgwProdukte.Columns.AddRange(new DataGridViewColumn[] {
-        colArtikelnummer,
-        colProduktname,
-        colMenge,
-        colGewicht,
-        colEtikett});
+        dgwProdukte.Columns.AddRange(new DataGridViewColumn[] { colArtikelnummer, colProduktname, colMenge, colGewicht, colEtikett });
         dgwProdukte.Dock = DockStyle.Fill;
         dgwProdukte.Location = new Point(0, 84);
         dgwProdukte.Name = "dgwProdukte";

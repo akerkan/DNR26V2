@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using global::System.Net;
 using System.Text.RegularExpressions;
 using DNR26V2.Domain.DTOs.Etikett;
 using DNR26V2.Domain.Entities.Etikett;
@@ -87,16 +88,12 @@ public static class EtiketRenderer
         }
 
         string text = GetFieldText(field.Feld, data);
-        if (string.IsNullOrEmpty(text)) return;
+        if (string.IsNullOrWhiteSpace(text)) return;
 
-        var fontStyle = (field.Bold   ? FontStyle.Bold   : FontStyle.Regular)
+        var baseStyle = (field.Bold   ? FontStyle.Bold   : FontStyle.Regular)
                       | (field.Italic ? FontStyle.Italic : FontStyle.Regular);
 
-        using var font   = new Font(field.FontName, field.FontSize * scale, fontStyle, GraphicsUnit.Pixel);
-        using var brush  = new SolidBrush(foreColor);
-        var sf = BuildStringFormat(field);
-
-        g.DrawString(text, font, brush, rect, sf);
+        DrawRichText(g, text, field.FontName, field.FontSize * scale, baseStyle, foreColor, rect, field.TextAlignH);
     }
 
     private static StringFormat BuildStringFormat(EtiketLayoutField field)
@@ -136,8 +133,8 @@ public static class EtiketRenderer
             EtiketFeld.SchockGefroren      => "Schock gefrostet",
             EtiketFeld.UrunAdi             => d.Produktname,
             EtiketFeld.Untertitel          => d.Untertitel ?? string.Empty,
-            EtiketFeld.Zutaten             => StripHtml(d.Zutaten ?? string.Empty),
-            EtiketFeld.Hinweis             => StripHtml(d.Hinweis ?? string.Empty),
+            EtiketFeld.Zutaten             => d.Zutaten ?? string.Empty,
+            EtiketFeld.Hinweis             => d.Hinweis ?? string.Empty,
             EtiketFeld.HaltbarBis          => $"bei -18°C  mindestens haltbar bis\n{d.LieferDatum.AddMonths(6):dd.MM.yyyy}",
             EtiketFeld.Wochentag           => dayName,
             EtiketFeld.ChargeEingefrorenAm => $"Charge/eingefroren am\n{d.LieferDatum:dd.MM.yyyy}",
@@ -170,6 +167,216 @@ public static class EtiketRenderer
 
     private static string StripHtml(string html)
         => Regex.Replace(html, "<.*?>", string.Empty).Trim();
+
+    private sealed record TextRun(string Text, FontStyle Style, bool NewLine = false);
+
+    private static void DrawRichText(
+        Graphics g,
+        string raw,
+        string fontName,
+        float fontSize,
+        FontStyle baseStyle,
+        Color color,
+        RectangleF rect,
+        int textAlignH)
+    {
+        var runs = ParseHtmlRuns(raw, baseStyle);
+        if (runs.Count == 0) return;
+
+        using var brush = new SolidBrush(color);
+        using var measureFormat = (StringFormat)StringFormat.GenericTypographic.Clone();
+        measureFormat.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
+
+        var line = new List<(string Text, Font Font, float Width)>();
+        float y = rect.Top;
+
+        void FlushLine()
+        {
+            if (line.Count == 0)
+            {
+                using var lf = new Font(fontName, fontSize, baseStyle, GraphicsUnit.Pixel);
+                y += lf.GetHeight(g);
+                return;
+            }
+
+            float lineWidth  = line.Sum(s => s.Width);
+            float lineHeight = line.Max(s => s.Font.GetHeight(g));
+            if (y + lineHeight > rect.Bottom) return;
+
+            float x = textAlignH switch
+            {
+                1 => rect.Left + (rect.Width - lineWidth) / 2f,
+                2 => rect.Right - lineWidth,
+                _ => rect.Left
+            };
+
+            foreach (var s in line)
+            {
+                g.DrawString(s.Text, s.Font, brush, x, y, measureFormat);
+                x += s.Width;
+                s.Font.Dispose();
+            }
+
+            line.Clear();
+            y += lineHeight;
+        }
+
+        foreach (var run in runs)
+        {
+            if (run.NewLine)
+            {
+                FlushLine();
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(run.Text))
+                continue;
+
+            var chunks = Regex.Matches(run.Text, @"\S+|\s+")
+                              .Select(m => m.Value)
+                              .ToList();
+
+            foreach (var chunk in chunks)
+            {
+                if (line.Count == 0 && string.IsNullOrWhiteSpace(chunk))
+                    continue;
+
+                var font = new Font(fontName, fontSize, run.Style, GraphicsUnit.Pixel);
+                float w = g.MeasureString(chunk, font, PointF.Empty, measureFormat).Width;
+                float currentLineWidth = line.Sum(s => s.Width);
+
+                if (currentLineWidth + w <= rect.Width || line.Count == 0)
+                {
+                    if (w > rect.Width && line.Count == 0 && chunk.Length > 1)
+                    {
+                        var parts = SplitChunkToFit(g, chunk, font, rect.Width, measureFormat);
+                        font.Dispose();
+                        foreach (var part in parts)
+                        {
+                            var pf = new Font(fontName, fontSize, run.Style, GraphicsUnit.Pixel);
+                            float pw = g.MeasureString(part, pf, PointF.Empty, measureFormat).Width;
+                            float cur = line.Sum(s => s.Width);
+                            if (cur + pw > rect.Width && line.Count > 0)
+                                FlushLine();
+                            line.Add((part, pf, pw));
+                            if (part != parts.Last())
+                                FlushLine();
+                        }
+                    }
+                    else
+                    {
+                        line.Add((chunk, font, w));
+                    }
+                }
+                else
+                {
+                    font.Dispose();
+                    FlushLine();
+                    if (y >= rect.Bottom) return;
+
+                    if (!string.IsNullOrWhiteSpace(chunk))
+                    {
+                        var nf = new Font(fontName, fontSize, run.Style, GraphicsUnit.Pixel);
+                        float nw = g.MeasureString(chunk, nf, PointF.Empty, measureFormat).Width;
+                        line.Add((chunk, nf, nw));
+                    }
+                }
+
+                if (y >= rect.Bottom) return;
+            }
+        }
+
+        FlushLine();
+    }
+
+    private static List<TextRun> ParseHtmlRuns(string input, FontStyle baseStyle)
+    {
+        var runs = new List<TextRun>();
+
+        int b = 0, i = 0, u = 0;
+        var parts = Regex.Split(input.Replace("\r\n", "\n"), "(<[^>]+>)");
+
+        FontStyle CurrentStyle()
+        {
+            var s = baseStyle;
+            if (b > 0) s |= FontStyle.Bold;
+            if (i > 0) s |= FontStyle.Italic;
+            if (u > 0) s |= FontStyle.Underline;
+            return s;
+        }
+
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrEmpty(part)) continue;
+
+            if (part.StartsWith("<") && part.EndsWith(">"))
+            {
+                var t = part.Trim().ToLowerInvariant();
+                switch (t)
+                {
+                    case "<b>":
+                    case "<strong>": b++; break;
+                    case "</b>":
+                    case "</strong>": if (b > 0) b--; break;
+                    case "<i>":
+                    case "<em>": i++; break;
+                    case "</i>":
+                    case "</em>": if (i > 0) i--; break;
+                    case "<u>": u++; break;
+                    case "</u>": if (u > 0) u--; break;
+                    case "<br>":
+                    case "<br/>":
+                    case "<br />": runs.Add(new TextRun(string.Empty, CurrentStyle(), NewLine: true)); break;
+                    case "<p>":
+                    case "</p>": runs.Add(new TextRun(string.Empty, CurrentStyle(), NewLine: true)); break;
+                }
+
+                continue;
+            }
+
+            var decoded = WebUtility.HtmlDecode(part);
+            var splitByNewline = decoded.Split(new[] { '\n' }, StringSplitOptions.None);
+            for (int idx = 0; idx < splitByNewline.Length; idx++)
+            {
+                if (!string.IsNullOrEmpty(splitByNewline[idx]))
+                    runs.Add(new TextRun(splitByNewline[idx], CurrentStyle()));
+
+                if (idx < splitByNewline.Length - 1)
+                    runs.Add(new TextRun(string.Empty, CurrentStyle(), NewLine: true));
+            }
+        }
+
+        return runs;
+    }
+
+    private static List<string> SplitChunkToFit(
+        Graphics g,
+        string chunk,
+        Font font,
+        float maxWidth,
+        StringFormat measureFormat)
+    {
+        var result = new List<string>();
+        var remaining = chunk;
+
+        while (!string.IsNullOrEmpty(remaining))
+        {
+            int len = remaining.Length;
+            while (len > 1)
+            {
+                var candidate = remaining[..len];
+                var width = g.MeasureString(candidate, font, PointF.Empty, measureFormat).Width;
+                if (width <= maxWidth) break;
+                len--;
+            }
+
+            if (len <= 0) len = 1;
+            result.Add(remaining[..len]);
+            remaining = remaining[len..];
+        }
+
+        return result;
+    }
 
     private static void DrawImage(Graphics g, Image img, RectangleF dest, int sizeMode)
     {

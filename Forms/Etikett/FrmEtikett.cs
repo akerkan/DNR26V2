@@ -36,7 +36,6 @@ public partial class FrmEtikett : BaseListForm
     private void WireEvents()
     {
         dgwKunden.SelectionChanged += DgwKunden_SelectionChanged;
-        btnDesigner.Click += BtnDesigner_Click;
         txtKundenSearch.TextChanged += TxtKundenSearch_TextChanged;
         dgwProdukte.CellClick += DgwProdukte_CellClick;
         dgwProdukte.CellEndEdit += DgwProdukte_CellEndEdit;
@@ -122,6 +121,8 @@ public partial class FrmEtikett : BaseListForm
     {
         var setup = await _db.AppSetup.FirstOrDefaultAsync();
 
+        var kopienAusMenge = Math.Max(1, (int)Math.Round(row.Menge, MidpointRounding.AwayFromZero));
+
         var data = new EtiketDruckData
         {
             Kundenname    = row.Kundenname,
@@ -135,7 +136,7 @@ public partial class FrmEtikett : BaseListForm
             HerstellDatum = dtpHerstellDatum.Value,
             Menge         = row.Menge,
             Gewicht       = row.Gewicht,
-            Kopien        = (int)nudKopien.Value,
+            Kopien        = kopienAusMenge,
             Firmenname    = setup?.Firmenname    ?? string.Empty,
             FirmenAdresse = setup?.Firmenadresse ?? string.Empty,
             FirmenTelefon = setup?.FirmenTelefon ?? string.Empty,
@@ -147,13 +148,6 @@ public partial class FrmEtikett : BaseListForm
         var printerName = setup?.DruckerEtikett ?? string.Empty;
 
         using var frm = new FrmEtiketDruck(data, layout, printerName);
-        frm.ShowDialog(this);
-    }
-
-    private async void BtnDesigner_Click(object? sender, EventArgs e)
-    {
-        var layout = await _service.GetLayoutAsync();
-        using var frm = new FrmEtiketDesigner(_service, layout);
         frm.ShowDialog(this);
     }
 
@@ -182,8 +176,9 @@ public partial class FrmEtikett : BaseListForm
             ReadOnly         = true,
         });
 
-        // ?? Produkte grid ??????????????????????????????????????????????????
+        // ? Produkte grid editable for Menge/Gewicht
         ConfigureGrid(dgwProdukte);
+        dgwProdukte.ReadOnly = false;
         dgwProdukte.AutoGenerateColumns = false;
         dgwProdukte.Columns.Clear();
         dgwProdukte.Columns.Add(new DataGridViewTextBoxColumn

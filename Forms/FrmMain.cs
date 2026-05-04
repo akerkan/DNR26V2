@@ -3,6 +3,7 @@ using DNR26V2.Domain.Configuration;
 using DNR26V2.Forms.Base;
 using DNR26V2.Forms.Deliveries;
 using DNR26V2.Forms.Etikett;
+using DNR26V2.Services.Etikett;
 using DNR26V2.Forms.Invoices;
 using DNR26V2.Forms.MasterData;
 using DNR26V2.Forms.Orders;
@@ -197,4 +198,12 @@ public partial class FrmMain : Form
 
     private void MenuEtikett_Click(object? sender, EventArgs e)
         => BaseListForm.GetOrCreateInstance<FrmEtikett>(ref FrmEtikettInstance, this, () => GetService<FrmEtikett>());
+
+    private async void MenuEtikettDesigner_Click(object? sender, EventArgs e)
+    {
+        var service = GetService<IEtiketService>();
+        var layout  = await service.GetLayoutAsync();
+        using var frm = new FrmEtiketDesigner(service, layout);
+        frm.ShowDialog(this);
+    }
 }

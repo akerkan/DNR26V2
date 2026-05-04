@@ -81,6 +81,27 @@ public static class EtiketDefaultLayout
                 x:5, y:480, w:368, h:50,
                 fontName:"Arial", fontSize:7.5f,
                 backHex:"#FFFFFF", foreHex:"#000000", align:1),
+
+            // ?? Resim alanlar? 2-5 ????????????????????????????????????????????
+            Field(layoutName, EtiketFeld.Bild2,
+                x:200, y:5, w:173, h:80,
+                fontName:"Arial", fontSize:9f,
+                backHex:"#FFFFFF", foreHex:"#000000", align:1),
+
+            Field(layoutName, EtiketFeld.Bild3,
+                x:5, y:540, w:120, h:22,
+                fontName:"Arial", fontSize:9f,
+                backHex:"#FFFFFF", foreHex:"#000000", align:1),
+
+            Field(layoutName, EtiketFeld.Bild4,
+                x:130, y:540, w:120, h:22,
+                fontName:"Arial", fontSize:9f,
+                backHex:"#FFFFFF", foreHex:"#000000", align:1),
+
+            Field(layoutName, EtiketFeld.Bild5,
+                x:255, y:540, w:118, h:22,
+                fontName:"Arial", fontSize:9f,
+                backHex:"#FFFFFF", foreHex:"#000000", align:1),
         };
     }
 

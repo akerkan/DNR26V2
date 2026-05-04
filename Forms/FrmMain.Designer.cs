@@ -96,9 +96,12 @@ partial class FrmMain
         });
 
         // --- Etikett ---
-        var menuEtikett    = new ToolStripMenuItem("&Etikett");
-        var menuEtikettErstellen = new ToolStripMenuItem("&Etikett erstellen", null, MenuEtikett_Click);
+        var menuEtikett          = new ToolStripMenuItem("&Etikett");
+        var menuEtikettErstellen = new ToolStripMenuItem("&Etikett erstellen",  null, MenuEtikett_Click);
+        var menuEtikettDesigner  = new ToolStripMenuItem("&Label-Designer",     null, MenuEtikettDesigner_Click);
         menuEtikett.DropDownItems.Add(menuEtikettErstellen);
+        menuEtikett.DropDownItems.Add(new ToolStripSeparator());
+        menuEtikett.DropDownItems.Add(menuEtikettDesigner);
 
         menuStrip.Items.AddRange(new ToolStripItem[]
         {

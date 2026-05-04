@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Text.RegularExpressions;
 using DNR26V2.Domain.DTOs.Etikett;
 using DNR26V2.Domain.Entities.Etikett;
@@ -72,6 +73,18 @@ public static class EtiketRenderer
         // Fill background
         if (backColor != Color.White)
             g.FillRectangle(new SolidBrush(backColor), rect);
+
+        // Draw background image if present (before text)
+        if (field.ImageData is { Length: > 0 })
+        {
+            try
+            {
+                using var ms  = new MemoryStream(field.ImageData);
+                using var img = Image.FromStream(ms);
+                DrawImage(g, img, rect, field.ImageSizeMode);
+            }
+            catch { /* ignore broken image data */ }
+        }
 
         string text = GetFieldText(field.Feld, data);
         if (string.IsNullOrEmpty(text)) return;
@@ -157,6 +170,29 @@ public static class EtiketRenderer
 
     private static string StripHtml(string html)
         => Regex.Replace(html, "<.*?>", string.Empty).Trim();
+
+    private static void DrawImage(Graphics g, Image img, RectangleF dest, int sizeMode)
+    {
+        switch (sizeMode)
+        {
+            case 0: // Strecken
+                g.DrawImage(img, dest);
+                break;
+            case 1: // Anpassen (Zoom)
+                double ratio = Math.Min(dest.Width / img.Width, dest.Height / img.Height);
+                float iw = (float)(img.Width  * ratio);
+                float ih = (float)(img.Height * ratio);
+                g.DrawImage(img,
+                    dest.X + (dest.Width  - iw) / 2f,
+                    dest.Y + (dest.Height - ih) / 2f, iw, ih);
+                break;
+            case 2: // Zentrieren
+                g.DrawImage(img,
+                    dest.X + (dest.Width  - img.Width)  / 2f,
+                    dest.Y + (dest.Height - img.Height) / 2f);
+                break;
+        }
+    }
 
     private static Color ParseColor(string hex, Color fallback)
     {

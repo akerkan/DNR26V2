@@ -12,6 +12,7 @@ public partial class FrmEtiketDruck : BaseForm
     private readonly IReadOnlyList<EtiketLayoutField> _layout;
     private readonly string _printerName;
     private bool _isPrinting;
+    private int _remainingCopies;
 
     public FrmEtiketDruck(
         EtiketDruckData data,
@@ -50,7 +51,8 @@ public partial class FrmEtiketDruck : BaseForm
             if (!string.IsNullOrWhiteSpace(_printerName))
                 doc.PrinterSettings.PrinterName = _printerName;
 
-            doc.PrinterSettings.Copies = (short)Math.Max(1, (int)nudKopien.Value);
+            _remainingCopies = Math.Max(1, (int)nudKopien.Value);
+            doc.PrinterSettings.Copies = 1;
 
             // 10 × 15 cm in hundredths of an inch: 394 × 591
             doc.DefaultPageSettings.PaperSize = new PaperSize("Etikett 10x15", 394, 591);
@@ -71,10 +73,11 @@ public partial class FrmEtiketDruck : BaseForm
 
     private void PrintPage(object sender, PrintPageEventArgs e)
     {
-        float dpi   = e.Graphics!.DpiX;
-        float scale = dpi / 96f;
+        const float scale = 100f / 96f;
         EtiketRenderer.Render(e.Graphics, _data, _layout, scale);
-        e.HasMorePages = false;
+
+        _remainingCopies--;
+        e.HasMorePages = _remainingCopies > 0;
     }
 
     private void BtnSchliessen_Click(object? sender, EventArgs e) => Close();

@@ -46,6 +46,15 @@ partial class FrmEtiketDesigner
     private Panel              canvasContainer  = null!;
     internal Panel             canvas           = null!;
 
+    // ── Image section (shown only for image fields) ───────────────────────────
+    private Panel            pnlImageSection  = null!;
+    private TableLayoutPanel tblImage         = null!;
+    private FlowLayoutPanel  pnlImageBtns     = null!;
+    private Button           btnImageLoad     = null!;
+    private Button           btnImageClear    = null!;
+    private ComboBox         cmbImageSizeMode = null!;
+    private Label            lblImageStatus   = null!;
+
     protected override void Dispose(bool disposing)
     {
         if (disposing && components != null) components.Dispose();
@@ -84,6 +93,13 @@ partial class FrmEtiketDesigner
         cmbPropAlign = new ComboBox();
         btnPropForeColor = new Button();
         btnPropBackColor = new Button();
+        pnlImageSection  = new Panel();
+        tblImage         = new TableLayoutPanel();
+        pnlImageBtns     = new FlowLayoutPanel();
+        btnImageLoad     = new Button();
+        btnImageClear    = new Button();
+        cmbImageSizeMode = new ComboBox();
+        lblImageStatus   = new Label();
         toolStrip.SuspendLayout();
         ((ISupportInitialize)mainSplit).BeginInit();
         mainSplit.Panel1.SuspendLayout();
@@ -200,6 +216,7 @@ partial class FrmEtiketDesigner
         // 
         pnlPropContent.AutoScroll = true;
         pnlPropContent.Controls.Add(tbl);
+        pnlPropContent.Controls.Add(pnlImageSection);
         pnlPropContent.Dock = DockStyle.Fill;
         pnlPropContent.Enabled = false;
         pnlPropContent.Location = new Point(0, 36);
@@ -231,6 +248,70 @@ partial class FrmEtiketDesigner
         Row(tbl, "Ausricht.:", cmbPropAlign);
         Row(tbl, "Vorderf.:", btnPropForeColor);
         Row(tbl, "Hinterf.:", btnPropBackColor);
+        // 
+        // pnlImageSection
+        // 
+        pnlImageSection.Dock = DockStyle.Top;
+        pnlImageSection.AutoSize = true;
+        pnlImageSection.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        pnlImageSection.Visible = false;
+        pnlImageSection.Controls.Add(tblImage);
+        // 
+        // tblImage
+        // 
+        tblImage.AutoSize = true;
+        tblImage.ColumnCount = 2;
+        tblImage.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85F));
+        tblImage.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        tblImage.Dock = DockStyle.Top;
+        tblImage.Padding = new Padding(6, 4, 6, 8);
+        var lblImgSep = new Label
+        {
+            Text      = "── Hintergrundbild ──",
+            Dock      = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter,
+            ForeColor = Color.Gray,
+            Font      = new Font("Segoe UI", 8F),
+            Margin    = new Padding(0, 6, 0, 2),
+        };
+        tblImage.Controls.Add(lblImgSep);
+        tblImage.SetColumnSpan(lblImgSep, 2);
+        // 
+        // pnlImageBtns
+        // 
+        pnlImageBtns.AutoSize = true;
+        pnlImageBtns.Dock = DockStyle.Fill;
+        pnlImageBtns.Margin = new Padding(0, 3, 0, 3);
+        pnlImageBtns.Controls.AddRange(new Control[] { btnImageLoad, btnImageClear });
+        // 
+        // btnImageLoad
+        // 
+        btnImageLoad.Text = "Yükle…";
+        btnImageLoad.AutoSize = true;
+        btnImageLoad.Margin = new Padding(0, 0, 4, 0);
+        btnImageLoad.Click += BtnImageLoad_Click;
+        // 
+        // btnImageClear
+        // 
+        btnImageClear.Text = "Sil";
+        btnImageClear.AutoSize = true;
+        btnImageClear.Click += BtnImageClear_Click;
+        // 
+        // cmbImageSizeMode
+        // 
+        cmbImageSizeMode.Dock = DockStyle.Fill;
+        cmbImageSizeMode.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbImageSizeMode.Items.AddRange(new object[] { "Strecken", "Anpassen (Zoom)", "Zentrieren" });
+        // 
+        // lblImageStatus
+        // 
+        lblImageStatus.Dock = DockStyle.Fill;
+        lblImageStatus.Text = "(kein Bild)";
+        lblImageStatus.ForeColor = Color.Gray;
+        lblImageStatus.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
+        Row(tblImage, "Bild:",    pnlImageBtns);
+        Row(tblImage, "Ansicht:", cmbImageSizeMode);
+        Row(tblImage, "",         lblImageStatus);
         // 
         // lblSelectedFeld
         // 

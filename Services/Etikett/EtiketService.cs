@@ -87,6 +87,9 @@ public class EtiketService : IEtiketService
                 existing.BackColorHex = field.BackColorHex;
                 existing.TextAlignH   = field.TextAlignH;
                 existing.Visible      = field.Visible;
+                existing.ImageSizeMode = field.ImageSizeMode;
+                if (field.ImageData != null)
+                    existing.ImageData = field.ImageData;
             }
         }
         await _db.SaveChangesAsync();

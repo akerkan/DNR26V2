@@ -14,7 +14,6 @@ partial class FrmEtikett
     private DateTimePicker dtpLieferDatum   = null!;
     private DateTimePicker dtpHerstellDatum = null!;
     private NumericUpDown  nudKopien        = null!;
-    private Button         btnDesigner      = null!;
 
     // ── Right products grid ───────────────────────────────────────────────────
     private DataGridView              dgwProdukte      = null!;
@@ -43,7 +42,6 @@ partial class FrmEtikett
         dtpLieferDatum = new DateTimePicker();
         dtpHerstellDatum = new DateTimePicker();
         nudKopien = new NumericUpDown();
-        btnDesigner = new Button();
         pnlDates = new Panel();
         lblLiefer = new Label();
         lblHerstell = new Label();
@@ -125,16 +123,8 @@ partial class FrmEtikett
         nudKopien.TabIndex = 2;
         nudKopien.Value = new decimal(new int[] { 1, 0, 0, 0 });
         // 
-        // btnDesigner
-        // 
-        btnDesigner.Location = new Point(415, 26);
-        btnDesigner.Name = "btnDesigner";
-        btnDesigner.Size = new Size(140, 32);
-        btnDesigner.TabIndex = 3;
-        btnDesigner.Text = "🖊 Label-Designer";
-        // 
         // pnlDates
-        // 
+        //
         pnlDates.BackColor = Color.WhiteSmoke;
         pnlDates.Controls.Add(lblLiefer);
         pnlDates.Controls.Add(dtpLieferDatum);
@@ -142,7 +132,6 @@ partial class FrmEtikett
         pnlDates.Controls.Add(dtpHerstellDatum);
         pnlDates.Controls.Add(lblKopien);
         pnlDates.Controls.Add(nudKopien);
-        pnlDates.Controls.Add(btnDesigner);
         pnlDates.Dock = DockStyle.Top;
         pnlDates.Location = new Point(0, 0);
         pnlDates.Name = "pnlDates";

@@ -15,5 +15,6 @@ public class EtiketLayoutFieldConfiguration : IEntityTypeConfiguration<EtiketLay
         builder.Property(e => e.ForeColorHex).HasMaxLength(10);
         builder.Property(e => e.BackColorHex).HasMaxLength(10);
         builder.Property(e => e.FontSize).HasColumnType("real");
+        builder.Property(e => e.ImageData).HasColumnType("varbinary(max)").IsRequired(false);
     }
 }

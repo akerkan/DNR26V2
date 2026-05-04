@@ -2,6 +2,7 @@
 using DNR26V2.Domain.Enums;
 using DNR26V2.Forms.Base;
 using DNR26V2.Services.Etikett;
+using System.IO;
 
 namespace DNR26V2.Forms.Etikett;
 
@@ -36,6 +37,10 @@ public partial class FrmEtiketDesigner : BaseForm
 
     // ── Guard: prevents feedback loop when setting NUD values in code ─────────
     private bool _updatingProps;
+
+    // ── Image cache: decoded bitmaps keyed by EtiketFeld ─────────────────────
+    private readonly Dictionary<EtiketFeld, Bitmap?> _imageCache = new();
+    private const int MaxImageBytes = 100 * 1024; // 100 KB
 
     private const int HitZone = 7;
     private const int MinSize = 20;
@@ -88,6 +93,7 @@ public partial class FrmEtiketDesigner : BaseForm
         chkPropItalic.CheckedChanged      += PropChanged;
         chkPropVisible.CheckedChanged     += PropChanged;
         cmbPropAlign.SelectedIndexChanged += PropChanged;
+        cmbImageSizeMode.SelectedIndexChanged += ImageSizeModeChanged;
     }
 
     // ── Paper size ────────────────────────────────────────────────────────────
@@ -145,6 +151,10 @@ public partial class FrmEtiketDesigner : BaseForm
         canvas.Controls.Clear();
         _selectedPanel = null;
         _selectedField = null;
+
+        foreach (var bmp in _imageCache.Values) bmp?.Dispose();
+        _imageCache.Clear();
+
         UpdatePropertiesPanel();
 
         foreach (var field in _fields)
@@ -175,6 +185,12 @@ public partial class FrmEtiketDesigner : BaseForm
 
     private void PaintField(Graphics g, Panel pnl, EtiketLayoutField field)
     {
+        // ── Hintergrundbild ───────────────────────────────────────────────────
+        var img = GetFieldImage(field);
+        if (img != null)
+            DrawFieldImage(g, img, pnl.ClientRectangle, field.ImageSizeMode);
+
+        // ── Rahmen ────────────────────────────────────────────────────────────
         if (ReferenceEquals(pnl, _selectedPanel))
         {
             using var pen = new Pen(Color.DodgerBlue, 2);
@@ -247,6 +263,11 @@ public partial class FrmEtiketDesigner : BaseForm
 
             SetColorBtn(btnPropForeColor, _selectedField.ForeColorHex, Color.Black);
             SetColorBtn(btnPropBackColor, _selectedField.BackColorHex, Color.White);
+
+            // ── Resim bölümü (her alan için göster) ───────────────────────────
+            pnlImageSection.Visible = true;
+            cmbImageSizeMode.SelectedIndex = Math.Clamp(_selectedField.ImageSizeMode, 0, 2);
+            UpdateImageStatus(_selectedField);
         }
         finally
         {
@@ -484,6 +505,126 @@ public partial class FrmEtiketDesigner : BaseForm
 
     private void BtnSchliessen_Click(object? sender, EventArgs e) => Close();
 
+    // ── Image helpers ─────────────────────────────────────────────────────────
+
+    private static bool IsImageField(EtiketFeld feld) =>
+        feld is EtiketFeld.Logo  or EtiketFeld.Bild2
+             or EtiketFeld.Bild3 or EtiketFeld.Bild4
+             or EtiketFeld.Bild5;
+
+    private Bitmap? GetFieldImage(EtiketLayoutField field)
+    {
+        if (_imageCache.TryGetValue(field.Feld, out var cached))
+            return cached;
+
+        Bitmap? bmp = null;
+        if (field.ImageData is { Length: > 0 })
+        {
+            try
+            {
+                using var ms = new MemoryStream(field.ImageData);
+                bmp = new Bitmap(ms);
+            }
+            catch { bmp = null; }
+        }
+        _imageCache[field.Feld] = bmp;
+        return bmp;
+    }
+
+    private void InvalidateImageCache(EtiketFeld feld)
+    {
+        if (_imageCache.TryGetValue(feld, out var old))
+        {
+            old?.Dispose();
+            _imageCache.Remove(feld);
+        }
+    }
+
+    private static void DrawFieldImage(Graphics g, Bitmap img, Rectangle dest, int sizeMode)
+    {
+        switch (sizeMode)
+        {
+            case 0: // Strecken
+                g.DrawImage(img, dest);
+                break;
+            case 1: // Anpassen (Zoom)
+                double ratio = Math.Min((double)dest.Width / img.Width, (double)dest.Height / img.Height);
+                int iw = (int)(img.Width  * ratio);
+                int ih = (int)(img.Height * ratio);
+                g.DrawImage(img, dest.X + (dest.Width - iw) / 2, dest.Y + (dest.Height - ih) / 2, iw, ih);
+                break;
+            case 2: // Zentrieren
+                g.DrawImage(img,
+                    dest.X + (dest.Width  - img.Width)  / 2,
+                    dest.Y + (dest.Height - img.Height) / 2);
+                break;
+        }
+    }
+
+    private void UpdateImageStatus(EtiketLayoutField field)
+    {
+        if (field.ImageData is { Length: > 0 })
+        {
+            lblImageStatus.Text      = $"{field.ImageData.Length / 1024.0:0.#} KB geladen";
+            lblImageStatus.ForeColor = Color.FromArgb(0, 128, 0);
+        }
+        else
+        {
+            lblImageStatus.Text      = "(kein Bild)";
+            lblImageStatus.ForeColor = Color.Gray;
+        }
+    }
+
+    private void BtnImageLoad_Click(object? sender, EventArgs e)
+    {
+        if (_selectedField is null) return;
+
+        using var dlg = new OpenFileDialog
+        {
+            Title  = "Bild auswählen",
+            Filter = "Bilder|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Alle Dateien|*.*",
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        byte[] bytes;
+        try   { bytes = File.ReadAllBytes(dlg.FileName); }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Fehler beim Lesen: " + ex.Message,
+                "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        if (bytes.Length > MaxImageBytes)
+        {
+            MessageBox.Show(
+                $"Das Bild ist zu groß ({bytes.Length / 1024} KB).\nMaximal erlaubt: {MaxImageBytes / 1024} KB.",
+                "Bild zu groß", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        InvalidateImageCache(_selectedField.Feld);
+        _selectedField.ImageData = bytes;
+        UpdateImageStatus(_selectedField);
+        _selectedPanel?.Invalidate();
+    }
+
+    private void BtnImageClear_Click(object? sender, EventArgs e)
+    {
+        if (_selectedField is null) return;
+        InvalidateImageCache(_selectedField.Feld);
+        _selectedField.ImageData = null;
+        UpdateImageStatus(_selectedField);
+        _selectedPanel?.Invalidate();
+    }
+
+    private void ImageSizeModeChanged(object? sender, EventArgs e)
+    {
+        if (_updatingProps || _selectedField is null || _selectedPanel is null) return;
+        _selectedField.ImageSizeMode = cmbImageSizeMode.SelectedIndex;
+        _selectedPanel.Invalidate();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static Color ParseColor(string hex, Color fallback)
@@ -512,6 +653,10 @@ public partial class FrmEtiketDesigner : BaseForm
         EtiketFeld.Kundenname          => "Kundenname",
         EtiketFeld.MengeGewicht        => "Menge / Gewicht",
         EtiketFeld.FirmaFooter         => "Firma Footer",
+        EtiketFeld.Bild2               => "Bild 2",
+        EtiketFeld.Bild3               => "Bild 3",
+        EtiketFeld.Bild4               => "Bild 4",
+        EtiketFeld.Bild5               => "Bild 5",
         _                              => feld.ToString(),
     };
 }

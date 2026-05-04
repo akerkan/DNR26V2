@@ -32,4 +32,11 @@ public class EtiketLayoutField
     public int TextAlignH { get; set; } = 0;
 
     public bool Visible { get; set; } = true;
+
+    // ?? Hintergrundbild (nur für Resim-Felder) ????????????????????????????????
+    /// <summary>Rohe Bilddaten (PNG/JPG), max. 100 KB. Null = kein Bild.</summary>
+    public byte[]? ImageData { get; set; }
+
+    /// <summary>0 = Strecken, 1 = Anpassen (Zoom), 2 = Zentrieren</summary>
+    public int ImageSizeMode { get; set; } = 1;
 }
